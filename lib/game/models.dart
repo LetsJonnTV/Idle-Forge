@@ -1,0 +1,313 @@
+enum ItemSlot { weapon, armor, helm, gloves, boots, ring }
+
+enum ItemTier { common, uncommon, rare, epic, legendary }
+
+enum ItemSet { ember, tide, storm }
+
+enum EnemyArchetype { brute, assassin, poisoner, guardian }
+
+enum QuestType { kills, crafts, bosses }
+
+enum TalentType { attack, vitality, forge }
+
+enum ClanPerkType { warpath, bulwark, prosperity, rituals }
+
+enum ShopUpgradeType { speed, hammer, recovery }
+
+enum BossPattern { berserker, venom, titan }
+
+enum CombatStance { balanced, aggressive, defensive }
+
+enum FlaskType { healing, berserk }
+
+enum ShopOfferKind {
+  speedUpgrade,
+  hammerUpgrade,
+  recoveryUpgrade,
+  hammerPack,
+  shardCache,
+  healingFlask,
+  berserkFlask,
+}
+
+enum AchievementMetric {
+  totalKills,
+  craftedItems,
+  bossDefeats,
+  chapter,
+  forgeLevel,
+  prestigeLevel,
+  totalStrength,
+  questCycle,
+}
+
+class QuestStateView {
+  const QuestStateView({
+    required this.type,
+    required this.title,
+    required this.description,
+    required this.progress,
+    required this.target,
+    required this.rewardGold,
+    required this.rewardHammers,
+    required this.rewardShards,
+    required this.claimed,
+    required this.canClaim,
+  });
+
+  final QuestType type;
+  final String title;
+  final String description;
+  final int progress;
+  final int target;
+  final int rewardGold;
+  final int rewardHammers;
+  final int rewardShards;
+  final bool claimed;
+  final bool canClaim;
+}
+
+class SetCollectionView {
+  const SetCollectionView({
+    required this.setId,
+    required this.ownedCount,
+    required this.totalCount,
+    required this.missingSlots,
+    required this.rewardGold,
+    required this.rewardShards,
+    required this.rewardClaimed,
+    required this.rewardClaimable,
+  });
+
+  final ItemSet setId;
+  final int ownedCount;
+  final int totalCount;
+  final List<ItemSlot> missingSlots;
+  final int rewardGold;
+  final int rewardShards;
+  final bool rewardClaimed;
+  final bool rewardClaimable;
+}
+
+class ShopOffer {
+  const ShopOffer({
+    required this.id,
+    required this.kind,
+    required this.cost,
+    required this.stock,
+    required this.amount,
+    this.isDaily = false,
+    this.discountPercent = 0,
+  });
+
+  final String id;
+  final ShopOfferKind kind;
+  final int cost;
+  final int stock;
+  final int amount;
+  final bool isDaily;
+  final int discountPercent;
+
+  ShopOffer copyWith({
+    int? cost,
+    int? stock,
+    int? amount,
+    bool? isDaily,
+    int? discountPercent,
+  }) {
+    return ShopOffer(
+      id: id,
+      kind: kind,
+      cost: cost ?? this.cost,
+      stock: stock ?? this.stock,
+      amount: amount ?? this.amount,
+      isDaily: isDaily ?? this.isDaily,
+      discountPercent: discountPercent ?? this.discountPercent,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'kind': kind.name,
+      'cost': cost,
+      'stock': stock,
+      'amount': amount,
+      'isDaily': isDaily,
+      'discountPercent': discountPercent,
+    };
+  }
+
+  factory ShopOffer.fromJson(Map<String, dynamic> json) {
+    return ShopOffer(
+      id: json['id'] as String,
+      kind: ShopOfferKind.values.firstWhere(
+        (entry) => entry.name == (json['kind'] as String? ?? ShopOfferKind.hammerPack.name),
+        orElse: () => ShopOfferKind.hammerPack,
+      ),
+      cost: json['cost'] as int? ?? 0,
+      stock: json['stock'] as int? ?? 0,
+      amount: json['amount'] as int? ?? 1,
+      isDaily: json['isDaily'] as bool? ?? false,
+      discountPercent: json['discountPercent'] as int? ?? 0,
+    );
+  }
+}
+
+class AchievementDefinition {
+  const AchievementDefinition({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.metric,
+    required this.target,
+    required this.rewardGold,
+    required this.rewardShards,
+  });
+
+  final String id;
+  final String title;
+  final String description;
+  final AchievementMetric metric;
+  final int target;
+  final int rewardGold;
+  final int rewardShards;
+}
+
+class AchievementView {
+  const AchievementView({
+    required this.definition,
+    required this.progress,
+    required this.claimed,
+    required this.canClaim,
+  });
+
+  final AchievementDefinition definition;
+  final int progress;
+  final bool claimed;
+  final bool canClaim;
+}
+
+class GameItem {
+  const GameItem({
+    required this.id,
+    required this.name,
+    required this.slot,
+    required this.tier,
+    required this.setId,
+    required this.power,
+    required this.sellValue,
+    this.iconPath = 'assets/icons/forge.svg',
+    this.isLocked = false,
+  });
+
+  final String id;
+  final String name;
+  final ItemSlot slot;
+  final ItemTier tier;
+  final ItemSet setId;
+  final int power;
+  final int sellValue;
+  final String iconPath;
+  final bool isLocked;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'slot': slot.name,
+      'tier': tier.name,
+      'setId': setId.name,
+      'power': power,
+      'sellValue': sellValue,
+      'iconPath': iconPath,
+      'isLocked': isLocked,
+    };
+  }
+
+  factory GameItem.fromJson(Map<String, dynamic> json) {
+    return GameItem(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      slot: ItemSlot.values.firstWhere((slot) => slot.name == json['slot']),
+      tier: ItemTier.values.firstWhere((tier) => tier.name == json['tier']),
+      setId: ItemSet.values.firstWhere(
+        (setId) => setId.name == (json['setId'] as String? ?? ItemSet.ember.name),
+      ),
+      power: json['power'] as int,
+      sellValue: json['sellValue'] as int,
+      iconPath: json['iconPath'] as String? ?? 'assets/icons/forge.svg',
+      isLocked: json['isLocked'] as bool? ?? false,
+    );
+  }
+}
+
+class SkillDefinition {
+  const SkillDefinition({
+    required this.id,
+    required this.labelKey,
+    required this.cooldownSeconds,
+    required this.damageMultiplier,
+    this.bonusHits = 0,
+  });
+
+  final String id;
+  final String labelKey;
+  final double cooldownSeconds;
+  final double damageMultiplier;
+  final int bonusHits;
+}
+
+class SkillState {
+  const SkillState({required this.definition, required this.cooldownRemaining});
+
+  final SkillDefinition definition;
+  final double cooldownRemaining;
+
+  SkillState copyWith({double? cooldownRemaining}) {
+    return SkillState(
+      definition: definition,
+      cooldownRemaining: cooldownRemaining ?? this.cooldownRemaining,
+    );
+  }
+}
+
+class EnemyState {
+  const EnemyState({
+    required this.name,
+    required this.maxHp,
+    required this.hp,
+    required this.approach,
+    required this.isBoss,
+    this.archetype = EnemyArchetype.brute,
+    this.bossPattern = BossPattern.berserker,
+  });
+
+  final String name;
+  final double maxHp;
+  final double hp;
+  final double approach;
+  final bool isBoss;
+  final EnemyArchetype archetype;
+  final BossPattern bossPattern;
+
+  EnemyState copyWith({
+    String? name,
+    double? maxHp,
+    double? hp,
+    double? approach,
+    bool? isBoss,
+    EnemyArchetype? archetype,
+    BossPattern? bossPattern,
+  }) {
+    return EnemyState(
+      name: name ?? this.name,
+      maxHp: maxHp ?? this.maxHp,
+      hp: hp ?? this.hp,
+      approach: approach ?? this.approach,
+      isBoss: isBoss ?? this.isBoss,
+      archetype: archetype ?? this.archetype,
+      bossPattern: bossPattern ?? this.bossPattern,
+    );
+  }
+}

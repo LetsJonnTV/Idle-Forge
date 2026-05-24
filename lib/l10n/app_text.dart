@@ -1,0 +1,102 @@
+class AppText {
+  AppText(this.localeCode);
+
+  final String localeCode;
+
+  static const supportedLocales = ['de', 'en'];
+
+  static const Map<String, Map<String, String>> _strings = {
+    'de': {
+      'appTitle': 'Idle Forge',
+      'soon': 'Bald...',
+      'gold': 'Gold',
+      'hammers': 'Haemmer',
+      'forge': 'Schmiede',
+      'craft': 'Schmieden',
+      'upgradeChance': 'Chance verbessern',
+      'inventory': 'Inventar',
+      'profilePlaceholder': 'Abenteurer',
+      'totalStrength': 'Gesamtstaerke',
+      'equip': 'Anlegen',
+      'unequip': 'Ablegen',
+      'sell': 'Verkaufen',
+      'close': 'Schliessen',
+      'crafted': 'Geschmiedetes Item',
+      'skillStrike': 'Kraftschlag',
+      'skillWhirl': 'Wirbelhieb',
+      'skillFocus': 'Kampffokus',
+      'notEnoughHammers': 'Du hast keine Haemmer.',
+      'notEnoughGold': 'Zu wenig Gold.',
+      'equipped': 'Angelegt',
+      'stage': 'Stage',
+      'chapter': 'Kapitel',
+      'boss': 'Boss',
+      'forgeLevel': 'Schmiede-Stufe',
+      'offlineReward': 'Offline-Belohnung',
+      'offlineSummary': 'Du warst weg und hast Belohnungen erhalten.',
+      'menuWorld': 'Welt',
+      'menuClan': 'Clan',
+      'menuShop': 'Shop',
+      'menuQuest': 'Quest',
+      'slotWeapon': 'Waffe',
+      'slotArmor': 'Ruestung',
+      'slotHelm': 'Helm',
+      'slotGloves': 'Handschuhe',
+      'slotBoots': 'Schuhe',
+      'slotRing': 'Ring',
+      'tierCommon': 'T1 Gewoehnlich',
+      'tierUncommon': 'T2 Ungewoehnlich',
+      'tierRare': 'T3 Selten',
+      'tierEpic': 'T4 Episch',
+      'tierLegendary': 'T5 Legendaer'
+    },
+    'en': {
+      'appTitle': 'Idle Forge',
+      'soon': 'Soon...',
+      'gold': 'Gold',
+      'hammers': 'Hammers',
+      'forge': 'Forge',
+      'craft': 'Craft',
+      'upgradeChance': 'Upgrade chance',
+      'inventory': 'Inventory',
+      'profilePlaceholder': 'Adventurer',
+      'totalStrength': 'Total power',
+      'equip': 'Equip',
+      'unequip': 'Unequip',
+      'sell': 'Sell',
+      'close': 'Close',
+      'crafted': 'Crafted Item',
+      'skillStrike': 'Power Strike',
+      'skillWhirl': 'Whirl Slash',
+      'skillFocus': 'Battle Focus',
+      'notEnoughHammers': 'You have no hammers.',
+      'notEnoughGold': 'Not enough gold.',
+      'equipped': 'Equipped',
+      'stage': 'Stage',
+      'chapter': 'Chapter',
+      'boss': 'Boss',
+      'forgeLevel': 'Forge level',
+      'offlineReward': 'Offline reward',
+      'offlineSummary': 'You were away and gained rewards.',
+      'menuWorld': 'World',
+      'menuClan': 'Clan',
+      'menuShop': 'Shop',
+      'menuQuest': 'Quest',
+      'slotWeapon': 'Weapon',
+      'slotArmor': 'Armor',
+      'slotHelm': 'Helm',
+      'slotGloves': 'Gloves',
+      'slotBoots': 'Boots',
+      'slotRing': 'Ring',
+      'tierCommon': 'T1 Common',
+      'tierUncommon': 'T2 Uncommon',
+      'tierRare': 'T3 Rare',
+      'tierEpic': 'T4 Epic',
+      'tierLegendary': 'T5 Legendary'
+    }
+  };
+
+  String tr(String key) {
+    return _strings[localeCode]?[key] ?? _strings['en']![key] ?? key;
+  }
+}

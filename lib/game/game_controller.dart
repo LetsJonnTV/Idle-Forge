@@ -1,0 +1,2936 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../l10n/app_text.dart';
+import 'models.dart';
+
+class OfflineReward {
+  const OfflineReward({required this.gold, required this.hammers, required this.minutes});
+
+  final int gold;
+  final int hammers;
+  final int minutes;
+}
+
+class BulkSellResult {
+  const BulkSellResult({required this.soldCount, required this.earnedGold});
+
+  final int soldCount;
+  final int earnedGold;
+}
+
+class BulkSellPreview {
+  const BulkSellPreview({
+    required this.candidateCount,
+    required this.sellableCount,
+    required this.protectedCount,
+    required this.estimatedGold,
+  });
+
+  final int candidateCount;
+  final int sellableCount;
+  final int protectedCount;
+  final int estimatedGold;
+}
+
+class BalanceTuning {
+  const BalanceTuning({
+    this.autoAttackIntervalSec = 1,
+    this.playerDamageMultiplier = 1,
+    this.enemyHpMultiplier = 1,
+    this.enemyApproachSpeedMultiplier = 1,
+    this.goldGainMultiplier = 1,
+    this.offlineRewardMultiplier = 1,
+    this.forgeExtraBonus = 0,
+    this.killsPerStage = 10,
+  });
+
+  final double autoAttackIntervalSec;
+  final double playerDamageMultiplier;
+  final double enemyHpMultiplier;
+  final double enemyApproachSpeedMultiplier;
+  final double goldGainMultiplier;
+  final double offlineRewardMultiplier;
+  final double forgeExtraBonus;
+  final int killsPerStage;
+
+  BalanceTuning copyWith({
+    double? autoAttackIntervalSec,
+    double? playerDamageMultiplier,
+    double? enemyHpMultiplier,
+    double? enemyApproachSpeedMultiplier,
+    double? goldGainMultiplier,
+    double? offlineRewardMultiplier,
+    double? forgeExtraBonus,
+    int? killsPerStage,
+  }) {
+    return BalanceTuning(
+      autoAttackIntervalSec: autoAttackIntervalSec ?? this.autoAttackIntervalSec,
+      playerDamageMultiplier: playerDamageMultiplier ?? this.playerDamageMultiplier,
+      enemyHpMultiplier: enemyHpMultiplier ?? this.enemyHpMultiplier,
+      enemyApproachSpeedMultiplier:
+          enemyApproachSpeedMultiplier ?? this.enemyApproachSpeedMultiplier,
+      goldGainMultiplier: goldGainMultiplier ?? this.goldGainMultiplier,
+      offlineRewardMultiplier: offlineRewardMultiplier ?? this.offlineRewardMultiplier,
+      forgeExtraBonus: forgeExtraBonus ?? this.forgeExtraBonus,
+      killsPerStage: killsPerStage ?? this.killsPerStage,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'autoAttackIntervalSec': autoAttackIntervalSec,
+      'playerDamageMultiplier': playerDamageMultiplier,
+      'enemyHpMultiplier': enemyHpMultiplier,
+      'enemyApproachSpeedMultiplier': enemyApproachSpeedMultiplier,
+      'goldGainMultiplier': goldGainMultiplier,
+      'offlineRewardMultiplier': offlineRewardMultiplier,
+      'forgeExtraBonus': forgeExtraBonus,
+      'killsPerStage': killsPerStage,
+    };
+  }
+
+  factory BalanceTuning.fromJson(Map<String, dynamic> json) {
+    return BalanceTuning(
+      autoAttackIntervalSec: (json['autoAttackIntervalSec'] as num?)?.toDouble() ?? 1,
+      playerDamageMultiplier: (json['playerDamageMultiplier'] as num?)?.toDouble() ?? 1,
+      enemyHpMultiplier: (json['enemyHpMultiplier'] as num?)?.toDouble() ?? 1,
+      enemyApproachSpeedMultiplier:
+          (json['enemyApproachSpeedMultiplier'] as num?)?.toDouble() ?? 1,
+      goldGainMultiplier: (json['goldGainMultiplier'] as num?)?.toDouble() ?? 1,
+      offlineRewardMultiplier: (json['offlineRewardMultiplier'] as num?)?.toDouble() ?? 1,
+      forgeExtraBonus: (json['forgeExtraBonus'] as num?)?.toDouble() ?? 0,
+      killsPerStage: (json['killsPerStage'] as num?)?.toInt() ?? 10,
+    );
+  }
+}
+
+class _ItemBlueprint {
+  const _ItemBlueprint({required this.name, required this.iconPath, required this.basePower});
+
+  final String name;
+  final String iconPath;
+  final int basePower;
+}
+
+class GameController extends ChangeNotifier {
+  GameController({this.localeCode = 'de'}) {
+    _skills = _definitions
+        .map((definition) => SkillState(definition: definition, cooldownRemaining: 0))
+        .toList(growable: false);
+  }
+
+  final String localeCode;
+  final Random _random = Random();
+  late List<SkillState> _skills;
+
+  Timer? _timer;
+  DateTime? _lastSaveAt;
+  bool _isLoaded = false;
+
+  int gold = 60;
+  int hammers = 0;
+  int forgeLevel = 0;
+  int prestigeLevel = 0;
+  int forgeShards = 0;
+  int chapter = 1;
+  int stage = 1;
+  int killsInStage = 0;
+  int totalKills = 0;
+  int deaths = 0;
+  int craftedItems = 0;
+  int bossDefeats = 0;
+  int questCycle = 1;
+
+  bool questKillsClaimed = false;
+  bool questCraftsClaimed = false;
+  bool questBossClaimed = false;
+
+  int talentAttackLevel = 0;
+  int talentVitalityLevel = 0;
+  int talentForgeLevel = 0;
+
+  int clanLevel = 1;
+  int clanXp = 0;
+  int clanPoints = 0;
+  int clanWarpathLevel = 0;
+  int clanBulwarkLevel = 0;
+  int clanProsperityLevel = 0;
+  int clanRitualsLevel = 0;
+
+  int skillStrikeLevel = 0;
+  int skillWhirlLevel = 0;
+  int skillFocusLevel = 0;
+
+  int shopSpeedLevel = 0;
+  int shopHammerLevel = 0;
+  int shopRecoveryLevel = 0;
+
+  int shopManualRefreshes = 0;
+  List<ShopOffer> _shopOffers = const [];
+  List<ShopOffer> _dailyShopOffers = const [];
+  String _dailyOfferDateKey = '';
+  DateTime _shopRefreshAt = DateTime.now();
+
+  int healingFlasks = 2;
+  int berserkFlasks = 1;
+  double flaskCooldownRemaining = 0;
+  double berserkRemaining = 0;
+  CombatStance combatStance = CombatStance.balanced;
+
+  final Set<int> autoSkillSlots = {};
+
+  double playerHp = 140;
+
+  bool autoSellEnabled = false;
+  ItemTier autoSellKeepFromTier = ItemTier.rare;
+  bool autoLockEnabled = false;
+  ItemTier autoLockFromTier = ItemTier.epic;
+
+  bool _lastCraftAutoSold = false;
+  String _lastCraftAutoSoldText = '';
+
+  final String playerName = 'Rookie';
+
+  final List<GameItem> inventory = [];
+  final Map<ItemSlot, String> equippedBySlot = {};
+  final Map<int, Map<ItemSlot, String>> loadoutPresets = {};
+  final Set<String> discoveredSetSlots = {};
+  final Set<ItemSet> claimedSetRewards = {};
+  final Set<String> claimedAchievements = {};
+
+  EnemyState enemy = const EnemyState(
+    name: 'Schleim',
+    maxHp: 20,
+    hp: 20,
+    approach: 1,
+    isBoss: false,
+  );
+
+  OfflineReward? lastOfflineReward;
+  BalanceTuning tuning = const BalanceTuning();
+
+  double _autoAttackAccumulator = 0;
+  double _enemyAttackAccumulator = 0;
+  double _bossSpecialAccumulator = 0;
+  double _poisonTickAccumulator = 0;
+  int _poisonTicksRemaining = 0;
+  bool _bossPhaseTwo = false;
+  bool _bossPhaseThree = false;
+  double _animationTime = 0;
+
+  String lastCombatEvent = '';
+
+  static const _saveKey = 'idle_forge.save.v1';
+
+  static const List<SkillDefinition> _definitions = [
+    SkillDefinition(
+      id: 'strike',
+      labelKey: 'skillStrike',
+      cooldownSeconds: 5,
+      damageMultiplier: 2.4,
+      bonusHits: 0,
+    ),
+    SkillDefinition(
+      id: 'whirl',
+      labelKey: 'skillWhirl',
+      cooldownSeconds: 8,
+      damageMultiplier: 1.6,
+      bonusHits: 1,
+    ),
+    SkillDefinition(
+      id: 'focus',
+      labelKey: 'skillFocus',
+      cooldownSeconds: 12,
+      damageMultiplier: 3.0,
+      bonusHits: 0,
+    ),
+  ];
+
+  static const List<String> _catalogPrefixes = [
+    'Glut',
+    'Frost',
+    'Sturm',
+    'Nebel',
+    'Eisen',
+    'Runen',
+    'Aether',
+    'Schatten',
+    'Licht',
+    'Donner',
+    'Asche',
+    'Sonnen',
+    'Mond',
+    'Stern',
+    'Titan',
+    'Drachen',
+    'Wolken',
+    'Wuesten',
+    'Gezeiten',
+    'Ewigen',
+  ];
+
+  static const List<String> _weaponNouns = [
+    'Klinge',
+    'Schwert',
+    'Saebel',
+    'Rapier',
+    'Katana',
+    'Axt',
+    'Beil',
+    'Hammer',
+    'Morgenstern',
+    'Speer',
+    'Lanze',
+    'Hellebarde',
+    'Dolch',
+    'Messer',
+    'Sichel',
+    'Sense',
+    'Flegel',
+    'Stab',
+    'Zweihander',
+    'Krummschwert',
+  ];
+
+  static const List<String> _armorNouns = [
+    'Panzer',
+    'Harnisch',
+    'Brustplatte',
+    'Schuppenpanzer',
+    'Ringpanzer',
+    'Lederweste',
+    'Kettenhemd',
+    'Brigantine',
+    'Kuerass',
+    'Lamellenpanzer',
+    'Runenmantel',
+    'Wappenrock',
+    'Kampfrock',
+    'Schlachtrobe',
+    'Bastion',
+    'Aegis',
+    'Wardenmail',
+    'Zitadelle',
+    'Festungspanzer',
+    'Sentinelplatte',
+  ];
+
+  static const List<String> _helmNouns = [
+    'Helm',
+    'Visier',
+    'Sturmhaube',
+    'Topfhelm',
+    'Schaller',
+    'Barbuta',
+    'Maskenhelm',
+    'Kronhelm',
+    'Hornhelm',
+    'Kopfplatte',
+    'Wachhelm',
+    'Aegiskrone',
+    'Runenkappe',
+    'Wolkenhaube',
+    'Titanhelm',
+    'Drachenschaedel',
+    'Kampfhaube',
+    'Sentinelhelm',
+    'Wardenkappe',
+    'Festungshelm',
+  ];
+
+  static const List<String> _gloveNouns = [
+    'Handschuhe',
+    'Stulpen',
+    'Panzerhandschuhe',
+    'Faeustlinge',
+    'Klauen',
+    'Greifer',
+    'Griffwickel',
+    'Kampfhandschuhe',
+    'Schlaghandschuhe',
+    'Runenstulpen',
+    'Dornfaeuste',
+    'Wardenfingern',
+    'Bastiongreifer',
+    'Titanfaeuste',
+    'Schmiedehandschuhe',
+    'Klingenfaeuste',
+    'Schattenstulpen',
+    'Sturmhandschuhe',
+    'Wolkenfäuste',
+    'Aegisgreifer',
+  ];
+
+  static const List<String> _bootsNouns = [
+    'Stiefel',
+    'Tritter',
+    'Schuhe',
+    'Kampfstiefel',
+    'Greaves',
+    'Panzerstiefel',
+    'Laufstiefel',
+    'Schattenstiefel',
+    'Sturmstiefel',
+    'Pfadlaeufer',
+    'Wolkenstiefel',
+    'Titantritte',
+    'Wardenstiefel',
+    'Bastionsohlen',
+    'Runenschuhe',
+    'Drachenklaue',
+    'Marschstiefel',
+    'Aegisstiefel',
+    'Wuestenstiefel',
+    'Gezeitenstiefel',
+  ];
+
+  static const List<String> _ringNouns = [
+    'Ring',
+    'Siegel',
+    'Band',
+    'Reif',
+    'Signet',
+    'Wappenring',
+    'Runenring',
+    'Aegissiegel',
+    'Titanband',
+    'Sturmreif',
+    'Schattenring',
+    'Mondring',
+    'Sonnenring',
+    'Sternensiegel',
+    'Drachenband',
+    'Bastionring',
+    'Wardensiegel',
+    'Gezeitenreif',
+    'Wolkenband',
+    'Ewigkeitsring',
+  ];
+
+  static final Map<ItemSlot, List<_ItemBlueprint>> _slotCatalogs = _buildSlotCatalogs();
+
+  static Map<ItemSlot, List<_ItemBlueprint>> _buildSlotCatalogs() {
+    return {
+      ItemSlot.weapon: _buildCatalogForSlot(
+        slot: ItemSlot.weapon,
+        nouns: _weaponNouns,
+        iconFolder: 'weapons',
+        iconPrefix: 'w',
+      ),
+      ItemSlot.armor: _buildCatalogForSlot(
+        slot: ItemSlot.armor,
+        nouns: _armorNouns,
+        iconFolder: 'armors',
+        iconPrefix: 'a',
+      ),
+      ItemSlot.helm: _buildCatalogForSlot(
+        slot: ItemSlot.helm,
+        nouns: _helmNouns,
+        iconFolder: 'helms',
+        iconPrefix: 'h',
+      ),
+      ItemSlot.gloves: _buildCatalogForSlot(
+        slot: ItemSlot.gloves,
+        nouns: _gloveNouns,
+        iconFolder: 'gloves',
+        iconPrefix: 'g',
+      ),
+      ItemSlot.boots: _buildCatalogForSlot(
+        slot: ItemSlot.boots,
+        nouns: _bootsNouns,
+        iconFolder: 'boots',
+        iconPrefix: 'b',
+      ),
+      ItemSlot.ring: _buildCatalogForSlot(
+        slot: ItemSlot.ring,
+        nouns: _ringNouns,
+        iconFolder: 'rings',
+        iconPrefix: 'r',
+      ),
+    };
+  }
+
+  static List<_ItemBlueprint> _buildCatalogForSlot({
+    required ItemSlot slot,
+    required List<String> nouns,
+    required String iconFolder,
+    required String iconPrefix,
+  }) {
+    final result = <_ItemBlueprint>[];
+    var index = 1;
+    for (int p = 0; p < _catalogPrefixes.length; p += 1) {
+      for (int n = 0; n < nouns.length; n += 1) {
+        final iconId = index.toString().padLeft(3, '0');
+        result.add(
+          _ItemBlueprint(
+            name: '${_catalogPrefixes[p]} ${nouns[n]}',
+            iconPath: 'assets/icons/$iconFolder/${iconPrefix}_$iconId.svg',
+            basePower: _slotBasePower(slot) + p + (n ~/ 2),
+          ),
+        );
+        index += 1;
+      }
+    }
+    return result;
+  }
+
+  static int _slotBasePower(ItemSlot slot) {
+    return switch (slot) {
+      ItemSlot.weapon => 4,
+      ItemSlot.armor => 3,
+      ItemSlot.helm => 2,
+      ItemSlot.gloves => 2,
+      ItemSlot.boots => 2,
+      ItemSlot.ring => 1,
+    };
+  }
+
+  late final List<AchievementDefinition> _achievementDefinitions = _buildAchievementDefinitions();
+
+  AppText get text => AppText(localeCode);
+  bool get isLoaded => _isLoaded;
+  double get animationBob => sin(_animationTime * 3) * 5;
+  List<SkillState> get skills => _skills;
+
+  int get stageTargetKills => isBossStage ? 1 : tuning.killsPerStage;
+  bool get isBossStage => stage == 15;
+
+  int get basePower {
+    return 10 + chapter * 3 + (stage - 1);
+  }
+
+  int get totalStrength {
+    int gearPower = 0;
+    for (final item in equippedItems) {
+      gearPower += item.power;
+    }
+    return basePower + gearPower + setAttackBonus;
+  }
+
+  Map<ItemSet, int> get equippedSetCounts {
+    final counts = <ItemSet, int>{};
+    for (final item in equippedItems) {
+      counts[item.setId] = (counts[item.setId] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  int get setAttackBonus {
+    int bonus = 0;
+    for (final count in equippedSetCounts.values) {
+      if (count >= 2) {
+        bonus += 6;
+      }
+      if (count >= 4) {
+        bonus += 12;
+      }
+    }
+    return bonus;
+  }
+
+  double get setHpBonusMultiplier {
+    final count = equippedSetCounts[ItemSet.tide] ?? 0;
+    if (count >= 4) {
+      return 1.2;
+    }
+    if (count >= 2) {
+      return 1.1;
+    }
+    return 1.0;
+  }
+
+  double get setForgeBonus {
+    final count = equippedSetCounts[ItemSet.ember] ?? 0;
+    if (count >= 4) {
+      return 0.05;
+    }
+    if (count >= 2) {
+      return 0.02;
+    }
+    return 0.0;
+  }
+
+  double get maxPlayerHp {
+    final base = 140 + (totalStrength * 2.4);
+    final prestigeBoost = 1 + (prestigeLevel * 0.03) + (talentVitalityLevel * 0.08);
+    return base * prestigeBoost * setHpBonusMultiplier;
+  }
+
+  double get playerHpPercent {
+    if (maxPlayerHp <= 0) {
+      return 0;
+    }
+    return (playerHp / maxPlayerHp).clamp(0.0, 1.0).toDouble();
+  }
+
+  int get forgeUpgradeCost => 40 + (forgeLevel + 1) * 35;
+
+  double get prestigeDamageBonus =>
+      (1 + (prestigeLevel * 0.08) + (talentAttackLevel * 0.06)) * clanDamageBonusMultiplier;
+
+  double get prestigeForgeBonus => (prestigeLevel * 0.01).clamp(0, 0.2);
+
+  double get forgeBonusChance =>
+      (forgeLevel * 0.018 +
+          prestigeForgeBonus +
+          (talentForgeLevel * 0.008) +
+          setForgeBonus)
+        .clamp(0, 0.65);
+
+  String get autoSellLabel {
+    if (!autoSellEnabled) {
+      return 'Aus';
+    }
+    return 'Ab ${tierLabel(autoSellKeepFromTier)} behalten';
+  }
+
+  int get prestigeShardGain {
+    final raw = ((chapter - 1) * 3) + ((stage - 1) ~/ 5) + (forgeLevel ~/ 2) + (totalKills ~/ 120);
+    return max(0, raw);
+  }
+
+  bool get canPrestige => chapter >= 2 && prestigeShardGain > 0;
+
+  int get questKillsTarget => 80 + ((questCycle - 1) * 18);
+  int get questCraftsTarget => 16 + ((questCycle - 1) * 4);
+  int get questBossTarget => 3 + ((questCycle - 1) ~/ 2);
+
+  int get talentAttackCost => 3 + (talentAttackLevel * 2);
+  int get talentVitalityCost => 3 + (talentVitalityLevel * 2);
+  int get talentForgeCost => 4 + (talentForgeLevel * 3);
+
+  int get clanXpRequired => 120 + ((clanLevel - 1) * 80);
+  double get clanXpProgress => clanXpRequired <= 0 ? 0 : (clanXp / clanXpRequired).clamp(0.0, 1.0);
+  double get clanDamageBonusMultiplier => 1 + (clanWarpathLevel * 0.04);
+  double get clanDefenseReduction => (clanBulwarkLevel * 0.03).clamp(0.0, 0.45);
+  double get clanGoldBonusMultiplier => 1 + (clanProsperityLevel * 0.04);
+  double get clanShardBonusMultiplier => 1 + (clanRitualsLevel * 0.05);
+
+  int get skillStrikeCost => 2 + (skillStrikeLevel * 2);
+  int get skillWhirlCost => 2 + (skillWhirlLevel * 2);
+  int get skillFocusCost => 3 + (skillFocusLevel * 3);
+
+  int get shopSpeedCost => 120 + (shopSpeedLevel * 85);
+  int get shopHammerCost => 150 + (shopHammerLevel * 90);
+  int get shopRecoveryCost => 110 + (shopRecoveryLevel * 80);
+  int get shopRefreshCost => 90 + (chapter * 12) + (shopManualRefreshes * 60);
+
+  List<ShopOffer> get shopOffers => List<ShopOffer>.unmodifiable(_shopOffers);
+  List<ShopOffer> get dailyShopOffers => List<ShopOffer>.unmodifiable(_dailyShopOffers);
+  List<ShopOffer> get allShopOffers => List<ShopOffer>.unmodifiable([
+    ..._dailyShopOffers,
+    ..._shopOffers,
+  ]);
+
+  Duration get shopRefreshRemaining {
+    final remaining = _shopRefreshAt.difference(DateTime.now());
+    if (remaining.isNegative) {
+      return Duration.zero;
+    }
+    return remaining;
+  }
+
+  double get shopAttackSpeedFactor => (1 - (shopSpeedLevel * 0.05)).clamp(0.45, 1.0);
+  double get shopHammerBonusChance => (shopHammerLevel * 0.08).clamp(0.0, 0.6);
+  double get shopRecoveryBonus => 1 + (shopRecoveryLevel * 0.12);
+
+  bool get berserkActive => berserkRemaining > 0;
+
+  double get combatDamageMultiplier {
+    final stance = switch (combatStance) {
+      CombatStance.balanced => 1.0,
+      CombatStance.aggressive => 1.2,
+      CombatStance.defensive => 0.88,
+    };
+    final berserk = berserkActive ? 1.25 : 1.0;
+    return stance * berserk;
+  }
+
+  double get combatRegenMultiplier {
+    return switch (combatStance) {
+      CombatStance.balanced => 1.0,
+      CombatStance.aggressive => 0.72,
+      CombatStance.defensive => 1.25,
+    };
+  }
+
+  double get incomingDamageMultiplier {
+    final stance = switch (combatStance) {
+      CombatStance.balanced => 1.0,
+      CombatStance.aggressive => 1.18,
+      CombatStance.defensive => 0.76,
+    };
+    return stance * (1 - clanDefenseReduction);
+  }
+
+  int get healingFlaskCost => 80 + (healingFlasks * 35) + (chapter * 4);
+  int get berserkFlaskCost => 140 + (berserkFlasks * 55) + (chapter * 6);
+
+  bool get allQuestsClaimed => questKillsClaimed && questCraftsClaimed && questBossClaimed;
+
+  int get currentBossPhase {
+    if (!enemy.isBoss) {
+      return 0;
+    }
+    if (_bossPhaseThree) {
+      return 3;
+    }
+    if (_bossPhaseTwo) {
+      return 2;
+    }
+    return 1;
+  }
+
+  BossPattern get currentBossPattern => enemy.bossPattern;
+
+  List<String> get activeSetBonuses {
+    final bonuses = <String>[];
+    final counts = equippedSetCounts;
+
+    for (final setId in ItemSet.values) {
+      final count = counts[setId] ?? 0;
+      if (count < 2) {
+        continue;
+      }
+
+      if (setId == ItemSet.ember) {
+        bonuses.add('${setLabel(setId)} 2er: +2% Schmiedechance');
+        if (count >= 4) {
+          bonuses.add('${setLabel(setId)} 4er: +5% Schmiedechance');
+        }
+      } else if (setId == ItemSet.tide) {
+        bonuses.add('${setLabel(setId)} 2er: +10% HP');
+        if (count >= 4) {
+          bonuses.add('${setLabel(setId)} 4er: +20% HP');
+        }
+      } else {
+        bonuses.add('${setLabel(setId)} 2er: +6 Angriff');
+        if (count >= 4) {
+          bonuses.add('${setLabel(setId)} 4er: +12 Angriff');
+        }
+      }
+    }
+
+    return bonuses;
+  }
+
+  List<SetCollectionView> get setCollection {
+    final total = ItemSlot.values.length;
+    return ItemSet.values.map((setId) {
+      final missing = <ItemSlot>[];
+      int owned = 0;
+      for (final slot in ItemSlot.values) {
+        if (discoveredSetSlots.contains(_collectionKey(setId, slot))) {
+          owned += 1;
+        } else {
+          missing.add(slot);
+        }
+      }
+      return SetCollectionView(
+        setId: setId,
+        ownedCount: owned,
+        totalCount: total,
+        missingSlots: missing,
+        rewardGold: setCompletionGoldReward(setId),
+        rewardShards: setCompletionShardReward(setId),
+        rewardClaimed: isSetCompletionRewardClaimed(setId),
+        rewardClaimable: missing.isEmpty && !isSetCompletionRewardClaimed(setId),
+      );
+    }).toList(growable: false);
+  }
+
+  List<AchievementView> get achievements {
+    return _achievementDefinitions.map((definition) {
+      final raw = _achievementProgress(definition.metric);
+      final progress = raw.clamp(0, definition.target);
+      final claimed = claimedAchievements.contains(definition.id);
+      return AchievementView(
+        definition: definition,
+        progress: progress,
+        claimed: claimed,
+        canClaim: !claimed && raw >= definition.target,
+      );
+    }).toList(growable: false);
+  }
+
+  int get claimableAchievementCount {
+    return achievements.where((entry) => entry.canClaim).length;
+  }
+
+  bool claimAchievement(String achievementId) {
+    AchievementView? achievement;
+    for (final entry in achievements) {
+      if (entry.definition.id == achievementId) {
+        achievement = entry;
+        break;
+      }
+    }
+    if (achievement == null || !achievement.canClaim) {
+      return false;
+    }
+
+    claimedAchievements.add(achievementId);
+    gold += _scaledGoldReward(achievement.definition.rewardGold);
+    forgeShards += _scaledShardReward(achievement.definition.rewardShards);
+    _gainClanXp(8);
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  int claimAllAchievements() {
+    final claimable = achievements.where((entry) => entry.canClaim).toList(growable: false);
+    if (claimable.isEmpty) {
+      return 0;
+    }
+
+    int rewardGold = 0;
+    int rewardShards = 0;
+    for (final entry in claimable) {
+      claimedAchievements.add(entry.definition.id);
+      rewardGold += entry.definition.rewardGold;
+      rewardShards += entry.definition.rewardShards;
+    }
+
+    gold += _scaledGoldReward(rewardGold);
+    forgeShards += _scaledShardReward(rewardShards);
+    _gainClanXp(claimable.length * 5);
+    _save();
+    notifyListeners();
+    return claimable.length;
+  }
+
+  int _achievementProgress(AchievementMetric metric) {
+    return switch (metric) {
+      AchievementMetric.totalKills => totalKills,
+      AchievementMetric.craftedItems => craftedItems,
+      AchievementMetric.bossDefeats => bossDefeats,
+      AchievementMetric.chapter => chapter,
+      AchievementMetric.forgeLevel => forgeLevel,
+      AchievementMetric.prestigeLevel => prestigeLevel,
+      AchievementMetric.totalStrength => totalStrength,
+      AchievementMetric.questCycle => questCycle,
+    };
+  }
+
+  List<AchievementDefinition> _buildAchievementDefinitions() {
+    final entries = <AchievementDefinition>[];
+
+    void addSeries({
+      required String idPrefix,
+      required String titlePrefix,
+      required String descPrefix,
+      required AchievementMetric metric,
+      required List<int> thresholds,
+      required int baseGold,
+      required int baseShards,
+    }) {
+      for (int i = 0; i < thresholds.length; i += 1) {
+        final target = thresholds[i];
+        entries.add(
+          AchievementDefinition(
+            id: '${idPrefix}_${i + 1}',
+            title: '$titlePrefix ${i + 1}',
+            description: '$descPrefix $target',
+            metric: metric,
+            target: target,
+            rewardGold: baseGold + (i * 60),
+            rewardShards: baseShards + (i ~/ 2),
+          ),
+        );
+      }
+    }
+
+    List<int> buildProgressiveThresholds({
+      required int lastThreshold,
+      required int count,
+      required double growthFactor,
+      required int minStep,
+    }) {
+      final result = <int>[];
+      var current = lastThreshold;
+      var step = (lastThreshold * growthFactor).round();
+
+      for (int i = 0; i < count; i += 1) {
+        step = max(minStep, step);
+        current += step;
+        result.add(current);
+        step = (step * 1.14).round();
+      }
+
+      return result;
+    }
+
+    addSeries(
+      idPrefix: 'ach_kills',
+      titlePrefix: 'Jaeger-Stufe',
+      descPrefix: 'Besiege insgesamt Gegner:',
+      metric: AchievementMetric.totalKills,
+      thresholds: const [50, 100, 200, 350, 500, 750, 1000, 1500, 2000, 3000],
+      baseGold: 120,
+      baseShards: 1,
+    );
+    addSeries(
+      idPrefix: 'ach_crafts',
+      titlePrefix: 'Schmiede-Stufe',
+      descPrefix: 'Schmiede insgesamt Items:',
+      metric: AchievementMetric.craftedItems,
+      thresholds: const [10, 25, 50, 80, 120, 170, 230, 300],
+      baseGold: 140,
+      baseShards: 1,
+    );
+    addSeries(
+      idPrefix: 'ach_bosses',
+      titlePrefix: 'Bossjaeger',
+      descPrefix: 'Besiege Bosse:',
+      metric: AchievementMetric.bossDefeats,
+      thresholds: const [1, 3, 5, 8, 12, 16, 22, 30],
+      baseGold: 170,
+      baseShards: 2,
+    );
+    addSeries(
+      idPrefix: 'ach_chapter',
+      titlePrefix: 'Weltlaeufer',
+      descPrefix: 'Erreiche Kapitel:',
+      metric: AchievementMetric.chapter,
+      thresholds: const [2, 3, 4, 5, 6, 7, 8, 9, 10, 12],
+      baseGold: 160,
+      baseShards: 2,
+    );
+    addSeries(
+      idPrefix: 'ach_forge',
+      titlePrefix: 'Essenzschmied',
+      descPrefix: 'Erreiche Schmiedestufe:',
+      metric: AchievementMetric.forgeLevel,
+      thresholds: const [2, 4, 6, 8, 10, 12, 14, 16],
+      baseGold: 180,
+      baseShards: 2,
+    );
+    addSeries(
+      idPrefix: 'ach_prestige',
+      titlePrefix: 'Aufgestiegener',
+      descPrefix: 'Erreiche Prestige-Stufe:',
+      metric: AchievementMetric.prestigeLevel,
+      thresholds: const [3, 6, 10, 14, 18, 24, 30],
+      baseGold: 220,
+      baseShards: 3,
+    );
+    addSeries(
+      idPrefix: 'ach_strength',
+      titlePrefix: 'Machtkern',
+      descPrefix: 'Erreiche Gesamtstaerke:',
+      metric: AchievementMetric.totalStrength,
+      thresholds: const [80, 120, 170, 230, 300, 380, 470],
+      baseGold: 210,
+      baseShards: 2,
+    );
+    addSeries(
+      idPrefix: 'ach_cycles',
+      titlePrefix: 'Zykluswandler',
+      descPrefix: 'Erreiche Quest-Zyklus:',
+      metric: AchievementMetric.questCycle,
+      thresholds: const [2, 3, 4, 5, 6, 7],
+      baseGold: 250,
+      baseShards: 3,
+    );
+
+    // 150 neue Endgame-Meilensteine als voll integrierte Achievements.
+    addSeries(
+      idPrefix: 'ach_kills_mythic',
+      titlePrefix: 'Mythos-Jaeger',
+      descPrefix: 'Besiege insgesamt Gegner:',
+      metric: AchievementMetric.totalKills,
+      thresholds: buildProgressiveThresholds(
+        lastThreshold: 3000,
+        count: 24,
+        growthFactor: 0.11,
+        minStep: 280,
+      ),
+      baseGold: 430,
+      baseShards: 5,
+    );
+    addSeries(
+      idPrefix: 'ach_crafts_mythic',
+      titlePrefix: 'Runenschmied',
+      descPrefix: 'Schmiede insgesamt Items:',
+      metric: AchievementMetric.craftedItems,
+      thresholds: buildProgressiveThresholds(
+        lastThreshold: 300,
+        count: 20,
+        growthFactor: 0.1,
+        minStep: 24,
+      ),
+      baseGold: 420,
+      baseShards: 5,
+    );
+    addSeries(
+      idPrefix: 'ach_bosses_mythic',
+      titlePrefix: 'Titanenfaeller',
+      descPrefix: 'Besiege Bosse:',
+      metric: AchievementMetric.bossDefeats,
+      thresholds: buildProgressiveThresholds(
+        lastThreshold: 30,
+        count: 18,
+        growthFactor: 0.22,
+        minStep: 5,
+      ),
+      baseGold: 470,
+      baseShards: 6,
+    );
+    addSeries(
+      idPrefix: 'ach_chapter_mythic',
+      titlePrefix: 'Sphärenwanderer',
+      descPrefix: 'Erreiche Kapitel:',
+      metric: AchievementMetric.chapter,
+      thresholds: buildProgressiveThresholds(
+        lastThreshold: 12,
+        count: 16,
+        growthFactor: 0.17,
+        minStep: 2,
+      ),
+      baseGold: 440,
+      baseShards: 5,
+    );
+    addSeries(
+      idPrefix: 'ach_forge_mythic',
+      titlePrefix: 'Astralschmiede',
+      descPrefix: 'Erreiche Schmiedestufe:',
+      metric: AchievementMetric.forgeLevel,
+      thresholds: buildProgressiveThresholds(
+        lastThreshold: 16,
+        count: 18,
+        growthFactor: 0.2,
+        minStep: 2,
+      ),
+      baseGold: 450,
+      baseShards: 6,
+    );
+    addSeries(
+      idPrefix: 'ach_prestige_mythic',
+      titlePrefix: 'Aether-Aufstieg',
+      descPrefix: 'Erreiche Prestige-Stufe:',
+      metric: AchievementMetric.prestigeLevel,
+      thresholds: buildProgressiveThresholds(
+        lastThreshold: 30,
+        count: 18,
+        growthFactor: 0.16,
+        minStep: 3,
+      ),
+      baseGold: 480,
+      baseShards: 7,
+    );
+    addSeries(
+      idPrefix: 'ach_strength_mythic',
+      titlePrefix: 'Reliktmacht',
+      descPrefix: 'Erreiche Gesamtstaerke:',
+      metric: AchievementMetric.totalStrength,
+      thresholds: buildProgressiveThresholds(
+        lastThreshold: 470,
+        count: 20,
+        growthFactor: 0.14,
+        minStep: 48,
+      ),
+      baseGold: 460,
+      baseShards: 6,
+    );
+    addSeries(
+      idPrefix: 'ach_cycles_mythic',
+      titlePrefix: 'Ewigzyklus',
+      descPrefix: 'Erreiche Quest-Zyklus:',
+      metric: AchievementMetric.questCycle,
+      thresholds: buildProgressiveThresholds(
+        lastThreshold: 7,
+        count: 16,
+        growthFactor: 0.2,
+        minStep: 1,
+      ),
+      baseGold: 500,
+      baseShards: 7,
+    );
+
+    return entries;
+  }
+
+  bool isSetCompletionRewardClaimed(ItemSet setId) {
+    return claimedSetRewards.contains(setId);
+  }
+
+  int get completedSetCount {
+    return setCollection.where((entry) => entry.ownedCount == entry.totalCount).length;
+  }
+
+  SetCollectionView get chapterSetProgress {
+    final chapterSet = _setForChapter();
+    return setCollection.firstWhere((entry) => entry.setId == chapterSet);
+  }
+
+  String get chapterSetHuntHint {
+    final chapterSet = _setForChapter();
+    final progress = chapterSetProgress;
+    if (progress.missingSlots.isEmpty) {
+      return '${setLabel(chapterSet)} ist komplett gesammelt.';
+    }
+    final nextSlot = progress.missingSlots.first;
+    return 'Zieljagd ${setLabel(chapterSet)}: Als naechstes ${slotLabel(nextSlot)} farmen.';
+  }
+
+  int setCompletionGoldReward(ItemSet setId) {
+    final progression = max(0, (chapter - 1) + (questCycle - 1));
+    final base = 280 + (setId.index * 90) + (progression * 45);
+    return _scaledGoldReward(base);
+  }
+
+  int setCompletionShardReward(ItemSet setId) {
+    final progression = max(0, ((chapter - 1) ~/ 2) + ((questCycle - 1) ~/ 2));
+    final base = 5 + (setId.index * 2) + progression;
+    return _scaledShardReward(base);
+  }
+
+  bool claimSetCompletionReward(ItemSet setId) {
+    if (isSetCompletionRewardClaimed(setId)) {
+      return false;
+    }
+
+    final collected = ItemSlot.values.every(
+      (slot) => discoveredSetSlots.contains(_collectionKey(setId, slot)),
+    );
+    if (!collected) {
+      return false;
+    }
+
+    claimedSetRewards.add(setId);
+    gold += setCompletionGoldReward(setId);
+    forgeShards += setCompletionShardReward(setId);
+    _gainClanXp(24);
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  List<QuestStateView> get questBoard {
+    final killsProgress = totalKills.clamp(0, questKillsTarget);
+    final craftsProgress = craftedItems.clamp(0, questCraftsTarget);
+    final bossProgress = bossDefeats.clamp(0, questBossTarget);
+
+    return [
+      QuestStateView(
+        type: QuestType.kills,
+        title: 'Jaeger',
+        description: 'Besiege $questKillsTarget Gegner',
+        progress: killsProgress,
+        target: questKillsTarget,
+        rewardGold: _scaledGoldReward(220 + ((questCycle - 1) * 35)),
+        rewardHammers: 10 + ((questCycle - 1) * 2),
+        rewardShards: 0,
+        claimed: questKillsClaimed,
+        canClaim: !questKillsClaimed && killsProgress >= questKillsTarget,
+      ),
+      QuestStateView(
+        type: QuestType.crafts,
+        title: 'Schmiedelehrling',
+        description: 'Schmiede $questCraftsTarget Items',
+        progress: craftsProgress,
+        target: questCraftsTarget,
+        rewardGold: _scaledGoldReward(160 + ((questCycle - 1) * 24)),
+        rewardHammers: 14 + ((questCycle - 1) * 2),
+        rewardShards: 0,
+        claimed: questCraftsClaimed,
+        canClaim: !questCraftsClaimed && craftsProgress >= questCraftsTarget,
+      ),
+      QuestStateView(
+        type: QuestType.bosses,
+        title: 'Boss-Brecher',
+        description: 'Besiege $questBossTarget Bosse',
+        progress: bossProgress,
+        target: questBossTarget,
+        rewardGold: _scaledGoldReward(250 + ((questCycle - 1) * 40)),
+        rewardHammers: 8 + questCycle,
+        rewardShards: _scaledShardReward(4 + ((questCycle - 1) ~/ 2)),
+        claimed: questBossClaimed,
+        canClaim: !questBossClaimed && bossProgress >= questBossTarget,
+      ),
+    ];
+  }
+
+  List<GameItem> get equippedItems {
+    final equippedIds = equippedBySlot.values.toSet();
+    return inventory.where((item) => equippedIds.contains(item.id)).toList(growable: false);
+  }
+
+  bool hasLoadoutPreset(int index) {
+    final preset = loadoutPresets[index];
+    return preset != null && preset.isNotEmpty;
+  }
+
+  int saveCurrentLoadout(int index) {
+    loadoutPresets[index] = Map<ItemSlot, String>.from(equippedBySlot);
+    _save();
+    notifyListeners();
+    return loadoutPresets[index]?.length ?? 0;
+  }
+
+  int applyLoadout(int index) {
+    final preset = loadoutPresets[index];
+    if (preset == null || preset.isEmpty) {
+      return 0;
+    }
+
+    int changes = 0;
+    for (final entry in preset.entries) {
+      final exists = inventory.any((item) => item.id == entry.value);
+      if (!exists) {
+        continue;
+      }
+      if (equippedBySlot[entry.key] == entry.value) {
+        continue;
+      }
+      equippedBySlot[entry.key] = entry.value;
+      changes += 1;
+    }
+
+    if (changes > 0) {
+      _save();
+      notifyListeners();
+    }
+    return changes;
+  }
+
+  GameItem? bestItemForSlot(ItemSlot slot) {
+    final candidates = inventory.where((item) => item.slot == slot).toList(growable: false);
+    if (candidates.isEmpty) {
+      return null;
+    }
+    candidates.sort((a, b) => b.power.compareTo(a.power));
+    return candidates.first;
+  }
+
+  int bestUpgradeDelta(ItemSlot slot) {
+    final best = bestItemForSlot(slot);
+    final equipped = equippedInSlot(slot);
+    if (best == null) {
+      return 0;
+    }
+    final equippedPower = equipped?.power ?? 0;
+    return best.power - equippedPower;
+  }
+
+  Future<void> initialize() async {
+    await _load();
+    _ensureDailyOffers();
+    if (_shopOffers.isEmpty) {
+      _regenerateShopOffers();
+      _shopRefreshAt = DateTime.now().add(const Duration(minutes: 5));
+    }
+    _spawnEnemy();
+    playerHp = playerHp.clamp(1.0, maxPlayerHp).toDouble();
+    _isLoaded = true;
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(milliseconds: 200), (_) => _tick(0.2));
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _tick(double dt) {
+    if (!_isLoaded) {
+      return;
+    }
+
+    _animationTime += dt;
+
+    _skills = _skills
+        .map(
+          (skill) => skill.copyWith(
+            cooldownRemaining: max(0, skill.cooldownRemaining - dt),
+          ),
+        )
+        .toList(growable: false);
+
+    flaskCooldownRemaining = max(0, flaskCooldownRemaining - dt);
+    berserkRemaining = max(0, berserkRemaining - dt);
+
+    for (final index in autoSkillSlots.toList(growable: false)) {
+      if (index < 0 || index >= _skills.length) {
+        continue;
+      }
+      if (_skills[index].cooldownRemaining <= 0) {
+        activateSkill(index);
+      }
+    }
+
+    _autoAttackAccumulator += dt;
+    final attackInterval =
+      (tuning.autoAttackIntervalSec * shopAttackSpeedFactor).clamp(0.2, 3.0);
+    while (_autoAttackAccumulator >= attackInterval) {
+      _autoAttackAccumulator -= attackInterval;
+      final baseHit =
+          (4 + (totalStrength * 0.38)) *
+          tuning.playerDamageMultiplier *
+          prestigeDamageBonus *
+          combatDamageMultiplier;
+      _damageEnemy(baseHit.roundToDouble());
+    }
+
+    final regenPerSecond = maxPlayerHp * 0.015 * shopRecoveryBonus * combatRegenMultiplier;
+    playerHp = min(maxPlayerHp, playerHp + regenPerSecond * dt);
+
+    _updateBossPhases();
+
+    if (_poisonTicksRemaining > 0) {
+      _poisonTickAccumulator += dt;
+      if (_poisonTickAccumulator >= 1) {
+        _poisonTickAccumulator = 0;
+        _poisonTicksRemaining -= 1;
+        final poisonDamage = max(1.0, maxPlayerHp * 0.012);
+        playerHp = max(0.0, playerHp - poisonDamage);
+        lastCombatEvent = 'Gift verursacht Schaden.';
+        if (playerHp <= 0) {
+          _onPlayerDefeated();
+        }
+      }
+    }
+
+    final nextApproach = max(
+      0.15,
+      enemy.approach - dt * (0.08 + chapter * 0.005) * tuning.enemyApproachSpeedMultiplier,
+    ).toDouble();
+    enemy = enemy.copyWith(approach: nextApproach);
+
+    final inMeleeRange = enemy.approach <= 0.22;
+    if (inMeleeRange) {
+      _enemyAttackAccumulator += dt;
+      final attackEvery = enemy.isBoss
+          ? (_bossPhaseThree ? 1.0 : (_bossPhaseTwo ? 1.2 : 1.4))
+          : 2.2;
+      if (_enemyAttackAccumulator >= attackEvery) {
+        _enemyAttackAccumulator = 0;
+        _enemyAttack();
+      }
+    }
+
+    if (_lastSaveAt == null || DateTime.now().difference(_lastSaveAt!).inSeconds >= 6) {
+      _save();
+      _lastSaveAt = DateTime.now();
+    }
+
+    if (DateTime.now().isAfter(_shopRefreshAt)) {
+      _regenerateShopOffers();
+      _shopRefreshAt = DateTime.now().add(const Duration(minutes: 5));
+      shopManualRefreshes = 0;
+      _save();
+    }
+
+    if (_dailyOfferDateKey != _todayKey()) {
+      _regenerateDailyOffers();
+      _save();
+    }
+
+    notifyListeners();
+  }
+
+  void _updateBossPhases() {
+    if (!enemy.isBoss) {
+      return;
+    }
+
+    final hpRatio = (enemy.hp / enemy.maxHp).clamp(0.0, 1.0);
+    if (!_bossPhaseTwo && hpRatio <= 0.66) {
+      _bossPhaseTwo = true;
+      if (enemy.bossPattern == BossPattern.venom) {
+        _poisonTicksRemaining = max(_poisonTicksRemaining, 5);
+        playerHp = max(0.0, playerHp - (maxPlayerHp * 0.05));
+        lastCombatEvent = 'Boss Phase 2: Giftwelle!';
+      } else if (enemy.bossPattern == BossPattern.berserker) {
+        playerHp = max(0.0, playerHp - (maxPlayerHp * 0.1));
+        lastCombatEvent = 'Boss Phase 2: Blutrausch!';
+      } else {
+        playerHp = max(0.0, playerHp - (maxPlayerHp * 0.06));
+        lastCombatEvent = 'Boss Phase 2: Titan-Schild!';
+      }
+      if (playerHp <= 0) {
+        _onPlayerDefeated();
+      }
+    }
+
+    if (!_bossPhaseThree && hpRatio <= 0.33) {
+      _bossPhaseThree = true;
+      _enemyAttackAccumulator = 0;
+      if (enemy.bossPattern == BossPattern.venom) {
+        _poisonTicksRemaining = max(_poisonTicksRemaining, 8);
+        playerHp = max(0.0, playerHp - (maxPlayerHp * 0.08));
+        lastCombatEvent = 'Boss Phase 3: Toxischer Sturm!';
+      } else if (enemy.bossPattern == BossPattern.berserker) {
+        playerHp = max(0.0, playerHp - (maxPlayerHp * 0.14));
+        lastCombatEvent = 'Boss Phase 3: Totale Raserei!';
+      } else {
+        playerHp = max(0.0, playerHp - (maxPlayerHp * 0.1));
+        lastCombatEvent = 'Boss Phase 3: Titan-Zorn!';
+      }
+      if (playerHp <= 0) {
+        _onPlayerDefeated();
+      }
+    }
+  }
+
+  void _enemyAttack() {
+    double damage = enemy.isBoss
+        ? (8 + chapter * 2.2 + stage * 1.2)
+        : (4 + chapter * 1.1 + stage * 0.65);
+
+    if (!enemy.isBoss) {
+      damage *= switch (enemy.archetype) {
+        EnemyArchetype.brute => 1.25,
+        EnemyArchetype.assassin => _random.nextDouble() < 0.3 ? 1.8 : 0.95,
+        EnemyArchetype.poisoner => 0.9,
+        EnemyArchetype.guardian => 1.05,
+      };
+
+      lastCombatEvent = switch (enemy.archetype) {
+        EnemyArchetype.brute => 'Brute trifft schwer.',
+        EnemyArchetype.assassin => 'Assassine sticht schnell.',
+        EnemyArchetype.poisoner => 'Du wurdest vergiftet.',
+        EnemyArchetype.guardian => 'Guardian drueckt dich zurueck.',
+      };
+
+      if (enemy.archetype == EnemyArchetype.poisoner) {
+        _poisonTicksRemaining = max(_poisonTicksRemaining, 4);
+      }
+
+      if (enemy.hp / enemy.maxHp <= 0.3 && enemy.archetype == EnemyArchetype.assassin) {
+        damage *= 1.35;
+        lastCombatEvent = 'Assassine wird rasend!';
+      }
+    }
+
+    if (enemy.isBoss) {
+      if (_bossPhaseTwo) {
+        damage *= enemy.bossPattern == BossPattern.titan ? 1.1 : 1.2;
+      }
+      if (_bossPhaseThree) {
+        damage *= enemy.bossPattern == BossPattern.berserker ? 1.6 : 1.45;
+      }
+
+      _bossSpecialAccumulator += 1;
+      if (_bossSpecialAccumulator >= 4) {
+        _bossSpecialAccumulator = 0;
+        damage *= 1.9;
+        lastCombatEvent = 'Boss-Spezialangriff!';
+      } else {
+        lastCombatEvent = 'Boss trifft dich.';
+      }
+    } else {
+      lastCombatEvent = 'Gegner trifft dich.';
+    }
+
+    damage *= incomingDamageMultiplier;
+
+    playerHp = max(0.0, playerHp - damage);
+    if (playerHp <= 0) {
+      _onPlayerDefeated();
+    }
+  }
+
+  void _onPlayerDefeated() {
+    deaths += 1;
+    gold = max(0, (gold * 0.9).round());
+    killsInStage = 0;
+    playerHp = maxPlayerHp;
+    _enemyAttackAccumulator = 0;
+    _bossSpecialAccumulator = 0;
+    _bossPhaseTwo = false;
+    _bossPhaseThree = false;
+    _poisonTickAccumulator = 0;
+    _poisonTicksRemaining = 0;
+    lastCombatEvent = 'Du wurdest besiegt. -10% Gold';
+    _spawnEnemy();
+  }
+
+  void _damageEnemy(double damage) {
+    if (enemy.isBoss) {
+      if (enemy.bossPattern == BossPattern.titan && _bossPhaseTwo) {
+        damage *= 0.82;
+      }
+      if (enemy.bossPattern == BossPattern.titan && _bossPhaseThree) {
+        damage *= 0.72;
+      }
+    }
+
+    final hpAfter = max(0.0, enemy.hp - damage).toDouble();
+    enemy = enemy.copyWith(hp: hpAfter, approach: min(1.0, enemy.approach + 0.12).toDouble());
+    if (hpAfter <= 0) {
+      _onEnemyDefeated();
+    }
+  }
+
+  void _onEnemyDefeated() {
+    int hammerDrop = 1;
+    if (_random.nextDouble() < shopHammerBonusChance) {
+      hammerDrop += 1;
+      lastCombatEvent = 'Bonus-Hammer gefunden!';
+    }
+
+    hammers += hammerDrop;
+    totalKills += 1;
+    killsInStage += 1;
+
+    if (isBossStage) {
+      forgeShards += _scaledShardReward(1);
+      bossDefeats += 1;
+      _gainClanXp(28 + chapter);
+    } else {
+      _gainClanXp(4 + chapter);
+    }
+
+    if (isBossStage) {
+      chapter += 1;
+      stage = 1;
+      killsInStage = 0;
+    } else if (killsInStage >= stageTargetKills) {
+      stage += 1;
+      killsInStage = 0;
+    }
+
+    _spawnEnemy();
+  }
+
+  void _spawnEnemy() {
+    final names = [
+      'Schleim',
+      'Wolfsritter',
+      'Steingolem',
+      'Wuestenratte',
+      'Nebelgeist',
+      'Klingenkrabbe',
+    ];
+
+    final enemyName = isBossStage
+        ? '${names[_random.nextInt(names.length)]} ${text.tr('boss')}'
+        : names[_random.nextInt(names.length)];
+    final archetype = isBossStage
+      ? EnemyArchetype.guardian
+      : EnemyArchetype.values[_random.nextInt(EnemyArchetype.values.length)];
+    final bossPattern = switch (chapter % 3) {
+      1 => BossPattern.berserker,
+      2 => BossPattern.venom,
+      _ => BossPattern.titan,
+    };
+
+    final stageScalar = chapter * 1.7 + stage * 1.1;
+    final chapterGrowth = pow(chapter.toDouble(), 1.2).toDouble() * 24;
+    final stageGrowth = pow(stage.toDouble(), 1.15).toDouble() * 12;
+    final hpBase = isBossStage ? 120 : 45;
+    final hp =
+      (hpBase + chapterGrowth + stageGrowth + (stageScalar * 10)) * tuning.enemyHpMultiplier;
+    enemy = EnemyState(
+      name: enemyName,
+      maxHp: hp,
+      hp: hp,
+      approach: 1,
+      isBoss: isBossStage,
+      archetype: archetype,
+      bossPattern: bossPattern,
+    );
+
+    _enemyAttackAccumulator = 0;
+    _bossPhaseTwo = false;
+    _bossPhaseThree = false;
+  }
+
+  String archetypeLabel(EnemyArchetype archetype) {
+    return switch (archetype) {
+      EnemyArchetype.brute => 'Brute',
+      EnemyArchetype.assassin => 'Assassin',
+      EnemyArchetype.poisoner => 'Poison',
+      EnemyArchetype.guardian => 'Guardian',
+    };
+  }
+
+  String bossPatternLabel(BossPattern pattern) {
+    return switch (pattern) {
+      BossPattern.berserker => 'Berserker',
+      BossPattern.venom => 'Venom',
+      BossPattern.titan => 'Titan',
+    };
+  }
+
+  String setLabel(ItemSet setId) {
+    return switch (setId) {
+      ItemSet.ember => 'Ember',
+      ItemSet.tide => 'Tide',
+      ItemSet.storm => 'Storm',
+    };
+  }
+
+  String _setShortName(ItemSet setId) {
+    return switch (setId) {
+      ItemSet.ember => '[EMB]',
+      ItemSet.tide => '[TID]',
+      ItemSet.storm => '[STM]',
+    };
+  }
+
+  ItemSet _setForChapter() {
+    return switch (chapter % 3) {
+      1 => ItemSet.ember,
+      2 => ItemSet.tide,
+      _ => ItemSet.storm,
+    };
+  }
+
+  ItemSet _rollSetForChapter() {
+    final favored = _setForChapter();
+    final favoredWeight = (0.56 + (forgeLevel * 0.008)).clamp(0.56, 0.76);
+    final otherWeight = (1 - favoredWeight) / 2;
+
+    final weights = <ItemSet, double>{
+      ItemSet.ember: otherWeight,
+      ItemSet.tide: otherWeight,
+      ItemSet.storm: otherWeight,
+    };
+    weights[favored] = favoredWeight;
+
+    final roll = _random.nextDouble();
+    double cumulative = 0;
+    for (final setId in ItemSet.values) {
+      cumulative += weights[setId] ?? 0;
+      if (roll <= cumulative) {
+        return setId;
+      }
+    }
+
+    return favored;
+  }
+
+  String _collectionKey(ItemSet setId, ItemSlot slot) => '${setId.name}:${slot.name}';
+
+  bool activateSkill(int index) {
+    if (index < 0 || index >= _skills.length) {
+      return false;
+    }
+    final skill = _skills[index];
+    if (skill.cooldownRemaining > 0) {
+      return false;
+    }
+
+    final level = switch (index) {
+      0 => skillStrikeLevel,
+      1 => skillWhirlLevel,
+      _ => skillFocusLevel,
+    };
+
+    final damageBoost = 1 + (level * 0.18);
+    final cooldownReduction = (level * 0.03).clamp(0.0, 0.35);
+    final extraHits = index == 1 ? (level ~/ 4) : 0;
+
+        final burst = (totalStrength *
+            combatDamageMultiplier *
+        skill.definition.damageMultiplier *
+        damageBoost *
+        tuning.playerDamageMultiplier *
+        prestigeDamageBonus)
+      .roundToDouble();
+    _damageEnemy(burst);
+
+    final totalBonusHits = skill.definition.bonusHits + extraHits;
+    for (int i = 0; i < totalBonusHits; i++) {
+      _damageEnemy((burst * 0.52).roundToDouble());
+    }
+
+    _skills[index] = skill.copyWith(
+      cooldownRemaining: skill.definition.cooldownSeconds * (1 - cooldownReduction),
+    );
+    notifyListeners();
+    return true;
+  }
+
+  GameItem? craftItem() {
+    if (hammers <= 0) {
+      return null;
+    }
+
+    hammers -= 1;
+    craftedItems += 1;
+    final tier = _rollTier();
+    final slot = ItemSlot.values[_random.nextInt(ItemSlot.values.length)];
+
+    final stageScore = chapter + stage / 15;
+    final tierStrength = {
+      ItemTier.common: 5,
+      ItemTier.uncommon: 8,
+      ItemTier.rare: 12,
+      ItemTier.epic: 17,
+      ItemTier.legendary: 24,
+    }[tier]!;
+
+    final power = (tierStrength + stageScore * 1.7 + _random.nextInt(5)).round();
+    final sellValue = (power * 1.6).round() + (tier.index * 15);
+    final setId = _rollSetForChapter();
+
+    String craftedName;
+    String craftedIconPath;
+    int craftedPower = power;
+
+    final slotCatalog = _slotCatalogs[slot];
+    if (slotCatalog != null && slotCatalog.isNotEmpty) {
+      final blueprint = slotCatalog[_random.nextInt(slotCatalog.length)];
+      craftedName = blueprint.name;
+      craftedIconPath = blueprint.iconPath;
+      craftedPower += blueprint.basePower;
+    } else {
+      craftedName = '${_slotName(slot)} ${_tierShortName(tier)} ${_setShortName(setId)}';
+      craftedIconPath = 'assets/icons/forge.svg';
+    }
+
+    final item = GameItem(
+      id: '${DateTime.now().microsecondsSinceEpoch}_${_random.nextInt(999)}',
+      name: craftedName,
+      slot: slot,
+      tier: tier,
+      setId: setId,
+      power: craftedPower,
+      sellValue: sellValue,
+      iconPath: craftedIconPath,
+      isLocked: autoLockEnabled && tier.index >= autoLockFromTier.index,
+    );
+
+    _gainClanXp(3 + tier.index);
+
+    discoveredSetSlots.add(_collectionKey(setId, slot));
+
+    _lastCraftAutoSold = false;
+    _lastCraftAutoSoldText = '';
+
+    if (autoSellEnabled && item.tier.index < autoSellKeepFromTier.index) {
+      final soldFor = max(
+        1,
+        (item.sellValue * tuning.goldGainMultiplier * clanGoldBonusMultiplier).round(),
+      );
+      gold += soldFor;
+      _lastCraftAutoSold = true;
+      _lastCraftAutoSoldText = '${item.name} automatisch verkauft (+$soldFor Gold)';
+      _save();
+      notifyListeners();
+      return item;
+    }
+
+    inventory.add(item);
+    _save();
+    notifyListeners();
+    return item;
+  }
+
+  bool consumeLastCraftAutoSoldFlag() {
+    final value = _lastCraftAutoSold;
+    _lastCraftAutoSold = false;
+    return value;
+  }
+
+  String consumeLastCraftAutoSoldText() {
+    final value = _lastCraftAutoSoldText;
+    _lastCraftAutoSoldText = '';
+    return value;
+  }
+
+  void equipItem(GameItem item) {
+    equippedBySlot[item.slot] = item.id;
+    _save();
+    notifyListeners();
+  }
+
+  void unequipSlot(ItemSlot slot) {
+    equippedBySlot.remove(slot);
+    _save();
+    notifyListeners();
+  }
+
+  bool sellItem(GameItem item) {
+    if (item.isLocked) {
+      return false;
+    }
+    equippedBySlot.removeWhere((_, value) => value == item.id);
+    inventory.removeWhere((entry) => entry.id == item.id);
+    gold += max(
+      1,
+      (item.sellValue * tuning.goldGainMultiplier * clanGoldBonusMultiplier).round(),
+    );
+    _gainClanXp(2);
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool toggleItemLock(String itemId) {
+    final index = inventory.indexWhere((entry) => entry.id == itemId);
+    if (index < 0) {
+      return false;
+    }
+
+    final item = inventory[index];
+    inventory[index] = GameItem(
+      id: item.id,
+      name: item.name,
+      slot: item.slot,
+      tier: item.tier,
+      setId: item.setId,
+      power: item.power,
+      sellValue: item.sellValue,
+      iconPath: item.iconPath,
+      isLocked: !item.isLocked,
+    );
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  void setAutoLock({required bool enabled, ItemTier? fromTier, bool applyToExisting = false}) {
+    autoLockEnabled = enabled;
+    if (fromTier != null) {
+      autoLockFromTier = fromTier;
+    }
+    if (applyToExisting) {
+      for (int i = 0; i < inventory.length; i++) {
+        final item = inventory[i];
+        final shouldLock = item.tier.index >= autoLockFromTier.index;
+        if (item.isLocked == shouldLock) {
+          continue;
+        }
+        inventory[i] = GameItem(
+          id: item.id,
+          name: item.name,
+          slot: item.slot,
+          tier: item.tier,
+          setId: item.setId,
+          power: item.power,
+          sellValue: item.sellValue,
+          iconPath: item.iconPath,
+          isLocked: shouldLock,
+        );
+      }
+    }
+    _save();
+    notifyListeners();
+  }
+
+  int applyAutoLockToInventory() {
+    int changed = 0;
+    for (int i = 0; i < inventory.length; i++) {
+      final item = inventory[i];
+      final shouldLock = item.tier.index >= autoLockFromTier.index;
+      if (item.isLocked == shouldLock) {
+        continue;
+      }
+      inventory[i] = GameItem(
+        id: item.id,
+        name: item.name,
+        slot: item.slot,
+        tier: item.tier,
+        setId: item.setId,
+        power: item.power,
+        sellValue: item.sellValue,
+        iconPath: item.iconPath,
+        isLocked: shouldLock,
+      );
+      changed += 1;
+    }
+    if (changed > 0) {
+      _save();
+      notifyListeners();
+    }
+    return changed;
+  }
+
+  BulkSellPreview getBulkSellPreview(Iterable<String> itemIds) {
+    final idSet = itemIds.toSet();
+    int sellableCount = 0;
+    int protectedCount = 0;
+    int estimatedGold = 0;
+
+    for (final item in inventory) {
+      if (!idSet.contains(item.id)) {
+        continue;
+      }
+      if (item.isLocked || isEquipped(item)) {
+        protectedCount += 1;
+        continue;
+      }
+      sellableCount += 1;
+      estimatedGold += max(
+        1,
+        (item.sellValue * tuning.goldGainMultiplier * clanGoldBonusMultiplier).round(),
+      );
+    }
+
+    return BulkSellPreview(
+      candidateCount: idSet.length,
+      sellableCount: sellableCount,
+      protectedCount: protectedCount,
+      estimatedGold: estimatedGold,
+    );
+  }
+
+  BulkSellResult sellItemsByIds(Iterable<String> itemIds) {
+    final idSet = itemIds.toSet();
+    int soldCount = 0;
+    int earnedGold = 0;
+
+    inventory.removeWhere((item) {
+      if (!idSet.contains(item.id)) {
+        return false;
+      }
+      if (item.isLocked || isEquipped(item)) {
+        return false;
+      }
+      soldCount += 1;
+      earnedGold += max(
+        1,
+        (item.sellValue * tuning.goldGainMultiplier * clanGoldBonusMultiplier).round(),
+      );
+      return true;
+    });
+
+    if (soldCount > 0) {
+      gold += earnedGold;
+      _gainClanXp(soldCount);
+      _save();
+      notifyListeners();
+    }
+
+    return BulkSellResult(soldCount: soldCount, earnedGold: earnedGold);
+  }
+
+  int smartEquipBestItems({bool preferSetSynergy = false}) {
+    int changes = 0;
+
+    if (!preferSetSynergy) {
+      for (final slot in ItemSlot.values) {
+        final candidates = inventory.where((item) => item.slot == slot).toList(growable: false);
+        if (candidates.isEmpty) {
+          continue;
+        }
+        candidates.sort((a, b) => b.power.compareTo(a.power));
+        final best = candidates.first;
+        if (equippedBySlot[slot] != best.id) {
+          equippedBySlot[slot] = best.id;
+          changes += 1;
+        }
+      }
+
+      if (changes > 0) {
+        _save();
+        notifyListeners();
+      }
+      return changes;
+    }
+
+    final selected = <ItemSlot, GameItem>{};
+    final counts = <ItemSet, int>{};
+
+    for (final slot in ItemSlot.values) {
+      final candidates = inventory.where((item) => item.slot == slot).toList(growable: false);
+      if (candidates.isEmpty) {
+        continue;
+      }
+
+      GameItem best = candidates.first;
+      double bestScore = -1;
+
+      for (final candidate in candidates) {
+        final projectedCount = (counts[candidate.setId] ?? 0) + 1;
+        double score = candidate.power.toDouble();
+        score += (counts[candidate.setId] ?? 0) * 4;
+        if (projectedCount >= 2) {
+          score += 12;
+        }
+        if (projectedCount >= 4) {
+          score += 18;
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          best = candidate;
+        }
+      }
+
+      selected[slot] = best;
+      counts[best.setId] = (counts[best.setId] ?? 0) + 1;
+    }
+
+    for (final entry in selected.entries) {
+      final slot = entry.key;
+      final best = entry.value;
+      if (equippedBySlot[slot] != best.id) {
+        equippedBySlot[slot] = best.id;
+        changes += 1;
+      }
+    }
+
+    if (changes > 0) {
+      _save();
+      notifyListeners();
+    }
+    return changes;
+  }
+
+  bool upgradeForgeChance() {
+    if (gold < forgeUpgradeCost) {
+      return false;
+    }
+    gold -= forgeUpgradeCost;
+    forgeLevel += 1;
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool performPrestige() {
+    if (!canPrestige) {
+      return false;
+    }
+
+    final gained = prestigeShardGain;
+    forgeShards += _scaledShardReward(gained);
+    prestigeLevel += gained;
+    _gainClanXp(40 + (gained * 2));
+
+    gold = 60;
+    hammers = 0;
+    forgeLevel = 0;
+    chapter = 1;
+    stage = 1;
+    killsInStage = 0;
+    totalKills = 0;
+    deaths = 0;
+    craftedItems = 0;
+    bossDefeats = 0;
+    questKillsClaimed = false;
+    questCraftsClaimed = false;
+    questBossClaimed = false;
+    playerHp = maxPlayerHp;
+    inventory.clear();
+    equippedBySlot.clear();
+
+    _spawnEnemy();
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool claimQuest(QuestType type) {
+    final quest = questBoard.firstWhere((entry) => entry.type == type);
+    if (!quest.canClaim) {
+      return false;
+    }
+
+    gold += quest.rewardGold;
+    hammers += quest.rewardHammers;
+    forgeShards += quest.rewardShards;
+    _gainClanXp(18 + (questCycle * 2));
+
+    if (type == QuestType.kills) {
+      questKillsClaimed = true;
+    } else if (type == QuestType.crafts) {
+      questCraftsClaimed = true;
+    } else {
+      questBossClaimed = true;
+    }
+
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool refreshQuestCycle() {
+    if (!allQuestsClaimed) {
+      return false;
+    }
+
+    questCycle += 1;
+    questKillsClaimed = false;
+    questCraftsClaimed = false;
+    questBossClaimed = false;
+    craftedItems = 0;
+    bossDefeats = 0;
+    totalKills = 0;
+
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool upgradeTalent(TalentType type) {
+    final cost = switch (type) {
+      TalentType.attack => talentAttackCost,
+      TalentType.vitality => talentVitalityCost,
+      TalentType.forge => talentForgeCost,
+    };
+
+    if (forgeShards < cost) {
+      return false;
+    }
+
+    forgeShards -= cost;
+
+    switch (type) {
+      case TalentType.attack:
+        talentAttackLevel += 1;
+      case TalentType.vitality:
+        talentVitalityLevel += 1;
+      case TalentType.forge:
+        talentForgeLevel += 1;
+    }
+
+    playerHp = min(playerHp, maxPlayerHp);
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  int clanPerkLevel(ClanPerkType type) {
+    return switch (type) {
+      ClanPerkType.warpath => clanWarpathLevel,
+      ClanPerkType.bulwark => clanBulwarkLevel,
+      ClanPerkType.prosperity => clanProsperityLevel,
+      ClanPerkType.rituals => clanRitualsLevel,
+    };
+  }
+
+  int clanPerkCost(ClanPerkType type) {
+    final level = clanPerkLevel(type);
+    return 1 + (level ~/ 2);
+  }
+
+  String clanPerkTitle(ClanPerkType type) {
+    return switch (type) {
+      ClanPerkType.warpath => 'Kriegspfad',
+      ClanPerkType.bulwark => 'Bollwerk',
+      ClanPerkType.prosperity => 'Wohlstand',
+      ClanPerkType.rituals => 'Rituale',
+    };
+  }
+
+  String clanPerkDescription(ClanPerkType type) {
+    return switch (type) {
+      ClanPerkType.warpath => '+4% Gesamtschaden pro Stufe.',
+      ClanPerkType.bulwark => '-3% erlittener Schaden pro Stufe.',
+      ClanPerkType.prosperity => '+4% Gold aus Belohnungen und Verkaeufen pro Stufe.',
+      ClanPerkType.rituals => '+5% Scherben aus Belohnungen pro Stufe.',
+    };
+  }
+
+  bool upgradeClanPerk(ClanPerkType type) {
+    final cost = clanPerkCost(type);
+    if (clanPoints < cost) {
+      return false;
+    }
+
+    clanPoints -= cost;
+    switch (type) {
+      case ClanPerkType.warpath:
+        clanWarpathLevel += 1;
+      case ClanPerkType.bulwark:
+        clanBulwarkLevel += 1;
+      case ClanPerkType.prosperity:
+        clanProsperityLevel += 1;
+      case ClanPerkType.rituals:
+        clanRitualsLevel += 1;
+    }
+
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  int _scaledGoldReward(int base) {
+    return max(1, (base * clanGoldBonusMultiplier).round());
+  }
+
+  int _scaledShardReward(int base) {
+    return max(1, (base * clanShardBonusMultiplier).round());
+  }
+
+  void _gainClanXp(int amount) {
+    if (amount <= 0) {
+      return;
+    }
+
+    clanXp += amount;
+    var leveled = false;
+    while (clanXp >= clanXpRequired) {
+      clanXp -= clanXpRequired;
+      clanLevel += 1;
+      clanPoints += 1;
+      leveled = true;
+    }
+
+    if (leveled) {
+      lastCombatEvent = 'Clan aufgestiegen!';
+    }
+  }
+
+  bool upgradeShop(ShopUpgradeType type) {
+    final cost = switch (type) {
+      ShopUpgradeType.speed => shopSpeedCost,
+      ShopUpgradeType.hammer => shopHammerCost,
+      ShopUpgradeType.recovery => shopRecoveryCost,
+    };
+
+    if (gold < cost) {
+      return false;
+    }
+
+    gold -= cost;
+    switch (type) {
+      case ShopUpgradeType.speed:
+        shopSpeedLevel += 1;
+      case ShopUpgradeType.hammer:
+        shopHammerLevel += 1;
+      case ShopUpgradeType.recovery:
+        shopRecoveryLevel += 1;
+    }
+
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  String shopOfferTitle(ShopOffer offer) {
+    return switch (offer.kind) {
+      ShopOfferKind.speedUpgrade => 'Tempotraining',
+      ShopOfferKind.hammerUpgrade => 'Hammerkunde',
+      ShopOfferKind.recoveryUpgrade => 'Regeneration',
+      ShopOfferKind.hammerPack => 'Hammerpaket',
+      ShopOfferKind.shardCache => 'Scherbenkiste',
+      ShopOfferKind.healingFlask => 'Heiltrank',
+      ShopOfferKind.berserkFlask => 'Berserkertrank',
+    };
+  }
+
+  String shopOfferDescription(ShopOffer offer) {
+    return switch (offer.kind) {
+      ShopOfferKind.speedUpgrade =>
+        'Dauerhaft +1 Shop-Level fuer Angriffstempo.',
+      ShopOfferKind.hammerUpgrade =>
+        'Dauerhaft +1 Shop-Level fuer Hammerdrop-Chance.',
+      ShopOfferKind.recoveryUpgrade =>
+        'Dauerhaft +1 Shop-Level fuer HP-Regeneration.',
+      ShopOfferKind.hammerPack =>
+        '+${offer.amount} Hammer sofort.',
+      ShopOfferKind.shardCache =>
+        '+${offer.amount} Scherben sofort.',
+      ShopOfferKind.healingFlask =>
+        '+${offer.amount} Heiltrank fuer den Kampf.',
+      ShopOfferKind.berserkFlask =>
+        '+${offer.amount} Berserkertrank fuer den Kampf.',
+    };
+  }
+
+  bool refreshShopManually() {
+    if (gold < shopRefreshCost) {
+      return false;
+    }
+
+    gold -= shopRefreshCost;
+    shopManualRefreshes += 1;
+    _regenerateShopOffers();
+    _shopRefreshAt = DateTime.now().add(const Duration(minutes: 5));
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool buyShopOffer(String offerId) {
+    int index = _dailyShopOffers.indexWhere((offer) => offer.id == offerId);
+    var fromDaily = true;
+    if (index < 0) {
+      index = _shopOffers.indexWhere((offer) => offer.id == offerId);
+      fromDaily = false;
+    }
+    if (index < 0) {
+      return false;
+    }
+
+    final source = fromDaily ? _dailyShopOffers : _shopOffers;
+    final offer = source[index];
+    if (offer.stock <= 0 || gold < offer.cost) {
+      return false;
+    }
+
+    gold -= offer.cost;
+    switch (offer.kind) {
+      case ShopOfferKind.speedUpgrade:
+        shopSpeedLevel += offer.amount;
+      case ShopOfferKind.hammerUpgrade:
+        shopHammerLevel += offer.amount;
+      case ShopOfferKind.recoveryUpgrade:
+        shopRecoveryLevel += offer.amount;
+      case ShopOfferKind.hammerPack:
+        hammers += offer.amount;
+      case ShopOfferKind.shardCache:
+        forgeShards += offer.amount;
+      case ShopOfferKind.healingFlask:
+        healingFlasks += offer.amount;
+      case ShopOfferKind.berserkFlask:
+        berserkFlasks += offer.amount;
+    }
+
+    source[index] = offer.copyWith(stock: max(0, offer.stock - 1));
+    _gainClanXp(offer.isDaily ? 6 : 3);
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  void _ensureDailyOffers() {
+    if (_dailyShopOffers.isEmpty || _dailyOfferDateKey != _todayKey()) {
+      _regenerateDailyOffers();
+    }
+  }
+
+  String _todayKey() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  void _regenerateDailyOffers() {
+    _dailyOfferDateKey = _todayKey();
+    final progression = chapter + (prestigeLevel ~/ 3) + (questCycle - 1);
+
+    final dailyPool = <ShopOffer>[
+      ShopOffer(
+        id: 'daily_shards_${DateTime.now().microsecondsSinceEpoch}',
+        kind: ShopOfferKind.shardCache,
+        cost: max(110, (95 + (progression * 16))),
+        stock: 1,
+        amount: 6 + (progression ~/ 4),
+        isDaily: true,
+        discountPercent: 30,
+      ),
+      ShopOffer(
+        id: 'daily_hammers_${DateTime.now().microsecondsSinceEpoch + 1}',
+        kind: ShopOfferKind.hammerPack,
+        cost: max(70, (65 + (progression * 10))),
+        stock: 1,
+        amount: 20 + progression,
+        isDaily: true,
+        discountPercent: 35,
+      ),
+      ShopOffer(
+        id: 'daily_berserk_${DateTime.now().microsecondsSinceEpoch + 2}',
+        kind: ShopOfferKind.berserkFlask,
+        cost: max(65, (berserkFlaskCost * 0.52).round()),
+        stock: 2,
+        amount: 1,
+        isDaily: true,
+        discountPercent: 40,
+      ),
+      ShopOffer(
+        id: 'daily_recovery_${DateTime.now().microsecondsSinceEpoch + 3}',
+        kind: ShopOfferKind.recoveryUpgrade,
+        cost: max(90, (shopRecoveryCost * 0.68).round()),
+        stock: 1,
+        amount: 1,
+        isDaily: true,
+        discountPercent: 32,
+      ),
+    ];
+
+    dailyPool.shuffle(_random);
+    _dailyShopOffers = dailyPool.take(2).toList(growable: false);
+  }
+
+  void _regenerateShopOffers() {
+    final upgrades = <ShopOffer>[
+      ShopOffer(
+        id: 'speed_${DateTime.now().microsecondsSinceEpoch}',
+        kind: ShopOfferKind.speedUpgrade,
+        cost: max(90, (shopSpeedCost * (0.88 + _random.nextDouble() * 0.16)).round()),
+        stock: 1,
+        amount: 1,
+      ),
+      ShopOffer(
+        id: 'hammer_${DateTime.now().microsecondsSinceEpoch + 1}',
+        kind: ShopOfferKind.hammerUpgrade,
+        cost: max(110, (shopHammerCost * (0.88 + _random.nextDouble() * 0.16)).round()),
+        stock: 1,
+        amount: 1,
+      ),
+      ShopOffer(
+        id: 'recovery_${DateTime.now().microsecondsSinceEpoch + 2}',
+        kind: ShopOfferKind.recoveryUpgrade,
+        cost: max(95, (shopRecoveryCost * (0.88 + _random.nextDouble() * 0.16)).round()),
+        stock: 1,
+        amount: 1,
+      ),
+    ];
+
+    final progression = chapter + ((stage - 1) ~/ 3);
+    final resources = <ShopOffer>[
+      ShopOffer(
+        id: 'hammer_pack_${DateTime.now().microsecondsSinceEpoch + 3}',
+        kind: ShopOfferKind.hammerPack,
+        cost: 45 + (progression * 11),
+        stock: 3,
+        amount: 6 + (progression ~/ 2),
+      ),
+      ShopOffer(
+        id: 'shard_cache_${DateTime.now().microsecondsSinceEpoch + 4}',
+        kind: ShopOfferKind.shardCache,
+        cost: 120 + (progression * 22),
+        stock: 2,
+        amount: 2 + (progression ~/ 6),
+      ),
+      ShopOffer(
+        id: 'heal_flask_${DateTime.now().microsecondsSinceEpoch + 5}',
+        kind: ShopOfferKind.healingFlask,
+        cost: max(40, (healingFlaskCost * 0.6).round()),
+        stock: 3,
+        amount: 1,
+      ),
+      ShopOffer(
+        id: 'berserk_flask_${DateTime.now().microsecondsSinceEpoch + 6}',
+        kind: ShopOfferKind.berserkFlask,
+        cost: max(70, (berserkFlaskCost * 0.62).round()),
+        stock: 2,
+        amount: 1,
+      ),
+    ];
+
+    _shopOffers = [...upgrades, ...resources];
+  }
+
+  String combatStanceLabel(CombatStance stance) {
+    return switch (stance) {
+      CombatStance.balanced => 'Ausgewogen',
+      CombatStance.aggressive => 'Offensiv',
+      CombatStance.defensive => 'Defensiv',
+    };
+  }
+
+  bool isAutoSkillEnabled(int index) {
+    return autoSkillSlots.contains(index);
+  }
+
+  bool toggleAutoSkill(int index) {
+    if (index < 0 || index >= _skills.length) {
+      return false;
+    }
+    if (autoSkillSlots.contains(index)) {
+      autoSkillSlots.remove(index);
+    } else {
+      autoSkillSlots.add(index);
+    }
+    _save();
+    notifyListeners();
+    return autoSkillSlots.contains(index);
+  }
+
+  bool setCombatStance(CombatStance stance) {
+    if (combatStance == stance) {
+      return false;
+    }
+    combatStance = stance;
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool buyFlask(FlaskType type) {
+    final cost = switch (type) {
+      FlaskType.healing => healingFlaskCost,
+      FlaskType.berserk => berserkFlaskCost,
+    };
+    if (gold < cost) {
+      return false;
+    }
+
+    gold -= cost;
+    if (type == FlaskType.healing) {
+      healingFlasks += 1;
+    } else {
+      berserkFlasks += 1;
+    }
+
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool useHealingFlask() {
+    if (healingFlasks <= 0 || flaskCooldownRemaining > 0) {
+      return false;
+    }
+
+    healingFlasks -= 1;
+    flaskCooldownRemaining = 12;
+    final healAmount = maxPlayerHp * (0.35 + (talentVitalityLevel * 0.01));
+    playerHp = min(maxPlayerHp, playerHp + healAmount);
+    lastCombatEvent = 'Heiltrank eingesetzt.';
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool useBerserkFlask() {
+    if (berserkFlasks <= 0 || flaskCooldownRemaining > 0) {
+      return false;
+    }
+
+    berserkFlasks -= 1;
+    flaskCooldownRemaining = 12;
+    berserkRemaining = max(berserkRemaining, 20 + (skillFocusLevel * 0.8));
+    lastCombatEvent = 'Berserkertrank aktiv!';
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool upgradeSkill(int index) {
+    int cost;
+    switch (index) {
+      case 0:
+        cost = skillStrikeCost;
+      case 1:
+        cost = skillWhirlCost;
+      default:
+        cost = skillFocusCost;
+    }
+
+    if (forgeShards < cost) {
+      return false;
+    }
+
+    forgeShards -= cost;
+    if (index == 0) {
+      skillStrikeLevel += 1;
+    } else if (index == 1) {
+      skillWhirlLevel += 1;
+    } else {
+      skillFocusLevel += 1;
+    }
+
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  void setTuning(BalanceTuning value, {bool refreshEnemy = false}) {
+    final clamped = value.copyWith(
+      autoAttackIntervalSec: value.autoAttackIntervalSec.clamp(0.2, 3.0),
+      playerDamageMultiplier: value.playerDamageMultiplier.clamp(0.3, 4.0),
+      enemyHpMultiplier: value.enemyHpMultiplier.clamp(0.3, 4.5),
+      enemyApproachSpeedMultiplier: value.enemyApproachSpeedMultiplier.clamp(0.3, 3.0),
+      goldGainMultiplier: value.goldGainMultiplier.clamp(0.2, 5.0),
+      offlineRewardMultiplier: value.offlineRewardMultiplier.clamp(0.2, 5.0),
+      forgeExtraBonus: value.forgeExtraBonus.clamp(0, 0.25),
+      killsPerStage: value.killsPerStage.clamp(1, 12),
+    );
+
+    tuning = clamped;
+
+    if (refreshEnemy) {
+      final hpRatio = (enemy.hp / enemy.maxHp).clamp(0.0, 1.0);
+      _spawnEnemy();
+      enemy = enemy.copyWith(hp: (enemy.maxHp * hpRatio).toDouble());
+    }
+
+    _save();
+    notifyListeners();
+  }
+
+  void debugAddResources({int goldDelta = 0, int hammerDelta = 0}) {
+    gold = max(0, gold + goldDelta);
+    hammers = max(0, hammers + hammerDelta);
+    _save();
+    notifyListeners();
+  }
+
+  void debugAdvanceStage(int delta) {
+    int linear = (chapter - 1) * 15 + (stage - 1) + delta;
+    linear = max(0, linear);
+    chapter = (linear ~/ 15) + 1;
+    stage = (linear % 15) + 1;
+    killsInStage = 0;
+    _spawnEnemy();
+    _save();
+    notifyListeners();
+  }
+
+  void cycleAutoSellMode() {
+    if (!autoSellEnabled) {
+      autoSellEnabled = true;
+      autoSellKeepFromTier = ItemTier.rare;
+    } else if (autoSellKeepFromTier == ItemTier.rare) {
+      autoSellKeepFromTier = ItemTier.epic;
+    } else if (autoSellKeepFromTier == ItemTier.epic) {
+      autoSellKeepFromTier = ItemTier.legendary;
+    } else {
+      autoSellEnabled = false;
+      autoSellKeepFromTier = ItemTier.rare;
+    }
+
+    _save();
+    notifyListeners();
+  }
+
+  bool isEquipped(GameItem item) {
+    return equippedBySlot[item.slot] == item.id;
+  }
+
+  GameItem? equippedInSlot(ItemSlot slot) {
+    final equippedId = equippedBySlot[slot];
+    if (equippedId == null) {
+      return null;
+    }
+    return inventory.firstWhere(
+      (item) => item.id == equippedId,
+      orElse: () => const GameItem(
+        id: '',
+        name: '',
+        slot: ItemSlot.weapon,
+        tier: ItemTier.common,
+        setId: ItemSet.ember,
+        power: 0,
+        sellValue: 0,
+        iconPath: 'assets/icons/forge.svg',
+      ),
+    );
+  }
+
+  ItemTier _rollTier() {
+    final roll = _random.nextDouble();
+    final bonus = (forgeBonusChance + tuning.forgeExtraBonus).clamp(0, 0.6);
+
+    final t1 = max(0.5, 0.82 - bonus * 0.7);
+    final t2 = min(0.31, 0.14 + bonus * 0.4);
+    final t3 = min(0.2, 0.03 + bonus * 0.35);
+    final t4 = min(0.12, 0.009 + bonus * 0.18);
+
+    final thresholds = [t1, t1 + t2, t1 + t2 + t3, t1 + t2 + t3 + t4];
+
+    if (roll <= thresholds[0]) {
+      return ItemTier.common;
+    }
+    if (roll <= thresholds[1]) {
+      return ItemTier.uncommon;
+    }
+    if (roll <= thresholds[2]) {
+      return ItemTier.rare;
+    }
+    if (roll <= thresholds[3]) {
+      return ItemTier.epic;
+    }
+    return ItemTier.legendary;
+  }
+
+  String _slotName(ItemSlot slot) {
+    return switch (slot) {
+      ItemSlot.weapon => text.tr('slotWeapon'),
+      ItemSlot.armor => text.tr('slotArmor'),
+      ItemSlot.helm => text.tr('slotHelm'),
+      ItemSlot.gloves => text.tr('slotGloves'),
+      ItemSlot.boots => text.tr('slotBoots'),
+      ItemSlot.ring => text.tr('slotRing'),
+    };
+  }
+
+  String _tierShortName(ItemTier tier) {
+    return switch (tier) {
+      ItemTier.common => 'T1',
+      ItemTier.uncommon => 'T2',
+      ItemTier.rare => 'T3',
+      ItemTier.epic => 'T4',
+      ItemTier.legendary => 'T5',
+    };
+  }
+
+  String tierLabel(ItemTier tier) {
+    return switch (tier) {
+      ItemTier.common => text.tr('tierCommon'),
+      ItemTier.uncommon => text.tr('tierUncommon'),
+      ItemTier.rare => text.tr('tierRare'),
+      ItemTier.epic => text.tr('tierEpic'),
+      ItemTier.legendary => text.tr('tierLegendary'),
+    };
+  }
+
+  String slotLabel(ItemSlot slot) {
+    return switch (slot) {
+      ItemSlot.weapon => text.tr('slotWeapon'),
+      ItemSlot.armor => text.tr('slotArmor'),
+      ItemSlot.helm => text.tr('slotHelm'),
+      ItemSlot.gloves => text.tr('slotGloves'),
+      ItemSlot.boots => text.tr('slotBoots'),
+      ItemSlot.ring => text.tr('slotRing'),
+    };
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_saveKey);
+
+    if (raw == null || raw.trim().isEmpty) {
+      return;
+    }
+
+    final map = jsonDecode(raw) as Map<String, dynamic>;
+
+    gold = map['gold'] as int? ?? gold;
+    hammers = map['hammers'] as int? ?? hammers;
+    forgeLevel = map['forgeLevel'] as int? ?? forgeLevel;
+    prestigeLevel = map['prestigeLevel'] as int? ?? prestigeLevel;
+    forgeShards = map['forgeShards'] as int? ?? forgeShards;
+    chapter = map['chapter'] as int? ?? chapter;
+    stage = map['stage'] as int? ?? stage;
+    killsInStage = map['killsInStage'] as int? ?? killsInStage;
+    totalKills = map['totalKills'] as int? ?? totalKills;
+    craftedItems = map['craftedItems'] as int? ?? craftedItems;
+    bossDefeats = map['bossDefeats'] as int? ?? bossDefeats;
+    questCycle = map['questCycle'] as int? ?? questCycle;
+    questKillsClaimed = map['questKillsClaimed'] as bool? ?? questKillsClaimed;
+    questCraftsClaimed = map['questCraftsClaimed'] as bool? ?? questCraftsClaimed;
+    questBossClaimed = map['questBossClaimed'] as bool? ?? questBossClaimed;
+    talentAttackLevel = map['talentAttackLevel'] as int? ?? talentAttackLevel;
+    talentVitalityLevel = map['talentVitalityLevel'] as int? ?? talentVitalityLevel;
+    talentForgeLevel = map['talentForgeLevel'] as int? ?? talentForgeLevel;
+    clanLevel = map['clanLevel'] as int? ?? clanLevel;
+    clanXp = map['clanXp'] as int? ?? clanXp;
+    clanPoints = map['clanPoints'] as int? ?? clanPoints;
+    clanWarpathLevel = map['clanWarpathLevel'] as int? ?? clanWarpathLevel;
+    clanBulwarkLevel = map['clanBulwarkLevel'] as int? ?? clanBulwarkLevel;
+    clanProsperityLevel = map['clanProsperityLevel'] as int? ?? clanProsperityLevel;
+    clanRitualsLevel = map['clanRitualsLevel'] as int? ?? clanRitualsLevel;
+    skillStrikeLevel = map['skillStrikeLevel'] as int? ?? skillStrikeLevel;
+    skillWhirlLevel = map['skillWhirlLevel'] as int? ?? skillWhirlLevel;
+    skillFocusLevel = map['skillFocusLevel'] as int? ?? skillFocusLevel;
+    shopSpeedLevel = map['shopSpeedLevel'] as int? ?? shopSpeedLevel;
+    shopHammerLevel = map['shopHammerLevel'] as int? ?? shopHammerLevel;
+    shopRecoveryLevel = map['shopRecoveryLevel'] as int? ?? shopRecoveryLevel;
+    shopManualRefreshes = map['shopManualRefreshes'] as int? ?? shopManualRefreshes;
+    healingFlasks = map['healingFlasks'] as int? ?? healingFlasks;
+    berserkFlasks = map['berserkFlasks'] as int? ?? berserkFlasks;
+    flaskCooldownRemaining = (map['flaskCooldownRemaining'] as num?)?.toDouble() ?? 0;
+    berserkRemaining = (map['berserkRemaining'] as num?)?.toDouble() ?? 0;
+    final stanceName = map['combatStance'] as String?;
+    if (stanceName != null) {
+      combatStance = CombatStance.values.firstWhere(
+        (value) => value.name == stanceName,
+        orElse: () => combatStance,
+      );
+    }
+
+    final shopRefreshMillis = map['shopRefreshAtMillis'] as int?;
+    if (shopRefreshMillis != null) {
+      _shopRefreshAt = DateTime.fromMillisecondsSinceEpoch(shopRefreshMillis);
+    }
+
+    final offersJson = (map['shopOffers'] as List<dynamic>? ?? [])
+        .map((entry) => ShopOffer.fromJson(Map<String, dynamic>.from(entry as Map)))
+        .toList(growable: false);
+    if (offersJson.isNotEmpty) {
+      _shopOffers = offersJson;
+    }
+
+    _dailyOfferDateKey = map['dailyOfferDateKey'] as String? ?? _dailyOfferDateKey;
+    final dailyOffersJson = (map['dailyShopOffers'] as List<dynamic>? ?? [])
+        .map((entry) => ShopOffer.fromJson(Map<String, dynamic>.from(entry as Map)))
+        .toList(growable: false);
+    if (dailyOffersJson.isNotEmpty) {
+      _dailyShopOffers = dailyOffersJson;
+    }
+
+    deaths = map['deaths'] as int? ?? deaths;
+    playerHp = (map['playerHp'] as num?)?.toDouble() ?? playerHp;
+    autoSellEnabled = map['autoSellEnabled'] as bool? ?? autoSellEnabled;
+    autoLockEnabled = map['autoLockEnabled'] as bool? ?? autoLockEnabled;
+    final keepTierName = map['autoSellKeepFromTier'] as String?;
+    if (keepTierName != null) {
+      autoSellKeepFromTier = ItemTier.values.firstWhere(
+        (tier) => tier.name == keepTierName,
+        orElse: () => autoSellKeepFromTier,
+      );
+    }
+    final autoLockTierName = map['autoLockFromTier'] as String?;
+    if (autoLockTierName != null) {
+      autoLockFromTier = ItemTier.values.firstWhere(
+        (tier) => tier.name == autoLockTierName,
+        orElse: () => autoLockFromTier,
+      );
+    }
+    tuning = BalanceTuning.fromJson(Map<String, dynamic>.from(map['tuning'] as Map? ?? {}));
+    discoveredSetSlots
+      ..clear()
+      ..addAll((map['discoveredSetSlots'] as List<dynamic>? ?? []).cast<String>());
+    claimedSetRewards
+      ..clear()
+      ..addAll(
+        (map['claimedSetRewards'] as List<dynamic>? ?? []).map(
+          (value) => ItemSet.values.firstWhere(
+            (setId) => setId.name == value,
+            orElse: () => ItemSet.ember,
+          ),
+        ),
+      );
+    claimedAchievements
+      ..clear()
+      ..addAll((map['claimedAchievements'] as List<dynamic>? ?? []).cast<String>());
+
+    autoSkillSlots
+      ..clear()
+      ..addAll(
+        (map['autoSkillSlots'] as List<dynamic>? ?? [])
+            .map((value) => (value as num).toInt()),
+      );
+
+    final inventoryJson = (map['inventory'] as List<dynamic>? ?? [])
+        .map((entry) => GameItem.fromJson(Map<String, dynamic>.from(entry as Map)))
+        .toList();
+    inventory
+      ..clear()
+      ..addAll(inventoryJson);
+
+    final equippedJson = Map<String, dynamic>.from(map['equippedBySlot'] as Map? ?? {});
+    equippedBySlot
+      ..clear()
+      ..addEntries(
+        equippedJson.entries.map(
+          (entry) => MapEntry(
+            ItemSlot.values.firstWhere((slot) => slot.name == entry.key),
+            entry.value as String,
+          ),
+        ),
+      );
+
+    loadoutPresets.clear();
+    final loadoutsJson = Map<String, dynamic>.from(map['loadoutPresets'] as Map? ?? {});
+    for (final presetEntry in loadoutsJson.entries) {
+      final index = int.tryParse(presetEntry.key);
+      if (index == null) {
+        continue;
+      }
+      final slotsJson = Map<String, dynamic>.from(presetEntry.value as Map? ?? {});
+      final mapped = <ItemSlot, String>{};
+      for (final slotEntry in slotsJson.entries) {
+        final slot = ItemSlot.values.firstWhere(
+          (value) => value.name == slotEntry.key,
+          orElse: () => ItemSlot.weapon,
+        );
+        mapped[slot] = slotEntry.value as String;
+      }
+      if (mapped.isNotEmpty) {
+        loadoutPresets[index] = mapped;
+      }
+    }
+
+    playerHp = playerHp.clamp(1.0, maxPlayerHp).toDouble();
+
+    final lastActiveMillis = map['lastActiveMillis'] as int?;
+    if (lastActiveMillis != null) {
+      _applyOfflineReward(DateTime.fromMillisecondsSinceEpoch(lastActiveMillis));
+    }
+  }
+
+  void _applyOfflineReward(DateTime lastActive) {
+    final minutes = DateTime.now().difference(lastActive).inMinutes;
+    if (minutes <= 0) {
+      return;
+    }
+
+    final clampedMinutes = min(minutes, 240);
+    final estimatedKills = max(1, (clampedMinutes / 2).floor());
+
+    final earnedGold = (estimatedKills *
+            (6 + chapter) *
+            tuning.offlineRewardMultiplier *
+            clanGoldBonusMultiplier)
+        .round();
+    final earnedHammers = estimatedKills;
+
+    gold += earnedGold;
+    hammers += earnedHammers;
+    _gainClanXp(max(4, estimatedKills ~/ 3));
+
+    lastOfflineReward = OfflineReward(
+      gold: earnedGold,
+      hammers: earnedHammers,
+      minutes: clampedMinutes,
+    );
+  }
+
+  Future<void> _save() async {
+    final prefs = await SharedPreferences.getInstance();
+    final map = {
+      'gold': gold,
+      'hammers': hammers,
+      'forgeLevel': forgeLevel,
+      'prestigeLevel': prestigeLevel,
+      'forgeShards': forgeShards,
+      'chapter': chapter,
+      'stage': stage,
+      'killsInStage': killsInStage,
+      'totalKills': totalKills,
+      'craftedItems': craftedItems,
+      'bossDefeats': bossDefeats,
+      'questCycle': questCycle,
+      'questKillsClaimed': questKillsClaimed,
+      'questCraftsClaimed': questCraftsClaimed,
+      'questBossClaimed': questBossClaimed,
+      'talentAttackLevel': talentAttackLevel,
+      'talentVitalityLevel': talentVitalityLevel,
+      'talentForgeLevel': talentForgeLevel,
+      'clanLevel': clanLevel,
+      'clanXp': clanXp,
+      'clanPoints': clanPoints,
+      'clanWarpathLevel': clanWarpathLevel,
+      'clanBulwarkLevel': clanBulwarkLevel,
+      'clanProsperityLevel': clanProsperityLevel,
+      'clanRitualsLevel': clanRitualsLevel,
+      'skillStrikeLevel': skillStrikeLevel,
+      'skillWhirlLevel': skillWhirlLevel,
+      'skillFocusLevel': skillFocusLevel,
+      'shopSpeedLevel': shopSpeedLevel,
+      'shopHammerLevel': shopHammerLevel,
+      'shopRecoveryLevel': shopRecoveryLevel,
+      'shopManualRefreshes': shopManualRefreshes,
+      'healingFlasks': healingFlasks,
+      'berserkFlasks': berserkFlasks,
+      'flaskCooldownRemaining': flaskCooldownRemaining,
+      'berserkRemaining': berserkRemaining,
+      'combatStance': combatStance.name,
+      'shopRefreshAtMillis': _shopRefreshAt.millisecondsSinceEpoch,
+      'dailyOfferDateKey': _dailyOfferDateKey,
+      'deaths': deaths,
+      'playerHp': playerHp,
+      'autoSellEnabled': autoSellEnabled,
+      'autoSellKeepFromTier': autoSellKeepFromTier.name,
+      'autoLockEnabled': autoLockEnabled,
+      'autoLockFromTier': autoLockFromTier.name,
+      'tuning': tuning.toJson(),
+      'discoveredSetSlots': discoveredSetSlots.toList(growable: false),
+      'claimedSetRewards': claimedSetRewards.map((setId) => setId.name).toList(growable: false),
+      'claimedAchievements': claimedAchievements.toList(growable: false),
+      'autoSkillSlots': autoSkillSlots.toList(growable: false),
+      'shopOffers': _shopOffers.map((offer) => offer.toJson()).toList(growable: false),
+      'dailyShopOffers': _dailyShopOffers.map((offer) => offer.toJson()).toList(growable: false),
+      'inventory': inventory.map((item) => item.toJson()).toList(growable: false),
+      'equippedBySlot': equippedBySlot.map((slot, id) => MapEntry(slot.name, id)),
+      'loadoutPresets': loadoutPresets.map(
+        (index, preset) => MapEntry(
+          index.toString(),
+          preset.map((slot, id) => MapEntry(slot.name, id)),
+        ),
+      ),
+      'lastActiveMillis': DateTime.now().millisecondsSinceEpoch,
+    };
+
+    await prefs.setString(_saveKey, jsonEncode(map));
+  }
+}
