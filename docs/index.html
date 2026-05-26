@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Idle Forge</title>
+  <style>
+    :root {
+      --bg: #0f0e0d;
+      --surface: #1a1815;
+      --border: #2e2a24;
+      --accent: #e8922a;
+      --accent-dark: #b86e18;
+      --text: #e8e0d4;
+      --muted: #8a7f72;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      padding: 2.5rem 1rem 2rem;
+      text-align: center;
+      background: linear-gradient(180deg, #1a1410 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
+    }
+
+    header .icon { font-size: 3.5rem; line-height: 1; margin-bottom: 0.5rem; }
+
+    header h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      background: linear-gradient(135deg, #f0a840, #e8922a, #c0692a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    header p.tagline {
+      margin-top: 0.5rem;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    main {
+      width: 100%;
+      max-width: 760px;
+      padding: 3rem 1.5rem;
+      flex: 1;
+    }
+
+    .description {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      line-height: 1.75;
+      font-size: 1.05rem;
+    }
+
+    .description p + p { margin-top: 1rem; }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .feature {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem 1.25rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .feature .emoji { font-size: 1.4rem; flex-shrink: 0; }
+
+    .feature span {
+      font-size: 0.95rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .cta {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: linear-gradient(135deg, #e8922a, #c0692a);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 1.15rem;
+      padding: 0.85rem 2.2rem;
+      border-radius: 8px;
+      transition: opacity 0.2s, transform 0.1s;
+      box-shadow: 0 4px 20px rgba(232, 146, 42, 0.35);
+    }
+
+    .btn-download:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-download:active { transform: translateY(0); }
+
+    .hint {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 0.75rem;
+    }
+
+    footer {
+      width: 100%;
+      border-top: 1px solid var(--border);
+      padding: 1.25rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="icon">⚒️</div>
+    <h1>Idle Forge</h1>
+    <p class="tagline">Forge legendary gear. Conquer stages. Grow your hero — even while you sleep.</p>
+  </header>
+
+  <main>
+    <h2>About the Game</h2>
+    <div class="description">
+      <p>
+        <strong>Idle Forge</strong> is a mobile idle RPG built with Flutter. Equip your hero with
+        powerful weapons and armor crafted in your very own forge, then watch them battle through
+        increasingly dangerous stages — no micromanagement required.
+      </p>
+      <p>
+        Collect resources, unlock rare blueprints, and come back to a stronger hero every time you
+        open the app. With offline rewards, your progress never stops.
+      </p>
+    </div>
+
+    <h2>Features</h2>
+    <div class="features">
+      <div class="feature"><span class="emoji">⚔️</span><span>Idle combat with auto-attacks &amp; skills</span></div>
+      <div class="feature"><span class="emoji">🔨</span><span>Crafting system — forge weapons, armor &amp; more</span></div>
+      <div class="feature"><span class="emoji">🛒</span><span>In-game shop with daily offers &amp; upgrades</span></div>
+      <div class="feature"><span class="emoji">🏆</span><span>Achievements &amp; quests</span></div>
+      <div class="feature"><span class="emoji">💾</span><span>Offline rewards — progress while away</span></div>
+      <div class="feature"><span class="emoji">🌍</span><span>German &amp; English language support</span></div>
+    </div>
+
+    <div class="cta">
+      <a class="btn-download" href="https://github.com/LetsJonnTV/Idle-Forge/releases/latest" target="_blank" rel="noopener">
+        ⬇️ Download Latest APK
+      </a>
+      <p class="hint">Android · Free · No account needed</p>
+    </div>
+  </main>
+
+  <footer>
+    <a href="https://github.com/LetsJonnTV/Idle-Forge" target="_blank" rel="noopener">GitHub</a>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/LetsJonnTV/Idle-Forge/issues" target="_blank" rel="noopener">Report a Bug</a>
+    &nbsp;·&nbsp; MIT License
+  </footer>
+
+</body>
+</html>
