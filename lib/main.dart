@@ -2,9 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'game/game_controller.dart';
 import 'game/models.dart';
+import 'services/update_checker.dart';
 
 const bool devMode = bool.fromEnvironment('DEV_MODE', defaultValue: false);
 
@@ -77,6 +80,43 @@ class _IdleForgeAppState extends State<IdleForgeApp> {
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
                   child: Text(controller.text.tr('close')),
+                ),
+              ],
+            );
+          },
+        );
+      });
+    }
+
+    // Version check
+    final updateChecker = UpdateChecker();
+    final updateInfo = await updateChecker.checkForUpdate();
+    if (updateInfo != null && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        showDialog<void>(
+          context: context,
+          builder: (context) {
+            final message = controller.text
+                .tr('newVersionMessage')
+                .replaceAll('{version}', updateInfo.latestVersion);
+            return AlertDialog(
+              title: Text(controller.text.tr('newVersionAvailable')),
+              content: Text(message),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(controller.text.tr('later')),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    final uri = Uri.parse(updateInfo.releaseUrl);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  child: Text(controller.text.tr('download')),
                 ),
               ],
             );
@@ -265,6 +305,8 @@ class _TopBar extends StatelessWidget {
                 goldCard,
                 const SizedBox(width: 8),
                 actionIcon(icon: Icons.auto_awesome, onTap: () => _showSkillTree(context, controller)),
+                const SizedBox(width: 8),
+                actionIcon(icon: Icons.settings, onTap: () => _showSettingsPanel(context)),
                 if (devMode) ...[
                   const SizedBox(width: 8),
                   actionIcon(icon: Icons.tune, onTap: () => _showDeveloperPanel(context)),
@@ -282,6 +324,8 @@ class _TopBar extends StatelessWidget {
                   Expanded(child: goldCard),
                   const SizedBox(width: 8),
                   actionIcon(icon: Icons.auto_awesome, onTap: () => _showSkillTree(context, controller)),
+                  const SizedBox(width: 8),
+                  actionIcon(icon: Icons.settings, onTap: () => _showSettingsPanel(context)),
                   if (devMode) ...[
                     const SizedBox(width: 8),
                     actionIcon(icon: Icons.tune, onTap: () => _showDeveloperPanel(context)),
@@ -510,6 +554,88 @@ class _TopBar extends StatelessWidget {
                   ],
                 );
               },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showSettingsPanel(BuildContext context) async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    if (!context.mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1E1E1E),
+      builder: (ctx) {
+        return SafeArea(
+          child: SizedBox(
+            height: _adaptiveSheetHeight(ctx, factor: 0.4, min: 260, max: 480),
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                Text(
+                  controller.text.tr('settings'),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF262626),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF3C3C3C)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: Color(0xFFB0B0B0), size: 20),
+                      const SizedBox(width: 10),
+                      Text(
+                        '${controller.text.tr('appVersion')}: ${packageInfo.version}',
+                        style: const TextStyle(color: Color(0xFFD8D8D8), fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () async {
+                    final uri = Uri.parse(
+                      'https://github.com/LetsJonnTV/Idle-Forge/issues/new',
+                    );
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF262626),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF3C3C3C)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.bug_report_outlined, color: Color(0xFFB0B0B0), size: 20),
+                        const SizedBox(width: 10),
+                        Text(
+                          controller.text.tr('reportBug'),
+                          style: const TextStyle(color: Color(0xFFD8D8D8), fontSize: 14),
+                        ),
+                        const Spacer(),
+                        const Icon(Icons.open_in_new, color: Color(0xFF7A7A7A), size: 16),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         );

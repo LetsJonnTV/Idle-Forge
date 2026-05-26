@@ -48,7 +48,14 @@ class AppText {
       'tierUncommon': 'T2 Ungewoehnlich',
       'tierRare': 'T3 Selten',
       'tierEpic': 'T4 Episch',
-      'tierLegendary': 'T5 Legendaer'
+      'tierLegendary': 'T5 Legendaer',
+      'settings': 'Einstellungen',
+      'appVersion': 'App Version',
+      'reportBug': 'Bug melden',
+      'newVersionAvailable': 'Neue Version verfügbar',
+      'newVersionMessage': 'Version {version} ist verfügbar. Jetzt aktualisieren?',
+      'download': 'Herunterladen',
+      'later': 'Später',
     },
     'en': {
       'appTitle': 'Idle Forge',
@@ -92,7 +99,14 @@ class AppText {
       'tierUncommon': 'T2 Uncommon',
       'tierRare': 'T3 Rare',
       'tierEpic': 'T4 Epic',
-      'tierLegendary': 'T5 Legendary'
+      'tierLegendary': 'T5 Legendary',
+      'settings': 'Settings',
+      'appVersion': 'App Version',
+      'reportBug': 'Report Bug',
+      'newVersionAvailable': 'New Version Available',
+      'newVersionMessage': 'Version {version} is available. Update now?',
+      'download': 'Download',
+      'later': 'Later',
     }
   };
 
