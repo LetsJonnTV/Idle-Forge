@@ -5,11 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'game/game_controller.dart';
 import 'game/models.dart';
 import 'l10n/app_text.dart';
+import 'screens/auth_screen.dart';
+import 'screens/coop_screen.dart';
+import 'screens/friends_screen.dart';
+import 'screens/leaderboard_screen.dart';
+import 'screens/pvp_screen.dart';
+import 'screens/coming_soon_screen.dart';
+import 'services/api_service.dart';
 import 'services/update_checker.dart';
 import 'services/update_installer.dart';
 

@@ -1,0 +1,16 @@
+# Local env files — never commit these
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Next.js build output
+.next/
+out/
+
+# Node dependencies
+node_modules/
+
+# Vercel
+.vercel
