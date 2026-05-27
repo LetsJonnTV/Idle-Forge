@@ -30,8 +30,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Session not found' }, { status: 404 });
   }
 
-  const hostId = (session.host as { id: string } | null)?.id;
-  const guestId = (session.guest as { id: string } | null)?.id;
+  const hostRaw = session.host;
+  const guestRaw = session.guest;
+  const hostId = (Array.isArray(hostRaw) ? hostRaw[0] : hostRaw as { id: string } | null)?.id;
+  const guestId = (Array.isArray(guestRaw) ? guestRaw[0] : guestRaw as { id: string } | null)?.id;
   const isParticipant = hostId === auth.playerId || guestId === auth.playerId;
 
   if (!isParticipant) {
