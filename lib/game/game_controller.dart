@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_text.dart';
+import '../services/notification_service.dart';
 import 'models.dart';
 
 class OfflineReward {
@@ -150,6 +151,13 @@ class GameController extends ChangeNotifier {
   bool questKillsClaimed = false;
   bool questCraftsClaimed = false;
   bool questBossClaimed = false;
+
+  PetState? activePet;
+  final List<Rune> runeInventory = [];
+
+  int loginStreakDays = 0;
+  bool streakClaimedToday = false;
+  String _lastLoginDateKey = '';
 
   int talentAttackLevel = 0;
   int talentVitalityLevel = 0;
@@ -516,6 +524,11 @@ class GameController extends ChangeNotifier {
     int gearPower = 0;
     for (final item in equippedItems) {
       gearPower += item.power;
+      for (final rune in item.enchantments) {
+        if (rune.type == RuneType.ice) {
+          gearPower += (item.power * rune.bonusValue).round();
+        }
+      }
     }
     return basePower + gearPower + setAttackBonus;
   }
@@ -530,43 +543,71 @@ class GameController extends ChangeNotifier {
 
   int get setAttackBonus {
     int bonus = 0;
-    for (final count in equippedSetCounts.values) {
-      if (count >= 2) {
-        bonus += 6;
-      }
-      if (count >= 4) {
-        bonus += 12;
-      }
+    final counts = equippedSetCounts;
+    for (final entry in counts.entries) {
+      final count = entry.value;
+      if (count >= 2) bonus += 6;
+      if (count >= 4) bonus += 12;
     }
     return bonus;
   }
 
   double get setHpBonusMultiplier {
     final count = equippedSetCounts[ItemSet.tide] ?? 0;
-    if (count >= 4) {
-      return 1.2;
-    }
-    if (count >= 2) {
-      return 1.1;
-    }
+    if (count >= 6) return 1.30;
+    if (count >= 4) return 1.20;
+    if (count >= 2) return 1.10;
     return 1.0;
   }
 
   double get setForgeBonus {
     final count = equippedSetCounts[ItemSet.ember] ?? 0;
-    if (count >= 4) {
-      return 0.05;
-    }
-    if (count >= 2) {
-      return 0.02;
-    }
+    if (count >= 6) return 0.20;
+    if (count >= 4) return 0.05;
+    if (count >= 2) return 0.02;
     return 0.0;
   }
+
+  double get setFlaskEffectBonus {
+    final count = equippedSetCounts[ItemSet.tide] ?? 0;
+    return count >= 6 ? 1.15 : 1.0;
+  }
+
+  double get setAttackSpeedBonus {
+    final count = equippedSetCounts[ItemSet.storm] ?? 0;
+    return count >= 6 ? 0.75 : 1.0;
+  }
+
+  double get petGoldBonus {
+    final pet = activePet;
+    if (pet == null || !pet.isActive || pet.type != PetType.wolf) return 0.0;
+    return 0.005 * pet.level;
+  }
+
+  double get petForgeBonus {
+    final pet = activePet;
+    if (pet == null || !pet.isActive || pet.type != PetType.phoenix) return 0.0;
+    return 0.005 * pet.level;
+  }
+
+  double get petDefenseBonus {
+    final pet = activePet;
+    if (pet == null || !pet.isActive || pet.type != PetType.golem) return 0.0;
+    return 0.005 * pet.level;
+  }
+
+  double get _runeDropChance => 0.03 + chapter * 0.002;
 
   double get maxPlayerHp {
     final base = 140 + (totalStrength * 2.4);
     final prestigeBoost = 1 + (prestigeLevel * 0.03) + (talentVitalityLevel * 0.08);
-    return base * prestigeBoost * setHpBonusMultiplier;
+    double lifeRuneBonus = 0.0;
+    for (final item in equippedItems) {
+      for (final rune in item.enchantments) {
+        if (rune.type == RuneType.life) lifeRuneBonus += rune.bonusValue;
+      }
+    }
+    return base * prestigeBoost * setHpBonusMultiplier * (1 + lifeRuneBonus);
   }
 
   double get playerHpPercent {
@@ -587,7 +628,8 @@ class GameController extends ChangeNotifier {
       (forgeLevel * 0.018 +
           prestigeForgeBonus +
           (talentForgeLevel * 0.008) +
-          setForgeBonus)
+          setForgeBonus +
+          petForgeBonus)
         .clamp(0, 0.65);
 
   String get autoSellLabel {
@@ -673,7 +715,7 @@ class GameController extends ChangeNotifier {
       CombatStance.aggressive => 1.18,
       CombatStance.defensive => 0.76,
     };
-    return stance * (1 - clanDefenseReduction);
+    return stance * (1 - clanDefenseReduction) * (1 - petDefenseBonus);
   }
 
   int get healingFlaskCost => 80 + (healingFlasks * 35) + (chapter * 4);
@@ -711,15 +753,24 @@ class GameController extends ChangeNotifier {
         if (count >= 4) {
           bonuses.add('${setLabel(setId)} 4er: +5% Schmiedechance');
         }
+        if (count >= 6) {
+          bonuses.add('${setLabel(setId)} 6er: +20% Schmiedechance');
+        }
       } else if (setId == ItemSet.tide) {
         bonuses.add('${setLabel(setId)} 2er: +10% HP');
         if (count >= 4) {
           bonuses.add('${setLabel(setId)} 4er: +20% HP');
         }
+        if (count >= 6) {
+          bonuses.add('${setLabel(setId)} 6er: +15% Flask-Effektivität');
+        }
       } else {
         bonuses.add('${setLabel(setId)} 2er: +6 Angriff');
         if (count >= 4) {
           bonuses.add('${setLabel(setId)} 4er: +12 Angriff');
+        }
+        if (count >= 6) {
+          bonuses.add('${setLabel(setId)} 6er: +25% Angriffsgeschwindigkeit');
         }
       }
     }
@@ -1228,7 +1279,9 @@ class GameController extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
+    await NotificationService.initialize();
     await _load();
+    checkAndClaimLoginStreak();
     _ensureDailyOffers();
     if (_shopOffers.isEmpty) {
       _regenerateShopOffers();
@@ -1295,15 +1348,29 @@ class GameController extends ChangeNotifier {
     }
 
     _autoAttackAccumulator += dt;
+    double runeSpeedBonus = 0.0;
+    for (final item in equippedItems) {
+      for (final rune in item.enchantments) {
+        if (rune.type == RuneType.speed) runeSpeedBonus += rune.bonusValue;
+      }
+    }
     final attackInterval =
-      (tuning.autoAttackIntervalSec * shopAttackSpeedFactor).clamp(0.2, 3.0);
+      (tuning.autoAttackIntervalSec * shopAttackSpeedFactor * setAttackSpeedBonus * (1 - runeSpeedBonus))
+        .clamp(0.15, 3.0);
     while (_autoAttackAccumulator >= attackInterval) {
       _autoAttackAccumulator -= attackInterval;
+      double runeFireBonus = 0.0;
+      for (final item in equippedItems) {
+        for (final rune in item.enchantments) {
+          if (rune.type == RuneType.fire) runeFireBonus += rune.bonusValue;
+        }
+      }
       final baseHit =
           (4 + (totalStrength * 0.38)) *
           tuning.playerDamageMultiplier *
           prestigeDamageBonus *
-          combatDamageMultiplier;
+          combatDamageMultiplier *
+          (1 + runeFireBonus);
       _damageEnemy(baseHit.roundToDouble());
     }
 
@@ -1514,6 +1581,22 @@ class GameController extends ChangeNotifier {
     hammers += hammerDrop;
     totalKills += 1;
     killsInStage += 1;
+
+    double runeGoldBonus = 0.0;
+    for (final item in equippedItems) {
+      for (final rune in item.enchantments) {
+        if (rune.type == RuneType.gold) runeGoldBonus += rune.bonusValue;
+      }
+    }
+    final goldMultiplier = tuning.goldGainMultiplier * clanGoldBonusMultiplier * (1 + petGoldBonus + runeGoldBonus);
+    final goldDrop = ((2 + chapter) * goldMultiplier).round();
+    gold += goldDrop;
+
+    if (_random.nextDouble() < _runeDropChance) {
+      final rune = _generateRune();
+      runeInventory.add(rune);
+      lastCombatEvent = 'Rune gefunden!';
+    }
 
     if (isBossStage) {
       forgeShards += _scaledShardReward(1);
@@ -1807,18 +1890,7 @@ class GameController extends ChangeNotifier {
       return false;
     }
 
-    final item = inventory[index];
-    inventory[index] = GameItem(
-      id: item.id,
-      name: item.name,
-      slot: item.slot,
-      tier: item.tier,
-      setId: item.setId,
-      power: item.power,
-      sellValue: item.sellValue,
-      iconPath: item.iconPath,
-      isLocked: !item.isLocked,
-    );
+    inventory[index] = inventory[index].copyWith(isLocked: !inventory[index].isLocked);
     _save();
     notifyListeners();
     return true;
@@ -1833,20 +1905,8 @@ class GameController extends ChangeNotifier {
       for (int i = 0; i < inventory.length; i++) {
         final item = inventory[i];
         final shouldLock = item.tier.index >= autoLockFromTier.index;
-        if (item.isLocked == shouldLock) {
-          continue;
-        }
-        inventory[i] = GameItem(
-          id: item.id,
-          name: item.name,
-          slot: item.slot,
-          tier: item.tier,
-          setId: item.setId,
-          power: item.power,
-          sellValue: item.sellValue,
-          iconPath: item.iconPath,
-          isLocked: shouldLock,
-        );
+        if (item.isLocked == shouldLock) continue;
+        inventory[i] = item.copyWith(isLocked: shouldLock);
       }
     }
     _save();
@@ -1858,20 +1918,8 @@ class GameController extends ChangeNotifier {
     for (int i = 0; i < inventory.length; i++) {
       final item = inventory[i];
       final shouldLock = item.tier.index >= autoLockFromTier.index;
-      if (item.isLocked == shouldLock) {
-        continue;
-      }
-      inventory[i] = GameItem(
-        id: item.id,
-        name: item.name,
-        slot: item.slot,
-        tier: item.tier,
-        setId: item.setId,
-        power: item.power,
-        sellValue: item.sellValue,
-        iconPath: item.iconPath,
-        isLocked: shouldLock,
-      );
+      if (item.isLocked == shouldLock) continue;
+      inventory[i] = item.copyWith(isLocked: shouldLock);
       changed += 1;
     }
     if (changed > 0) {
@@ -2568,7 +2616,7 @@ class GameController extends ChangeNotifier {
 
     healingFlasks -= 1;
     flaskCooldownRemaining = 12;
-    final healAmount = maxPlayerHp * (0.35 + (talentVitalityLevel * 0.01));
+    final healAmount = maxPlayerHp * (0.35 + (talentVitalityLevel * 0.01)) * setFlaskEffectBonus;
     playerHp = min(maxPlayerHp, playerHp + healAmount);
     lastCombatEvent = 'Heiltrank eingesetzt.';
     _save();
@@ -2583,7 +2631,8 @@ class GameController extends ChangeNotifier {
 
     berserkFlasks -= 1;
     flaskCooldownRemaining = 12;
-    berserkRemaining = max(berserkRemaining, 20 + (skillFocusLevel * 0.8));
+    final duration = (20 + (skillFocusLevel * 0.8)) * setFlaskEffectBonus;
+    berserkRemaining = max(berserkRemaining, duration);
     lastCombatEvent = 'Berserkertrank aktiv!';
     _save();
     notifyListeners();
@@ -2659,6 +2708,131 @@ class GameController extends ChangeNotifier {
     _spawnEnemy();
     _save();
     notifyListeners();
+  }
+
+  bool adoptPet(PetType type) {
+    const cost = 200;
+    if (gold < cost) return false;
+    gold -= cost;
+    activePet = PetState(type: type, level: 1, xp: 0, isActive: true);
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool feedPet(int materials) {
+    final pet = activePet;
+    if (pet == null) return false;
+    final xpGain = materials * 10;
+    int newXp = pet.xp + xpGain;
+    int newLevel = pet.level;
+    while (newLevel < 20 && newXp >= newLevel * 100) {
+      newXp -= newLevel * 100;
+      newLevel += 1;
+    }
+    if (newLevel >= 20) newXp = 0;
+    activePet = pet.copyWith(level: newLevel, xp: newXp);
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  Rune _generateRune() {
+    final roll = _random.nextDouble();
+    final int tier;
+    if (roll < 0.10) {
+      tier = 3;
+    } else if (roll < 0.40) {
+      tier = 2;
+    } else {
+      tier = 1;
+    }
+    final bonusValue = switch (tier) {
+      3 => 0.18,
+      2 => 0.10,
+      _ => 0.05,
+    };
+    final type = RuneType.values[_random.nextInt(RuneType.values.length)];
+    return Rune(type: type, tier: tier, bonusValue: bonusValue);
+  }
+
+  bool enchantItem(String itemId, int runeIndex) {
+    if (runeIndex < 0 || runeIndex >= runeInventory.length) return false;
+    final index = inventory.indexWhere((item) => item.id == itemId);
+    if (index < 0) return false;
+    final item = inventory[index];
+    if (item.enchantments.length >= 2) return false;
+    final rune = runeInventory[runeIndex];
+    runeInventory.removeAt(runeIndex);
+    final newEnchantments = [...item.enchantments, rune];
+    inventory[index] = item.copyWith(enchantments: newEnchantments);
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool removeEnchantment(String itemId, int slotIndex) {
+    final index = inventory.indexWhere((item) => item.id == itemId);
+    if (index < 0) return false;
+    final item = inventory[index];
+    if (slotIndex < 0 || slotIndex >= item.enchantments.length) return false;
+    final newEnchantments = [...item.enchantments]..removeAt(slotIndex);
+    final removedRune = item.enchantments[slotIndex];
+    runeInventory.add(removedRune);
+    inventory[index] = item.copyWith(enchantments: newEnchantments);
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  StreakReward getStreakReward(int day) {
+    final dayInCycle = ((day - 1) % 7) + 1;
+    return switch (dayInCycle) {
+      1 => const StreakReward(gold: 100, hammers: 0, shards: 0),
+      2 => const StreakReward(gold: 0, hammers: 5, shards: 0),
+      3 => const StreakReward(gold: 150, hammers: 0, shards: 0),
+      4 => const StreakReward(gold: 0, hammers: 10, shards: 0),
+      5 => const StreakReward(gold: 200, hammers: 0, shards: 1),
+      6 => const StreakReward(gold: 0, hammers: 0, shards: 2),
+      _ => const StreakReward(gold: 300, hammers: 5, shards: 5, isSpecial: true),
+    };
+  }
+
+  bool checkAndClaimLoginStreak() {
+    final today = _todayKey();
+    if (_lastLoginDateKey == today) {
+      return false;
+    }
+
+    if (_lastLoginDateKey.isNotEmpty) {
+      try {
+        final lastDate = DateTime.parse(_lastLoginDateKey);
+        final diff = DateTime.now().difference(lastDate).inDays;
+        if (diff > 1) {
+          loginStreakDays = 0;
+        }
+      } catch (_) {
+        loginStreakDays = 0;
+      }
+    }
+
+    loginStreakDays += 1;
+    _lastLoginDateKey = today;
+    streakClaimedToday = true;
+
+    final reward = getStreakReward(loginStreakDays);
+    gold += reward.gold;
+    hammers += reward.hammers;
+    forgeShards += reward.shards;
+
+    _save();
+    return true;
+  }
+
+  EquipDiff calculateEquipDiff(GameItem item) {
+    final currentItem = equippedInSlot(item.slot);
+    final currentPower = (currentItem != null && currentItem.id.isNotEmpty) ? currentItem.power : 0;
+    return EquipDiff(currentPower: currentPower, newPower: item.power);
   }
 
   void cycleAutoSellMode() {
@@ -2942,6 +3116,21 @@ class GameController extends ChangeNotifier {
     if (lastActiveMillis != null) {
       _applyOfflineReward(DateTime.fromMillisecondsSinceEpoch(lastActiveMillis));
     }
+
+    final petJson = map['activePet'] as Map?;
+    if (petJson != null) {
+      activePet = PetState.fromJson(Map<String, dynamic>.from(petJson));
+    }
+
+    runeInventory
+      ..clear()
+      ..addAll(
+        (map['runeInventory'] as List<dynamic>? ?? [])
+            .map((e) => Rune.fromJson(Map<String, dynamic>.from(e as Map))),
+      );
+
+    loginStreakDays = map['loginStreakDays'] as int? ?? 0;
+    _lastLoginDateKey = map['lastLoginDateKey'] as String? ?? '';
   }
 
   void _applyOfflineReward(DateTime lastActive) {
@@ -3041,6 +3230,10 @@ class GameController extends ChangeNotifier {
         ),
       ),
       'lastActiveMillis': DateTime.now().millisecondsSinceEpoch,
+      'activePet': activePet?.toJson(),
+      'runeInventory': runeInventory.map((r) => r.toJson()).toList(growable: false),
+      'loginStreakDays': loginStreakDays,
+      'lastLoginDateKey': _lastLoginDateKey,
     };
 
     await prefs.setString(_saveKey, jsonEncode(map));
