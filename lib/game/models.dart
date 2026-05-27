@@ -4,6 +4,10 @@ enum ItemTier { common, uncommon, rare, epic, legendary }
 
 enum ItemSet { ember, tide, storm }
 
+enum PetType { wolf, phoenix, golem }
+
+enum RuneType { fire, ice, life, speed, gold }
+
 enum EnemyArchetype { brute, assassin, poisoner, guardian }
 
 enum QuestType { kills, crafts, bosses }
@@ -39,6 +43,95 @@ enum AchievementMetric {
   prestigeLevel,
   totalStrength,
   questCycle,
+}
+
+class PetState {
+  PetState({required this.type, this.level = 1, this.xp = 0, this.isActive = false});
+
+  final PetType type;
+  final int level;
+  final int xp;
+  final bool isActive;
+
+  PetState copyWith({PetType? type, int? level, int? xp, bool? isActive}) {
+    return PetState(
+      type: type ?? this.type,
+      level: level ?? this.level,
+      xp: xp ?? this.xp,
+      isActive: isActive ?? this.isActive,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'type': type.name,
+      'level': level,
+      'xp': xp,
+      'isActive': isActive,
+    };
+  }
+
+  factory PetState.fromJson(Map<String, dynamic> json) {
+    return PetState(
+      type: PetType.values.firstWhere(
+        (t) => t.name == (json['type'] as String? ?? PetType.wolf.name),
+        orElse: () => PetType.wolf,
+      ),
+      level: json['level'] as int? ?? 1,
+      xp: json['xp'] as int? ?? 0,
+      isActive: json['isActive'] as bool? ?? false,
+    );
+  }
+}
+
+class EquipDiff {
+  const EquipDiff({required this.currentPower, required this.newPower});
+
+  final int currentPower;
+  final int newPower;
+
+  int get delta => newPower - currentPower;
+}
+
+class Rune {
+  const Rune({required this.type, required this.tier, required this.bonusValue});
+
+  final RuneType type;
+  final int tier;
+  final double bonusValue;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'type': type.name,
+      'tier': tier,
+      'bonusValue': bonusValue,
+    };
+  }
+
+  factory Rune.fromJson(Map<String, dynamic> json) {
+    return Rune(
+      type: RuneType.values.firstWhere(
+        (t) => t.name == (json['type'] as String? ?? RuneType.fire.name),
+        orElse: () => RuneType.fire,
+      ),
+      tier: json['tier'] as int? ?? 1,
+      bonusValue: (json['bonusValue'] as num?)?.toDouble() ?? 0.05,
+    );
+  }
+}
+
+class StreakReward {
+  const StreakReward({
+    required this.gold,
+    required this.hammers,
+    required this.shards,
+    this.isSpecial = false,
+  });
+
+  final int gold;
+  final int hammers;
+  final int shards;
+  final bool isSpecial;
 }
 
 class QuestStateView {
@@ -199,6 +292,7 @@ class GameItem {
     required this.sellValue,
     this.iconPath = 'assets/icons/forge.svg',
     this.isLocked = false,
+    this.enchantments = const [],
   });
 
   final String id;
@@ -210,6 +304,33 @@ class GameItem {
   final int sellValue;
   final String iconPath;
   final bool isLocked;
+  final List<Rune> enchantments;
+
+  GameItem copyWith({
+    String? id,
+    String? name,
+    ItemSlot? slot,
+    ItemTier? tier,
+    ItemSet? setId,
+    int? power,
+    int? sellValue,
+    String? iconPath,
+    bool? isLocked,
+    List<Rune>? enchantments,
+  }) {
+    return GameItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      slot: slot ?? this.slot,
+      tier: tier ?? this.tier,
+      setId: setId ?? this.setId,
+      power: power ?? this.power,
+      sellValue: sellValue ?? this.sellValue,
+      iconPath: iconPath ?? this.iconPath,
+      isLocked: isLocked ?? this.isLocked,
+      enchantments: enchantments ?? this.enchantments,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -222,10 +343,12 @@ class GameItem {
       'sellValue': sellValue,
       'iconPath': iconPath,
       'isLocked': isLocked,
+      'enchantments': enchantments.map((r) => r.toJson()).toList(growable: false),
     };
   }
 
   factory GameItem.fromJson(Map<String, dynamic> json) {
+    final enchantmentsRaw = json['enchantments'] as List<dynamic>? ?? [];
     return GameItem(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -238,6 +361,9 @@ class GameItem {
       sellValue: json['sellValue'] as int,
       iconPath: json['iconPath'] as String? ?? 'assets/icons/forge.svg',
       isLocked: json['isLocked'] as bool? ?? false,
+      enchantments: enchantmentsRaw
+          .map((e) => Rune.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList(growable: false),
     );
   }
 }

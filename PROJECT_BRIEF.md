@@ -100,15 +100,15 @@ Idle Forge ist ein Idle-RPG für Android/Windows in Flutter/Dart. Der Spieler be
 | Sprint | Name | Status | Scope |
 |--------|------|--------|-------|
 | 0 | Foundation | ✅ Done | v1.0.3: Tutorial, Dark/Light Mode, Auto-Update, Quests, Shop |
-| 1A | Game Systems | ✅ Done | Dungeons, Expeditionen, Crafting-Rezepte, Ascension-Baum |
-| 1B | Game Polish | 🔨 In Progress | Pet, Set-Boni, Enchantment, Login-Streak, SmartEquip, Notifications |
+| 1A | Game Systems | 🔨 In Progress | Dungeons, Expeditionen, Crafting-Rezepte, Ascension-Baum |
+| 1B | Game Polish | ✅ Done | Pet, Set-Boni 6-piece, Enchantment/Runen, Login-Streak, SmartEquip, Notifications |
 | 2 | Backend & Social | 📋 Geplant | Vercel-Backend, Freunde, Rangliste, Clan-Server, PVP, Koop |
 
-*Sprint 1A und 1B laufen PARALLEL auf separaten Branches.*
+*Sprint 1A und 1B liefen PARALLEL auf separaten Branches. 1B ist gemergt (pending PR review).*
 
-## 8. Current State (Stand v1.0.3)
+## 8. Current State (Stand nach Sprint 1B)
 
-**Was funktioniert (Stand Sprint 1A):**
+**Was funktioniert:**
 - Idle-Kampf mit Auto-Attacks, Skills (Strike, Whirl, Focus), Auto-Skill
 - Schmiede mit Zufalls-Crafting (Common → Legendary)
 - Shop: Tägliche Angebote, Speed/Hammer/Recovery-Upgrades
@@ -116,32 +116,29 @@ Idle Forge ist ein Idle-RPG für Android/Windows in Flutter/Dart. Der Spieler be
 - Quests (Kill/Craft/Boss) + Achievement-System
 - Talent-System (Attack/Vitality/Forge)
 - Clan-System (lokal: Level, XP, 4 Perks)
-- Item-Sets (Ember, Tide, Storm) mit Collection-Rewards
+- Item-Sets (Ember, Tide, Storm) mit 2/4/6-piece Set-Boni ✅ NEU
 - Offline-Rewards (bis 8h)
 - Tutorial (8 Schritte)
 - Dark/Light-Mode
 - In-App Auto-Update (Android + Windows)
-- DE/EN Lokalisierung
-- **[NEU Sprint 1A]** Dungeons (3 Schwierigkeiten, 5 Stages, Energie-System, Legendary-Drop)
-- **[NEU Sprint 1A]** Expeditionen (3 Slots, 6 Typen, offline-kompatibel)
-- **[NEU Sprint 1A]** Crafting-Rezepte (5 Rezepte, Drop beim Kämpfen, Rezeptbuch)
-- **[NEU Sprint 1A]** Ascension-Baum (3 Pfade: Krieger/Schmied/Schurke, 15 Nodes, permanente Boni)
+- DE/EN Lokalisierung (erweitert) ✅ NEU
+- **Pet/Companion System** (Wolf, Katze, Drache; Level, Feed, Boni auf Gold/Forge/Defense) ✅ NEU
+- **Enchantment/Rune System** (Feuer/Eis/Leben/Tempo/Gold-Runen, Tier 1-3, max 2 pro Item) ✅ NEU
+- **Daily Login Streak** (7-Tage-Kalender, Belohnungen in Gold+Hammern) ✅ NEU
+- **Smart Equip Preview** (Power-Delta Badges im Inventar: grün/rot/grau) ✅ NEU
+- **Push Notifications** (Android: Offline-Reward-Benachrichtigung) ✅ NEU
 
 **Was noch nicht existiert:**
-- Pet/Companion (Sprint 1B)
-- Enchantment-System (Sprint 1B)
-- Pet/Companion
-- Enchantment-System
-- Set-Boni (Tragen-Bonus)
-- Daily Login Streak
-- Smart Equip Preview
-- Push-Notifications
-- Backend / Online-Features
+- Dungeons, Expeditionen, Crafting-Rezepte (Sprint 1A)
+- Ascension-Baum (Sprint 1A)
+- Backend / Online-Features (Sprint 2)
+- Expedition-Done-Notification (nach Sprint 1A)
+- Windows Push Notifications (flutter_local_notifications v21+ benötigt)
 
 **Was als nächstes kommt:**
-- Sprint 1A: Kern-Spielsysteme (Dungeons, Expeditionen, Rezepte, Ascension)
-- Sprint 1B: Spielpolitur (Pet, Enchantment, Login, SmartEquip, Notifications)
+- Sprint 1A merge: Kern-Spielsysteme (Dungeons, Expeditionen, Rezepte, Ascension)
 - Sprint 2: Vercel-Backend, soziale Features
+- Economy-Balancing: Gold-per-Kill neu (vorher nur Hammer-Drop), Playtesting nötig
 
 ## 9. Security Rules
 

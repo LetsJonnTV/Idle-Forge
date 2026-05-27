@@ -158,6 +158,13 @@ class _IdleForgeAppState extends State<IdleForgeApp> {
       });
     }
 
+    if (controller.streakClaimedToday) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showStreakDialog(context, controller);
+      });
+    }
+
     // Version check
     final updateChecker = UpdateChecker();
     final updateInfo = await updateChecker.checkForUpdate();
@@ -823,6 +830,13 @@ class _TopBar extends StatelessWidget {
                             Text('Bosse besiegt: ${controller.bossDefeats} | Tode: ${controller.deaths}'),
                             const SizedBox(height: 14),
                             const Text(
+                              'Begleiter',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 8),
+                            _PetPanel(controller: controller, onRefresh: () => setModalState(() {})),
+                            const SizedBox(height: 14),
+                            const Text(
                               'App Einstellungen',
                               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
@@ -938,6 +952,120 @@ class _TopBar extends StatelessWidget {
     // animation still references it and disposing triggers cascading
     // "used after disposed" / GlobalKey errors.  GC will reclaim it.
     controller.setPlayerName(pendingName);
+  }
+}
+
+class _PetPanel extends StatelessWidget {
+  const _PetPanel({required this.controller, required this.onRefresh});
+
+  final GameController controller;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final pet = controller.activePet;
+    if (pet == null || !pet.isActive) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Kein Begleiter aktiv.', style: TextStyle(fontSize: 13)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: PetType.values.map((type) {
+              final label = switch (type) {
+                PetType.wolf => 'Wolf (Gold +%)',
+                PetType.phoenix => 'Phoenix (Forge +%)',
+                PetType.golem => 'Golem (Rüstung +%)',
+              };
+              return OutlinedButton(
+                onPressed: () {
+                  final ok = controller.adoptPet(type);
+                  if (!ok) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Nicht genug Gold (200 benötigt).')),
+                    );
+                  }
+                  onRefresh();
+                },
+                child: Text('$label\n(200 Gold)', textAlign: TextAlign.center, style: const TextStyle(fontSize: 11)),
+              );
+            }).toList(),
+          ),
+        ],
+      );
+    }
+
+    final typeName = switch (pet.type) {
+      PetType.wolf => 'Wolf',
+      PetType.phoenix => 'Phoenix',
+      PetType.golem => 'Golem',
+    };
+    final bonusText = switch (pet.type) {
+      PetType.wolf => '+${(controller.petGoldBonus * 100).toStringAsFixed(1)}% Gold',
+      PetType.phoenix => '+${(controller.petForgeBonus * 100).toStringAsFixed(1)}% Schmiedechance',
+      PetType.golem => '+${(controller.petDefenseBonus * 100).toStringAsFixed(1)}% Rüstung',
+    };
+    final maxXp = pet.level < 20 ? pet.level * 100 : 1;
+    final xpRatio = pet.level < 20 ? (pet.xp / maxXp).clamp(0.0, 1.0) : 1.0;
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: context.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.pets, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                '$typeName  Lv.${pet.level}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const Spacer(),
+              Text(bonusText, style: const TextStyle(fontSize: 12, color: Color(0xFF8FD39E))),
+            ],
+          ),
+          const SizedBox(height: 6),
+          if (pet.level < 20) ...[
+            Text('XP: ${pet.xp} / ${pet.level * 100}', style: const TextStyle(fontSize: 12)),
+            const SizedBox(height: 4),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: xpRatio,
+                minHeight: 6,
+                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFD4A44C)),
+                backgroundColor: const Color(0xFF3A3A3A),
+              ),
+            ),
+          ] else
+            const Text('Max Level erreicht!', style: TextStyle(fontSize: 12, color: Color(0xFFD4A44C))),
+          const SizedBox(height: 8),
+          FilledButton.tonal(
+            onPressed: () {
+              const feedCost = 5;
+              if (controller.hammers < feedCost) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Nicht genug Hammer (5 benötigt).')),
+                );
+                return;
+              }
+              controller.hammers -= feedCost;
+              controller.feedPet(feedCost);
+              onRefresh();
+            },
+            child: const Text('Füttern (5 Hammer)'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1366,6 +1494,174 @@ class _CombatArea extends StatelessWidget {
   }
 }
 
+class _RunesPanel extends StatefulWidget {
+  const _RunesPanel({required this.controller});
+
+  final GameController controller;
+
+  @override
+  State<_RunesPanel> createState() => _RunesPanelState();
+}
+
+class _RunesPanelState extends State<_RunesPanel> {
+  GameController get controller => widget.controller;
+
+  String _runeLabel(RuneType type) {
+    return switch (type) {
+      RuneType.fire => 'Feuerrune',
+      RuneType.ice => 'Eisrune',
+      RuneType.life => 'Lebensrune',
+      RuneType.speed => 'Temporune',
+      RuneType.gold => 'Goldrune',
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final runes = controller.runeInventory;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (runes.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Keine Runen gefunden',
+                style: TextStyle(fontSize: 13, color: context.textSecondary),
+              ),
+            )
+          else
+            ...runes.asMap().entries.map((entry) {
+              final i = entry.key;
+              final rune = entry.value;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: context.cardBg,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: context.cardBorder),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.diamond_outlined, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${_runeLabel(rune.type)}  T${rune.tier}  +${(rune.bonusValue * 100).toStringAsFixed(0)}%',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    OutlinedButton(
+                      onPressed: () => _showEnchantDialog(context, i),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('Anlegen', style: TextStyle(fontSize: 11)),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          const SizedBox(height: 8),
+          Text('Verzauberte Items:', style: TextStyle(fontSize: 12, color: context.textSecondary)),
+          const SizedBox(height: 4),
+          ...controller.equippedItems.where((item) => item.enchantments.isNotEmpty).map((item) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: context.cardBgAlt,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: context.cardBorder),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  ...item.enchantments.asMap().entries.map((e) {
+                    final rune = e.value;
+                    return Row(
+                      children: [
+                        Text(
+                          '  ${_runeLabel(rune.type)} T${rune.tier} +${(rune.bonusValue * 100).toStringAsFixed(0)}%',
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () {
+                            controller.removeEnchantment(item.id, e.key);
+                            setState(() {});
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            minimumSize: Size.zero,
+                          ),
+                          child: const Text('Entfernen', style: TextStyle(fontSize: 10)),
+                        ),
+                      ],
+                    );
+                  }),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  void _showEnchantDialog(BuildContext context, int runeIndex) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Item verzaubern'),
+          content: SizedBox(
+            width: 300,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Wähle ein Item aus dem Inventar:'),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 200,
+                  child: ListView(
+                    children: controller.inventory
+                        .where((item) => item.enchantments.length < 2)
+                        .map((item) => ListTile(
+                              dense: true,
+                              title: Text(item.name, style: const TextStyle(fontSize: 12)),
+                              subtitle: Text('+${item.power} | ${item.enchantments.length}/2 Runen'),
+                              onTap: () {
+                                controller.enchantItem(item.id, runeIndex);
+                                setState(() {});
+                                Navigator.of(context).pop();
+                              },
+                            ))
+                        .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Abbrechen'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _ForgePanel extends StatelessWidget {
   const _ForgePanel({required this.controller, this.dense = false});
 
@@ -1710,6 +2006,74 @@ class _ForgePanel extends StatelessWidget {
   }
 }
 
+void _showStreakDialog(BuildContext context, GameController controller) {
+  final text = controller.text;
+  final streak = controller.loginStreakDays;
+  final reward = controller.getStreakReward(streak);
+  showDialog<void>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(text.tr('streakTitle')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              text.tr('streakCurrent').replaceAll('{days}', '$streak'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              alignment: WrapAlignment.center,
+              children: List.generate(7, (i) {
+                final dayNum = i + 1;
+                final isCurrent = dayNum == ((streak - 1) % 7 + 1);
+                final isPast = dayNum < ((streak - 1) % 7 + 1);
+                return Container(
+                  width: 36,
+                  height: 36,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isCurrent
+                        ? const Color(0xFFD4A44C)
+                        : isPast
+                            ? const Color(0xFF3E5A3B)
+                            : context.cardBgAlt,
+                    border: Border.all(color: context.borderHeavy),
+                  ),
+                  child: Text(
+                    '$dayNum',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: isCurrent ? const Color(0xFF1A1A1A) : context.textPrimary,
+                    ),
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: 12),
+            if (reward.isSpecial)
+              Text(text.tr('streakSpecial'), style: const TextStyle(color: Color(0xFFD4A44C), fontWeight: FontWeight.bold)),
+            if (reward.gold > 0) Text('+${reward.gold} Gold'),
+            if (reward.hammers > 0) Text('+${reward.hammers} Hammer'),
+            if (reward.shards > 0) Text('+${reward.shards} Scherben'),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(text.tr('streakClaim')),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 Future<void> _showSkillTree(BuildContext context, GameController controller) async {
   await showModalBottomSheet<void>(
     context: context,
@@ -1941,6 +2305,19 @@ class _BottomMenu extends StatelessWidget {
                 AnimatedBuilder(
                   animation: controller,
                   builder: (context, _) => _ForgePanel(controller: controller, dense: true),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    controller.text.tr('runesTitle'),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                AnimatedBuilder(
+                  animation: controller,
+                  builder: (context, _) => _RunesPanel(controller: controller),
                 ),
               ],
             ),
@@ -3295,9 +3672,35 @@ class _BottomMenu extends StatelessWidget {
                                     ],
                                   ),
                                   const SizedBox(height: 3),
-                                  Text(
-                                    '${controller.tierLabel(item.tier)} | ${controller.setLabel(item.setId)} | +${item.power} | ${controller.slotLabel(item.slot)}',
-                                    style: TextStyle(color: context.textPrimary, fontSize: 12),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '${controller.tierLabel(item.tier)} | ${controller.setLabel(item.setId)} | +${item.power} | ${controller.slotLabel(item.slot)}',
+                                          style: TextStyle(color: context.textPrimary, fontSize: 12),
+                                        ),
+                                      ),
+                                      if (!equipped) ...[
+                                        const SizedBox(width: 6),
+                                        Builder(builder: (ctx) {
+                                          final diff = controller.calculateEquipDiff(item);
+                                          final color = diff.delta > 0
+                                              ? const Color(0xFF8FD39E)
+                                              : diff.delta < 0
+                                                  ? const Color(0xFFE39A9A)
+                                                  : context.textTertiary;
+                                          final label = diff.delta > 0
+                                              ? '+${diff.delta}'
+                                              : diff.delta < 0
+                                                  ? '${diff.delta}'
+                                                  : '±0';
+                                          return Text(
+                                            label,
+                                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
+                                          );
+                                        }),
+                                      ],
+                                    ],
                                   ),
                                   const SizedBox(height: 8),
                                   Row(
