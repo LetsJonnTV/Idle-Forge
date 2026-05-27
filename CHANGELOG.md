@@ -2,23 +2,31 @@
 
 All notable changes to Idle Forge are documented here.
 
-## [Unreleased]
+## [1.0.4] - 2026-05-27
 
 ### Added
-- **Dungeon-System Phase 1**: Vollständige Dungeon-Infrastruktur implementiert
-  - `DungeonDifficulty` Enum (Normal / Hard / Nightmare) in `models.dart`
-  - `DungeonStage` Model (5 Stages mit Boss-Namen, HP, garantiertem Reward-Tier)
-  - `DungeonRun` Model mit JSON-Serialisierung/Deserialisierung
-  - `DungeonReward` Model (Gold, Hämmer, Scherben, Items)
-  - `DungeonController` mit Energie-Regeneration (1 Energie alle 30 Min.), Start/Advance/Build-Reward-Logik
-  - `GameController`: Getter `dungeonController`, `dungeonEnergy`, `dungeonMaxEnergy`, `activeDungeonRun`
-  - `GameController`: Methoden `startDungeon`, `advanceDungeonStage`, `defeatDungeonStage`, `claimDungeonReward`, `abandonDungeon`, `_craftItemWithTier`
-  - Persistenz: Dungeon-State wird in `_save()`/`_load()` gespeichert und geladen
-  - Energie-Tick in `_tick()` integriert
-  - Dungeon-Button im Bottom-Menu (`Icons.castle_outlined`)
-  - `_showDungeonPanel` Modal: Difficulty-Auswahl, aktiver Run mit Stage-Fortschrittsbalken, Boss-Info, Reward-Claim
-  - `_DifficultyCard` Widget mit Farb-Akzent, Energie-Kosten-Anzeige und Start-Button
-  - 13 neue Lokalisierungs-Keys in `app_text.dart` (DE + EN)
+- **Dungeon-System**: Mehrstufige Instanzen mit 3 Schwierigkeiten (Normal/Hard/Nightmare), 5 Stages pro Run, Boss-HP-Balken, garantierter Legendary-Reward auf Stage 5, Energie-Regeneration (1 Energie alle 30 Min.)
+- **Enchantment-System**: Items mit Runen aufwerten (`enchantItem`) und Verzauberungen entfernen (`removeEnchantment`), bis zu 2 Slots pro Item
+- **Crafting-Rezepte**: Gezieltes Craften nach gefundenen Rezepten statt nur Zufallsschmiede
+- **Ascension-Baum**: Permanenter Skill-Tree nach Prestige mit Warrior/Smith/Rogue-Builds
+- **Pet/Companion**: Begleiter mit passiven Boni (Wolf: Gold, Phoenix: Schmiede), Level-System durch Füttern
+- **Set-Boni**: Gleiche Item-Sets tragen gibt Boni (z.B. Ember-Set: +20% Schmiede, Dragon-Set: +25% Angriffsgeschwindigkeit)
+- **Expeditionen**: Helden auf Timer-Missionen schicken (1h/4h/12h) für seltene Materialien
+- **Tägliche Login-Belohnung**: Streak-System mit eskalierenden Rewards (Gold → Hämmer → Scherben)
+- **Schnellausrüstung-Vorschau (Smart Equip)**: Zeigt Stärke-Differenz vor dem Ausrüsten
+- **Backend (Sprint 2)**: Next.js API auf Vercel mit Supabase — Auth, Rangliste, Freunde, PVP (async), Koop (Realtime)
+- **Social-Panel**: Zugang zu Auth, Rangliste, Freunde, PVP und Koop direkt aus dem Hauptmenü
+- **CI/CD-Pipeline**: GitHub Actions baut Android APK und Windows ZIP bei jedem `v*`-Tag; `API_BASE_URL` wird als GitHub Secret injiziert
+
+### Changed
+- Branch-Protection für `main`: CI-Check muss bestehen, kein Force-Push/Löschen
+- Tag-Ruleset `v*`: Löschen und Force-Push von Release-Tags verhindert
+- Next.js von 14.2.5 auf 14.2.30 aktualisiert (Sicherheits-Patch)
+
+### Fixed
+- Supabase Relationen-Join gibt Array zurück — Type-Cast in `/api/coop/[id]` und `/api/pvp/[id]` korrigiert
+- `dart format` auf alle Dart-Dateien angewendet (17 Dateien)
+- `curly_braces_in_flow_control_structures`-Warning in `game_controller.dart` behoben
 
 ## [1.0.3] - 2026-05-27
 
