@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_text.dart';
+import 'dungeon_controller.dart';
 import 'models.dart';
 
 class OfflineReward {
@@ -122,11 +123,13 @@ class GameController extends ChangeNotifier {
     _skills = _definitions
         .map((definition) => SkillState(definition: definition, cooldownRemaining: 0))
         .toList(growable: false);
+    _dungeonController = DungeonController(random: _random);
   }
 
   final String localeCode;
   final Random _random = Random();
   late List<SkillState> _skills;
+  late final DungeonController _dungeonController;
 
   Timer? _timer;
   DateTime? _lastTickAt;
@@ -209,6 +212,9 @@ class GameController extends ChangeNotifier {
   final Set<String> discoveredSetSlots = {};
   final Set<ItemSet> claimedSetRewards = {};
   final Set<String> claimedAchievements = {};
+  final Set<String> discoveredRecipes = {};
+  final Set<String> unlockedAscensionNodes = {};
+  int ascensionPoints = 0;
 
   EnemyState enemy = const EnemyState(
     name: 'Schleim',
@@ -220,6 +226,8 @@ class GameController extends ChangeNotifier {
 
   OfflineReward? lastOfflineReward;
   BalanceTuning tuning = const BalanceTuning();
+
+  final List<ActiveExpedition?> expeditionSlots = [null, null, null];
 
   double _autoAttackAccumulator = 0;
   double _enemyAttackAccumulator = 0;
@@ -234,6 +242,368 @@ class GameController extends ChangeNotifier {
   String lastCombatEvent = '';
 
   static const _saveKey = 'idle_forge.save.v1';
+
+  static const int expeditionSlotCount = 3;
+
+  static const List<CraftingRecipe> craftingRecipes = [
+    CraftingRecipe(
+      id: 'recipe_runic_blade',
+      nameDe: 'Runische Klinge',
+      nameEn: 'Runic Blade',
+      descDe: 'Eine mit Runen verstärkte Klinge.',
+      descEn: 'A blade empowered with runes.',
+      ingredients: [
+        RecipeIngredient(slot: ItemSlot.weapon, minTier: ItemTier.rare, count: 2),
+        RecipeIngredient(slot: ItemSlot.ring, minTier: ItemTier.uncommon, count: 1),
+      ],
+      resultSlot: ItemSlot.weapon,
+      resultTier: ItemTier.epic,
+      goldCost: 200,
+      hammerCost: 15,
+      dropChance: 0.002,
+    ),
+    CraftingRecipe(
+      id: 'recipe_titan_armor',
+      nameDe: 'Titan-Rüstung',
+      nameEn: 'Titan Armor',
+      descDe: 'Schwerer Schutzpanzer aus Titan-Erz.',
+      descEn: 'Heavy armor forged from titan ore.',
+      ingredients: [
+        RecipeIngredient(slot: ItemSlot.armor, minTier: ItemTier.rare, count: 2),
+        RecipeIngredient(slot: ItemSlot.helm, minTier: ItemTier.uncommon, count: 1),
+      ],
+      resultSlot: ItemSlot.armor,
+      resultTier: ItemTier.epic,
+      goldCost: 180,
+      hammerCost: 12,
+      dropChance: 0.002,
+    ),
+    CraftingRecipe(
+      id: 'recipe_shadow_dagger',
+      nameDe: 'Schattenklinge',
+      nameEn: 'Shadow Dagger',
+      descDe: 'Eine Klinge aus purem Schatten.',
+      descEn: 'A dagger made of pure shadow.',
+      ingredients: [
+        RecipeIngredient(slot: ItemSlot.weapon, minTier: ItemTier.uncommon, count: 3),
+      ],
+      resultSlot: ItemSlot.weapon,
+      resultTier: ItemTier.rare,
+      goldCost: 100,
+      hammerCost: 8,
+      dropChance: 0.005,
+    ),
+    CraftingRecipe(
+      id: 'recipe_storm_set_piece',
+      nameDe: 'Sturm-Fragment',
+      nameEn: 'Storm Fragment',
+      descDe: 'Ein Fragment der mächtigen Sturm-Rüstung.',
+      descEn: 'A fragment of the mighty Storm armor.',
+      ingredients: [
+        RecipeIngredient(slot: ItemSlot.armor, minTier: ItemTier.uncommon, count: 2),
+        RecipeIngredient(slot: ItemSlot.boots, minTier: ItemTier.uncommon, count: 1),
+      ],
+      resultSlot: ItemSlot.armor,
+      resultTier: ItemTier.rare,
+      goldCost: 150,
+      hammerCost: 10,
+      dropChance: 0.003,
+    ),
+    CraftingRecipe(
+      id: 'recipe_legendary_ring',
+      nameDe: 'Ring der Ewigkeit',
+      nameEn: 'Ring of Eternity',
+      descDe: 'Ein Ring mit ewiger Macht.',
+      descEn: 'A ring of eternal power.',
+      ingredients: [
+        RecipeIngredient(slot: ItemSlot.ring, minTier: ItemTier.rare, count: 2),
+        RecipeIngredient(slot: ItemSlot.weapon, minTier: ItemTier.epic, count: 1),
+      ],
+      resultSlot: ItemSlot.ring,
+      resultTier: ItemTier.legendary,
+      goldCost: 500,
+      hammerCost: 30,
+      dropChance: 0.0008,
+    ),
+  ];
+
+  static const List<AscensionNode> ascensionNodes = [
+    // === Krieger-Pfad ===
+    AscensionNode(
+      id: 'warrior_1_attack',
+      path: AscensionPath.warrior,
+      nameDe: 'Kampfkraft I',
+      nameEn: 'Combat Power I',
+      descDe: '+8% Angriffs-Schaden dauerhaft.',
+      descEn: '+8% attack damage permanently.',
+      cost: 1,
+      bonusType: AscensionBonusType.attackMultiplier,
+      bonusValue: 0.08,
+      requiredNodeId: null,
+      tier: 1,
+    ),
+    AscensionNode(
+      id: 'warrior_1_hp',
+      path: AscensionPath.warrior,
+      nameDe: 'Eisenhaut I',
+      nameEn: 'Iron Skin I',
+      descDe: '+10% maximale HP dauerhaft.',
+      descEn: '+10% max HP permanently.',
+      cost: 1,
+      bonusType: AscensionBonusType.hpMultiplier,
+      bonusValue: 0.1,
+      requiredNodeId: null,
+      tier: 1,
+    ),
+    AscensionNode(
+      id: 'warrior_2_attack',
+      path: AscensionPath.warrior,
+      nameDe: 'Kampfkraft II',
+      nameEn: 'Combat Power II',
+      descDe: '+12% Angriffs-Schaden dauerhaft.',
+      descEn: '+12% attack damage permanently.',
+      cost: 2,
+      bonusType: AscensionBonusType.attackMultiplier,
+      bonusValue: 0.12,
+      requiredNodeId: 'warrior_1_attack',
+      tier: 2,
+    ),
+    AscensionNode(
+      id: 'warrior_2_skill',
+      path: AscensionPath.warrior,
+      nameDe: 'Kampffokus',
+      nameEn: 'Combat Focus',
+      descDe: '-10% Skill-Cooldowns dauerhaft.',
+      descEn: '-10% skill cooldowns permanently.',
+      cost: 2,
+      bonusType: AscensionBonusType.skillCooldownReduction,
+      bonusValue: 0.1,
+      requiredNodeId: 'warrior_1_attack',
+      tier: 2,
+    ),
+    AscensionNode(
+      id: 'warrior_3_apex',
+      path: AscensionPath.warrior,
+      nameDe: 'Kriegsmeister',
+      nameEn: 'Warlord',
+      descDe: '+20% Angriff und +15% HP dauerhaft.',
+      descEn: '+20% attack and +15% HP permanently.',
+      cost: 3,
+      bonusType: AscensionBonusType.attackMultiplier,
+      bonusValue: 0.2,
+      requiredNodeId: 'warrior_2_attack',
+      tier: 3,
+    ),
+
+    // === Schmied-Pfad ===
+    AscensionNode(
+      id: 'smith_1_forge',
+      path: AscensionPath.smith,
+      nameDe: 'Schmiedemeister I',
+      nameEn: 'Master Smith I',
+      descDe: '+3% Schmiedechance dauerhaft.',
+      descEn: '+3% forge chance permanently.',
+      cost: 1,
+      bonusType: AscensionBonusType.forgeBonusChance,
+      bonusValue: 0.03,
+      requiredNodeId: null,
+      tier: 1,
+    ),
+    AscensionNode(
+      id: 'smith_1_hammer',
+      path: AscensionPath.smith,
+      nameDe: 'Hammer-Kult I',
+      nameEn: 'Hammer Cult I',
+      descDe: '+15% Hammer-Drop-Chance.',
+      descEn: '+15% hammer drop chance.',
+      cost: 1,
+      bonusType: AscensionBonusType.hammerDropChance,
+      bonusValue: 0.15,
+      requiredNodeId: null,
+      tier: 1,
+    ),
+    AscensionNode(
+      id: 'smith_2_forge',
+      path: AscensionPath.smith,
+      nameDe: 'Schmiedemeister II',
+      nameEn: 'Master Smith II',
+      descDe: '+5% Schmiedechance dauerhaft.',
+      descEn: '+5% forge chance permanently.',
+      cost: 2,
+      bonusType: AscensionBonusType.forgeBonusChance,
+      bonusValue: 0.05,
+      requiredNodeId: 'smith_1_forge',
+      tier: 2,
+    ),
+    AscensionNode(
+      id: 'smith_2_power',
+      path: AscensionPath.smith,
+      nameDe: 'Item-Meister',
+      nameEn: 'Item Master',
+      descDe: '+5 Bonus-Power auf alle gecrafteten Items.',
+      descEn: '+5 bonus power on all crafted items.',
+      cost: 2,
+      bonusType: AscensionBonusType.itemPowerBonus,
+      bonusValue: 5,
+      requiredNodeId: 'smith_1_forge',
+      tier: 2,
+    ),
+    AscensionNode(
+      id: 'smith_3_apex',
+      path: AscensionPath.smith,
+      nameDe: 'Legenden-Schmied',
+      nameEn: 'Legendary Smith',
+      descDe: '+8% Schmiedechance und +10 Item-Power dauerhaft.',
+      descEn: '+8% forge chance and +10 item power permanently.',
+      cost: 3,
+      bonusType: AscensionBonusType.forgeBonusChance,
+      bonusValue: 0.08,
+      requiredNodeId: 'smith_2_forge',
+      tier: 3,
+    ),
+
+    // === Schurken-Pfad ===
+    AscensionNode(
+      id: 'rogue_1_gold',
+      path: AscensionPath.rogue,
+      nameDe: 'Gold-Gier I',
+      nameEn: 'Gold Greed I',
+      descDe: '+10% Gold aus allen Quellen dauerhaft.',
+      descEn: '+10% gold from all sources permanently.',
+      cost: 1,
+      bonusType: AscensionBonusType.goldMultiplier,
+      bonusValue: 0.1,
+      requiredNodeId: null,
+      tier: 1,
+    ),
+    AscensionNode(
+      id: 'rogue_1_drop',
+      path: AscensionPath.rogue,
+      nameDe: 'Beute-Spezialist I',
+      nameEn: 'Loot Specialist I',
+      descDe: '+20% Drop-Rate für Items und Rezepte.',
+      descEn: '+20% drop rate for items and recipes.',
+      cost: 1,
+      bonusType: AscensionBonusType.dropRateBonus,
+      bonusValue: 0.2,
+      requiredNodeId: null,
+      tier: 1,
+    ),
+    AscensionNode(
+      id: 'rogue_2_gold',
+      path: AscensionPath.rogue,
+      nameDe: 'Gold-Gier II',
+      nameEn: 'Gold Greed II',
+      descDe: '+15% Gold aus allen Quellen dauerhaft.',
+      descEn: '+15% gold from all sources permanently.',
+      cost: 2,
+      bonusType: AscensionBonusType.goldMultiplier,
+      bonusValue: 0.15,
+      requiredNodeId: 'rogue_1_gold',
+      tier: 2,
+    ),
+    AscensionNode(
+      id: 'rogue_2_offline',
+      path: AscensionPath.rogue,
+      nameDe: 'Schattenwirtschaft',
+      nameEn: 'Shadow Economy',
+      descDe: '+25% Offline-Belohnungen dauerhaft.',
+      descEn: '+25% offline rewards permanently.',
+      cost: 2,
+      bonusType: AscensionBonusType.offlineRewardMultiplier,
+      bonusValue: 0.25,
+      requiredNodeId: 'rogue_1_gold',
+      tier: 2,
+    ),
+    AscensionNode(
+      id: 'rogue_3_apex',
+      path: AscensionPath.rogue,
+      nameDe: 'Meisterdieb',
+      nameEn: 'Master Thief',
+      descDe: '+20% Gold, +30% Drop-Rate und +30% Offline dauerhaft.',
+      descEn: '+20% gold, +30% drop rate and +30% offline permanently.',
+      cost: 3,
+      bonusType: AscensionBonusType.goldMultiplier,
+      bonusValue: 0.2,
+      requiredNodeId: 'rogue_2_gold',
+      tier: 3,
+    ),
+  ];
+
+  static const List<ExpeditionDefinition> expeditionDefinitions = [
+    ExpeditionDefinition(
+      id: 'hunt_1h',
+      type: ExpeditionType.hunt,
+      name: 'Kurze Jagd',
+      nameDe: 'Kurze Jagd',
+      nameEn: 'Quick Hunt',
+      durationHours: 1,
+      baseGold: 80,
+      baseHammers: 8,
+      baseShards: 0,
+      itemDropChance: 0.3,
+    ),
+    ExpeditionDefinition(
+      id: 'scavenge_1h',
+      type: ExpeditionType.scavenge,
+      name: 'Plünderung',
+      nameDe: 'Plünderung',
+      nameEn: 'Scavenge Run',
+      durationHours: 1,
+      baseGold: 120,
+      baseHammers: 4,
+      baseShards: 1,
+      itemDropChance: 0.2,
+    ),
+    ExpeditionDefinition(
+      id: 'hunt_4h',
+      type: ExpeditionType.hunt,
+      name: 'Große Jagd',
+      nameDe: 'Große Jagd',
+      nameEn: 'Grand Hunt',
+      durationHours: 4,
+      baseGold: 380,
+      baseHammers: 35,
+      baseShards: 2,
+      itemDropChance: 0.55,
+    ),
+    ExpeditionDefinition(
+      id: 'raid_4h',
+      type: ExpeditionType.raid,
+      name: 'Überfall',
+      nameDe: 'Überfall',
+      nameEn: 'Raid',
+      durationHours: 4,
+      baseGold: 280,
+      baseHammers: 25,
+      baseShards: 4,
+      itemDropChance: 0.45,
+    ),
+    ExpeditionDefinition(
+      id: 'expedition_12h',
+      type: ExpeditionType.scavenge,
+      name: 'Große Expedition',
+      nameDe: 'Große Expedition',
+      nameEn: 'Grand Expedition',
+      durationHours: 12,
+      baseGold: 1200,
+      baseHammers: 100,
+      baseShards: 10,
+      itemDropChance: 0.85,
+    ),
+    ExpeditionDefinition(
+      id: 'raid_12h',
+      type: ExpeditionType.raid,
+      name: 'Großer Überfall',
+      nameDe: 'Großer Überfall',
+      nameEn: 'Grand Raid',
+      durationHours: 12,
+      baseGold: 900,
+      baseHammers: 80,
+      baseShards: 15,
+      itemDropChance: 0.8,
+    ),
+  ];
 
   static const List<SkillDefinition> _definitions = [
     SkillDefinition(
@@ -504,6 +874,10 @@ class GameController extends ChangeNotifier {
   bool get isLoaded => _isLoaded;
   double get animationBob => reducedEffects ? 0 : sin(_animationTime * 3) * 5;
   List<SkillState> get skills => _skills;
+  DungeonController get dungeonController => _dungeonController;
+  int get dungeonEnergy => _dungeonController.dungeonEnergy;
+  int get dungeonMaxEnergy => _dungeonController.dungeonMaxEnergy;
+  DungeonRun? get activeDungeonRun => _dungeonController.activeDungeonRun;
 
   int get stageTargetKills => isBossStage ? 1 : tuning.killsPerStage;
   bool get isBossStage => stage == 15;
@@ -566,7 +940,7 @@ class GameController extends ChangeNotifier {
   double get maxPlayerHp {
     final base = 140 + (totalStrength * 2.4);
     final prestigeBoost = 1 + (prestigeLevel * 0.03) + (talentVitalityLevel * 0.08);
-    return base * prestigeBoost * setHpBonusMultiplier;
+    return base * prestigeBoost * setHpBonusMultiplier * ascensionHpMultiplier;
   }
 
   double get playerHpPercent {
@@ -579,7 +953,9 @@ class GameController extends ChangeNotifier {
   int get forgeUpgradeCost => 40 + (forgeLevel + 1) * 35;
 
   double get prestigeDamageBonus =>
-      (1 + (prestigeLevel * 0.08) + (talentAttackLevel * 0.06)) * clanDamageBonusMultiplier;
+      (1 + (prestigeLevel * 0.08) + (talentAttackLevel * 0.06)) *
+      clanDamageBonusMultiplier *
+      ascensionAttackMultiplier;
 
   double get prestigeForgeBonus => (prestigeLevel * 0.01).clamp(0, 0.2);
 
@@ -587,8 +963,63 @@ class GameController extends ChangeNotifier {
       (forgeLevel * 0.018 +
           prestigeForgeBonus +
           (talentForgeLevel * 0.008) +
-          setForgeBonus)
+          setForgeBonus +
+          ascensionForgeBonusChance)
         .clamp(0, 0.65);
+
+  double get ascensionAttackMultiplier {
+    return 1.0 + _sumAscensionBonus(AscensionBonusType.attackMultiplier);
+  }
+
+  double get ascensionHpMultiplier {
+    return 1.0 + _sumAscensionBonus(AscensionBonusType.hpMultiplier);
+  }
+
+  double get ascensionSkillCooldownReduction {
+    return _sumAscensionBonus(AscensionBonusType.skillCooldownReduction).clamp(0, 0.5);
+  }
+
+  double get ascensionForgeBonusChance {
+    return _sumAscensionBonus(AscensionBonusType.forgeBonusChance).clamp(0, 0.25);
+  }
+
+  double get ascensionHammerDropChance {
+    return _sumAscensionBonus(AscensionBonusType.hammerDropChance).clamp(0, 0.5);
+  }
+
+  int get ascensionItemPowerBonus {
+    return _sumAscensionBonus(AscensionBonusType.itemPowerBonus).round();
+  }
+
+  double get ascensionGoldMultiplier {
+    return 1.0 + _sumAscensionBonus(AscensionBonusType.goldMultiplier);
+  }
+
+  double get ascensionDropRateBonus {
+    return _sumAscensionBonus(AscensionBonusType.dropRateBonus).clamp(0, 0.8);
+  }
+
+  double get ascensionOfflineMultiplier {
+    return 1.0 + _sumAscensionBonus(AscensionBonusType.offlineRewardMultiplier);
+  }
+
+  double _sumAscensionBonus(AscensionBonusType type) {
+    double total = 0;
+    for (final nodeId in unlockedAscensionNodes) {
+      final node = _findAscensionNode(nodeId);
+      if (node != null && node.bonusType == type) {
+        total += node.bonusValue;
+      }
+    }
+    return total;
+  }
+
+  AscensionNode? _findAscensionNode(String nodeId) {
+    for (final node in ascensionNodes) {
+      if (node.id == nodeId) return node;
+    }
+    return null;
+  }
 
   String get autoSellLabel {
     if (!autoSellEnabled) {
@@ -1271,6 +1702,7 @@ class GameController extends ChangeNotifier {
       return;
     }
 
+    _dungeonController.tickEnergyRegeneration();
     _animationTime += dt;
 
     _skills = _skills
@@ -1514,6 +1946,7 @@ class GameController extends ChangeNotifier {
     hammers += hammerDrop;
     totalKills += 1;
     killsInStage += 1;
+    _tryDropRecipe();
 
     if (isBossStage) {
       forgeShards += _scaledShardReward(1);
@@ -1683,6 +2116,130 @@ class GameController extends ChangeNotifier {
     );
     notifyListeners();
     return true;
+  }
+
+  GameItem _craftItemWithTier(ItemTier tier) {
+    final slot = ItemSlot.values[_random.nextInt(ItemSlot.values.length)];
+    final stageScore = chapter * 2 + stage;
+    final tierStrength = {
+      ItemTier.common: 5,
+      ItemTier.uncommon: 8,
+      ItemTier.rare: 12,
+      ItemTier.epic: 17,
+      ItemTier.legendary: 24,
+    }[tier]!;
+    final power = (tierStrength + stageScore * 1.7 + _random.nextInt(5)).round();
+    final sellValue = (power * 1.6).round() + (tier.index * 15);
+    final setId = _rollSetForChapter();
+
+    String craftedName;
+    String craftedIconPath;
+    int craftedPower = power;
+
+    final slotCatalog = _slotCatalogs[slot];
+    if (slotCatalog != null && slotCatalog.isNotEmpty) {
+      final blueprint = slotCatalog[_random.nextInt(slotCatalog.length)];
+      craftedName = blueprint.name;
+      craftedIconPath = blueprint.iconPath;
+      craftedPower += blueprint.basePower;
+    } else {
+      craftedName = '${_slotName(slot)} ${_tierShortName(tier)} ${_setShortName(setId)}';
+      craftedIconPath = 'assets/icons/forge.svg';
+    }
+
+    return GameItem(
+      id: '${DateTime.now().microsecondsSinceEpoch}_d${_random.nextInt(999)}',
+      name: craftedName,
+      slot: slot,
+      tier: tier,
+      setId: setId,
+      power: craftedPower,
+      sellValue: sellValue,
+      iconPath: craftedIconPath,
+    );
+  }
+
+  bool startDungeon(DungeonDifficulty difficulty) {
+    final ok = _dungeonController.startDungeon(difficulty);
+    if (ok) {
+      notifyListeners();
+      _save();
+    }
+    return ok;
+  }
+
+  bool advanceDungeonStage() {
+    final run = _dungeonController.activeDungeonRun;
+    if (run == null || !run.isActive) return false;
+
+    if (run.currentStage >= 5) {
+      _dungeonController.activeDungeonRun!.isComplete = true;
+      _dungeonController.activeDungeonRun!.isActive = false;
+      _dungeonController.pendingDungeonReward = _dungeonController.buildReward(
+        difficulty: run.difficulty,
+        chapter: chapter,
+        completedStages: 5,
+        itemFactory: (tier) => _craftItemWithTier(tier),
+      );
+      _save();
+      notifyListeners();
+      return true;
+    }
+
+    run.currentStage += 1;
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool defeatDungeonStage() {
+    final run = _dungeonController.activeDungeonRun;
+    if (run == null || !run.isActive) return false;
+    final completedStages = run.currentStage;
+
+    _dungeonController.activeDungeonRun!.isComplete = true;
+    _dungeonController.activeDungeonRun!.isActive = false;
+
+    if (completedStages >= 1) {
+      _dungeonController.pendingDungeonReward = _dungeonController.buildReward(
+        difficulty: run.difficulty,
+        chapter: chapter,
+        completedStages: completedStages,
+        itemFactory: (tier) => _craftItemWithTier(tier),
+      );
+    } else {
+      _dungeonController.activeDungeonRun = null;
+    }
+
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  DungeonReward? claimDungeonReward() {
+    final reward = _dungeonController.pendingDungeonReward;
+    if (reward == null) return null;
+
+    gold += reward.gold;
+    hammers += reward.hammers;
+    forgeShards += reward.shards;
+    for (final item in reward.items) {
+      inventory.add(item);
+    }
+
+    _dungeonController.pendingDungeonReward = null;
+    _dungeonController.activeDungeonRun = null;
+    _gainClanXp(15);
+    _save();
+    notifyListeners();
+    return reward;
+  }
+
+  void abandonDungeon() {
+    _dungeonController.activeDungeonRun = null;
+    _dungeonController.pendingDungeonReward = null;
+    _save();
+    notifyListeners();
   }
 
   GameItem? craftItem() {
@@ -2032,6 +2589,7 @@ class GameController extends ChangeNotifier {
     final gained = prestigeShardGain;
     forgeShards += _scaledShardReward(gained);
     prestigeLevel += gained;
+    ascensionPoints += gained;
     _gainClanXp(40 + (gained * 2));
 
     gold = 60;
@@ -2183,7 +2741,30 @@ class GameController extends ChangeNotifier {
   }
 
   int _scaledGoldReward(int base) {
-    return max(1, (base * clanGoldBonusMultiplier).round());
+    return max(1, (base * clanGoldBonusMultiplier * ascensionGoldMultiplier).round());
+  }
+
+  bool canUnlockAscensionNode(String nodeId) {
+    if (unlockedAscensionNodes.contains(nodeId)) return false;
+    final node = _findAscensionNode(nodeId);
+    if (node == null) return false;
+    if (ascensionPoints < node.cost) return false;
+    if (node.requiredNodeId != null && !unlockedAscensionNodes.contains(node.requiredNodeId)) {
+      return false;
+    }
+    return true;
+  }
+
+  bool unlockAscensionNode(String nodeId) {
+    if (!canUnlockAscensionNode(nodeId)) return false;
+    final node = _findAscensionNode(nodeId);
+    if (node == null) return false;
+
+    ascensionPoints -= node.cost;
+    unlockedAscensionNodes.add(nodeId);
+    _save();
+    notifyListeners();
+    return true;
   }
 
   int _scaledShardReward(int base) {
@@ -2938,10 +3519,34 @@ class GameController extends ChangeNotifier {
 
     playerHp = playerHp.clamp(1.0, maxPlayerHp).toDouble();
 
+    final dungeonStateJson = map['dungeonState'] as Map<String, dynamic>?;
+    if (dungeonStateJson != null) {
+      _dungeonController.loadFromJson(dungeonStateJson);
+    }
+
     final lastActiveMillis = map['lastActiveMillis'] as int?;
     if (lastActiveMillis != null) {
       _applyOfflineReward(DateTime.fromMillisecondsSinceEpoch(lastActiveMillis));
     }
+
+    final expeditionSlotsJson = (map['expeditionSlots'] as List<dynamic>? ?? []);
+    for (int i = 0; i < expeditionSlotsJson.length && i < 3; i++) {
+      final slotJson = expeditionSlotsJson[i];
+      if (slotJson != null) {
+        expeditionSlots[i] = ActiveExpedition.fromJson(
+          Map<String, dynamic>.from(slotJson as Map),
+        );
+      }
+    }
+
+    discoveredRecipes
+      ..clear()
+      ..addAll((map['discoveredRecipes'] as List<dynamic>? ?? []).cast<String>());
+
+    ascensionPoints = map['ascensionPoints'] as int? ?? 0;
+    unlockedAscensionNodes
+      ..clear()
+      ..addAll((map['unlockedAscensionNodes'] as List<dynamic>? ?? []).cast<String>());
   }
 
   void _applyOfflineReward(DateTime lastActive) {
@@ -2956,7 +3561,8 @@ class GameController extends ChangeNotifier {
     final earnedGold = (estimatedKills *
             (6 + chapter) *
             tuning.offlineRewardMultiplier *
-            clanGoldBonusMultiplier)
+            clanGoldBonusMultiplier *
+            ascensionOfflineMultiplier)
         .round();
     final earnedHammers = estimatedKills;
 
@@ -2969,6 +3575,160 @@ class GameController extends ChangeNotifier {
       hammers: earnedHammers,
       minutes: clampedMinutes,
     );
+  }
+
+  bool startExpedition(int slotIndex, String expeditionId) {
+    if (slotIndex < 0 || slotIndex >= expeditionSlotCount) return false;
+    if (expeditionSlots[slotIndex] != null && !expeditionSlots[slotIndex]!.claimed) {
+      if (!expeditionSlots[slotIndex]!.isComplete) return false;
+    }
+
+    final def = expeditionDefinitions.firstWhere(
+      (d) => d.id == expeditionId,
+      orElse: () => expeditionDefinitions.first,
+    );
+
+    final completesAt = DateTime.now().add(Duration(hours: def.durationHours));
+    expeditionSlots[slotIndex] = ActiveExpedition(
+      slotIndex: slotIndex,
+      expeditionId: expeditionId,
+      completesAt: completesAt,
+    );
+
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool claimExpeditionReward(int slotIndex) {
+    if (slotIndex < 0 || slotIndex >= expeditionSlotCount) return false;
+    final expedition = expeditionSlots[slotIndex];
+    if (expedition == null || !expedition.isComplete || expedition.claimed) return false;
+
+    final def = expeditionDefinitions.firstWhere(
+      (d) => d.id == expedition.expeditionId,
+      orElse: () => expeditionDefinitions.first,
+    );
+
+    final progression = 1 + (chapter ~/ 2) + (prestigeLevel ~/ 5);
+    gold += _scaledGoldReward((def.baseGold * progression / 2).round());
+    hammers += (def.baseHammers * progression / 2).round();
+    if (def.baseShards > 0) {
+      forgeShards += _scaledShardReward((def.baseShards * progression / 3).round());
+    }
+
+    if (_random.nextDouble() < def.itemDropChance) {
+      final tier = _random.nextDouble() < 0.2 ? ItemTier.rare : ItemTier.uncommon;
+      final item = _craftItemWithTier(tier);
+      inventory.add(item);
+    }
+
+    expedition.claimed = true;
+    _gainClanXp(8 + def.durationHours);
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  void clearExpeditionSlot(int slotIndex) {
+    if (slotIndex < 0 || slotIndex >= expeditionSlotCount) return;
+    final expedition = expeditionSlots[slotIndex];
+    if (expedition == null || (expedition.isComplete && expedition.claimed)) {
+      expeditionSlots[slotIndex] = null;
+      _save();
+      notifyListeners();
+    }
+  }
+
+  List<ActiveExpedition?> get currentExpeditions => List.unmodifiable(expeditionSlots);
+
+  List<CraftingRecipe> get knownRecipes {
+    return craftingRecipes
+        .where((r) => discoveredRecipes.contains(r.id))
+        .toList(growable: false);
+  }
+
+  bool canCraftRecipe(String recipeId) {
+    final recipe = _findRecipe(recipeId);
+    if (recipe == null || !discoveredRecipes.contains(recipeId)) return false;
+    if (gold < recipe.goldCost || hammers < recipe.hammerCost) return false;
+    return _checkIngredients(recipe).isEmpty;
+  }
+
+  List<RecipeIngredient> getMissingIngredients(String recipeId) {
+    final recipe = _findRecipe(recipeId);
+    if (recipe == null) return [];
+    return _checkIngredients(recipe);
+  }
+
+  List<RecipeIngredient> _checkIngredients(CraftingRecipe recipe) {
+    final missing = <RecipeIngredient>[];
+    for (final ingredient in recipe.ingredients) {
+      final available = inventory.where(
+        (item) =>
+            item.slot == ingredient.slot &&
+            item.tier.index >= ingredient.minTier.index &&
+            !isEquipped(item) &&
+            !item.isLocked,
+      ).length;
+      if (available < ingredient.count) {
+        missing.add(ingredient);
+      }
+    }
+    return missing;
+  }
+
+  GameItem? craftByRecipe(String recipeId) {
+    final recipe = _findRecipe(recipeId);
+    if (recipe == null || !canCraftRecipe(recipeId)) return null;
+
+    for (final ingredient in recipe.ingredients) {
+      var toConsume = ingredient.count;
+      final candidates = inventory.where(
+        (item) =>
+            item.slot == ingredient.slot &&
+            item.tier.index >= ingredient.minTier.index &&
+            !isEquipped(item) &&
+            !item.isLocked,
+      ).toList();
+
+      candidates.sort((a, b) => a.power.compareTo(b.power));
+      for (final item in candidates) {
+        if (toConsume <= 0) break;
+        inventory.removeWhere((i) => i.id == item.id);
+        equippedBySlot.removeWhere((_, v) => v == item.id);
+        toConsume -= 1;
+      }
+    }
+
+    gold -= recipe.goldCost;
+    hammers -= recipe.hammerCost;
+
+    final result = _craftItemWithTier(recipe.resultTier);
+    inventory.add(result);
+    craftedItems += 1;
+    _gainClanXp(10 + recipe.resultTier.index * 3);
+    _save();
+    notifyListeners();
+    return result;
+  }
+
+  CraftingRecipe? _findRecipe(String recipeId) {
+    try {
+      return craftingRecipes.firstWhere((r) => r.id == recipeId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _tryDropRecipe() {
+    for (final recipe in craftingRecipes) {
+      if (discoveredRecipes.contains(recipe.id)) continue;
+      if (_random.nextDouble() < recipe.dropChance * (1 + chapter * 0.1)) {
+        discoveredRecipes.add(recipe.id);
+        lastCombatEvent = 'Neues Rezept gefunden: ${localeCode == 'de' ? recipe.nameDe : recipe.nameEn}!';
+      }
+    }
   }
 
   Future<void> _save() async {
@@ -3040,7 +3800,14 @@ class GameController extends ChangeNotifier {
           preset.map((slot, id) => MapEntry(slot.name, id)),
         ),
       ),
+      'dungeonState': _dungeonController.toJson(),
       'lastActiveMillis': DateTime.now().millisecondsSinceEpoch,
+      'expeditionSlots': expeditionSlots
+          .map((e) => e?.toJson())
+          .toList(growable: false),
+      'discoveredRecipes': discoveredRecipes.toList(growable: false),
+      'unlockedAscensionNodes': unlockedAscensionNodes.toList(growable: false),
+      'ascensionPoints': ascensionPoints,
     };
 
     await prefs.setString(_saveKey, jsonEncode(map));

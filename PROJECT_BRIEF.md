@@ -100,7 +100,7 @@ Idle Forge ist ein Idle-RPG für Android/Windows in Flutter/Dart. Der Spieler be
 | Sprint | Name | Status | Scope |
 |--------|------|--------|-------|
 | 0 | Foundation | ✅ Done | v1.0.3: Tutorial, Dark/Light Mode, Auto-Update, Quests, Shop |
-| 1A | Game Systems | 🔨 In Progress | Dungeons, Expeditionen, Crafting-Rezepte, Ascension-Baum |
+| 1A | Game Systems | ✅ Done | Dungeons, Expeditionen, Crafting-Rezepte, Ascension-Baum |
 | 1B | Game Polish | 🔨 In Progress | Pet, Set-Boni, Enchantment, Login-Streak, SmartEquip, Notifications |
 | 2 | Backend & Social | 📋 Geplant | Vercel-Backend, Freunde, Rangliste, Clan-Server, PVP, Koop |
 
@@ -108,7 +108,7 @@ Idle Forge ist ein Idle-RPG für Android/Windows in Flutter/Dart. Der Spieler be
 
 ## 8. Current State (Stand v1.0.3)
 
-**Was funktioniert:**
+**Was funktioniert (Stand Sprint 1A):**
 - Idle-Kampf mit Auto-Attacks, Skills (Strike, Whirl, Focus), Auto-Skill
 - Schmiede mit Zufalls-Crafting (Common → Legendary)
 - Shop: Tägliche Angebote, Speed/Hammer/Recovery-Upgrades
@@ -122,10 +122,14 @@ Idle Forge ist ein Idle-RPG für Android/Windows in Flutter/Dart. Der Spieler be
 - Dark/Light-Mode
 - In-App Auto-Update (Android + Windows)
 - DE/EN Lokalisierung
+- **[NEU Sprint 1A]** Dungeons (3 Schwierigkeiten, 5 Stages, Energie-System, Legendary-Drop)
+- **[NEU Sprint 1A]** Expeditionen (3 Slots, 6 Typen, offline-kompatibel)
+- **[NEU Sprint 1A]** Crafting-Rezepte (5 Rezepte, Drop beim Kämpfen, Rezeptbuch)
+- **[NEU Sprint 1A]** Ascension-Baum (3 Pfade: Krieger/Schmied/Schurke, 15 Nodes, permanente Boni)
 
 **Was noch nicht existiert:**
-- Dungeons, Expeditionen, Crafting-Rezepte
-- Ascension-Baum (post-Prestige permanent Skill-Tree)
+- Pet/Companion (Sprint 1B)
+- Enchantment-System (Sprint 1B)
 - Pet/Companion
 - Enchantment-System
 - Set-Boni (Tragen-Bonus)

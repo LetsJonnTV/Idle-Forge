@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'game/game_controller.dart';
 import 'game/models.dart';
+import 'l10n/app_text.dart';
 import 'services/update_checker.dart';
 import 'services/update_installer.dart';
 
@@ -1869,6 +1870,30 @@ class _BottomMenu extends StatelessWidget {
               label: text.tr('inventory'),
               dense: dense,
               onTap: () => _showInventory(context, controller),
+            ),
+            _MenuButton(
+              icon: Icons.castle_outlined,
+              label: text.tr('menuDungeon'),
+              dense: dense,
+              onTap: () => _showDungeonPanel(context, controller),
+            ),
+            _MenuButton(
+              icon: Icons.explore_outlined,
+              label: text.tr('menuExpedition'),
+              dense: dense,
+              onTap: () => _showExpeditionPanel(context, controller),
+            ),
+            _MenuButton(
+              icon: Icons.menu_book_outlined,
+              label: text.tr('menuRecipes'),
+              dense: dense,
+              onTap: () => _showRecipePanel(context, controller),
+            ),
+            _MenuButton(
+              icon: Icons.account_tree_outlined,
+              label: text.tr('menuAscension'),
+              dense: dense,
+              onTap: () => _showAscensionPanel(context, controller),
             ),
           ];
 
@@ -3958,6 +3983,509 @@ class _BottomMenu extends StatelessWidget {
       },
     );
   }
+
+  Future<void> _showDungeonPanel(BuildContext context, GameController controller) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.sheetBg,
+      isScrollControlled: true,
+      builder: (context) {
+        return SafeArea(
+          child: SizedBox(
+            height: _adaptiveSheetHeight(context, factor: 0.82, min: 400, max: 900),
+            child: StatefulBuilder(
+              builder: (context, setModalState) {
+                final dc = controller.dungeonController;
+                final text = controller.text;
+
+                void refresh() => setModalState(() {});
+
+                if (dc.pendingDungeonReward != null) {
+                  final reward = dc.pendingDungeonReward!;
+                  return Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.stars, color: Color(0xFFFFD700), size: 48),
+                        const SizedBox(height: 12),
+                        Text(
+                          text.tr('dungeonComplete'),
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 16),
+                        Text('+${reward.gold} Gold  |  +${reward.hammers} Haemmer  |  +${reward.shards} Scherben'),
+                        const SizedBox(height: 8),
+                        Text('${reward.items.length} Item(s) gefunden'),
+                        const SizedBox(height: 20),
+                        FilledButton.tonal(
+                          onPressed: () {
+                            controller.claimDungeonReward();
+                            Navigator.of(context).pop();
+                          },
+                          child: Text(text.tr('dungeonClaimReward')),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final run = dc.activeDungeonRun;
+                if (run != null && run.isActive) {
+                  final currentStage = dc.currentStage!;
+                  final bossHp = dc.getBossHp(run.difficulty, run.currentStage);
+
+                  return ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      Text(
+                        '${text.tr('dungeonTitle')} — ${_difficultyLabel(text, run.difficulty)}',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: List.generate(5, (i) {
+                          final stageNum = i + 1;
+                          final isDone = stageNum < run.currentStage;
+                          final isCurrent = stageNum == run.currentStage;
+                          return Expanded(
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 2),
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: isDone
+                                    ? const Color(0xFF4CAF50)
+                                    : isCurrent
+                                        ? const Color(0xFFFF9800)
+                                        : context.cardBorder,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${text.tr('dungeonStage')} ${run.currentStage}/5 — ${currentStage.bossName}',
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: context.cardBg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: context.cardBorder),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${text.tr("dungeonBoss")}: ${currentStage.bossName}',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            Text('HP: ${bossHp.round()}'),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FilledButton.tonal(
+                              onPressed: () {
+                                controller.advanceDungeonStage();
+                                refresh();
+                              },
+                              child: Text('Boss besiegen (${text.tr("dungeonStage")} ${run.currentStage})'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton(
+                        onPressed: () {
+                          controller.defeatDungeonStage();
+                          refresh();
+                        },
+                        child: Text(text.tr('dungeonAbandon')),
+                      ),
+                    ],
+                  );
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Text(
+                      text.tr('dungeonTitle'),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${text.tr("dungeonEnergy")}: ${dc.dungeonEnergy}/${dc.dungeonMaxEnergy}',
+                      style: TextStyle(color: context.textSecondary),
+                    ),
+                    const SizedBox(height: 16),
+                    for (final difficulty in DungeonDifficulty.values) ...[
+                      _DifficultyCard(
+                        difficulty: difficulty,
+                        controller: controller,
+                        onStart: () {
+                          final ok = controller.startDungeon(difficulty);
+                          if (!ok) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(text.tr('dungeonNotEnoughEnergy'))),
+                            );
+                          }
+                          refresh();
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Stage 1-5 jeweils mit eigenem Boss. Stage 5: Guaranteed Legendary-Drop!',
+                      style: TextStyle(fontSize: 11, color: Color(0xFFB0B0B0)),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _difficultyLabel(AppText text, DungeonDifficulty d) {
+    return switch (d) {
+      DungeonDifficulty.normal => text.tr('dungeonDiffNormal'),
+      DungeonDifficulty.hard => text.tr('dungeonDiffHard'),
+      DungeonDifficulty.nightmare => text.tr('dungeonDiffNightmare'),
+    };
+  }
+
+  Future<void> _showExpeditionPanel(BuildContext context, GameController controller) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.sheetBg,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: SizedBox(
+            height: _adaptiveSheetHeight(ctx, factor: 0.85, min: 450, max: 900),
+            child: StatefulBuilder(
+              builder: (context, setModalState) {
+                final text = controller.text;
+
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Text(
+                      text.tr('expeditionTitle'),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Sende Helden auf Expeditionen für Belohnungen.',
+                      style: TextStyle(color: context.textSecondary, fontSize: 12),
+                    ),
+                    const SizedBox(height: 16),
+                    for (int i = 0; i < GameController.expeditionSlotCount; i++) ...[
+                      _ExpeditionSlotCard(
+                        slotIndex: i,
+                        controller: controller,
+                        onRefresh: () => setModalState(() {}),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showAscensionPanel(BuildContext context, GameController controller) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.sheetBg,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: SizedBox(
+            height: _adaptiveSheetHeight(ctx, factor: 0.9, min: 500, max: 900),
+            child: StatefulBuilder(
+              builder: (context, setModalState) {
+                final text = controller.text;
+
+                return DefaultTabController(
+                  length: 3,
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    text.tr('ascensionTitle'),
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${text.tr("ascensionPoints")}: ${controller.ascensionPoints}',
+                                    style: TextStyle(color: context.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      TabBar(
+                        tabs: [
+                          Tab(text: text.tr('ascensionPathWarrior')),
+                          Tab(text: text.tr('ascensionPathSmith')),
+                          Tab(text: text.tr('ascensionPathRogue')),
+                        ],
+                      ),
+                      Expanded(
+                        child: TabBarView(
+                          children: [
+                            _AscensionPathView(
+                              path: AscensionPath.warrior,
+                              controller: controller,
+                              onRefresh: () => setModalState(() {}),
+                            ),
+                            _AscensionPathView(
+                              path: AscensionPath.smith,
+                              controller: controller,
+                              onRefresh: () => setModalState(() {}),
+                            ),
+                            _AscensionPathView(
+                              path: AscensionPath.rogue,
+                              controller: controller,
+                              onRefresh: () => setModalState(() {}),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showRecipePanel(BuildContext context, GameController controller) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.sheetBg,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: SizedBox(
+            height: _adaptiveSheetHeight(ctx, factor: 0.88, min: 480, max: 900),
+            child: StatefulBuilder(
+              builder: (context, setModalState) {
+                final text = controller.text;
+                final knownRecipes = controller.knownRecipes;
+
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Text(
+                      text.tr('recipesTitle'),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${knownRecipes.length}/${GameController.craftingRecipes.length} Rezepte gefunden',
+                      style: TextStyle(color: context.textSecondary, fontSize: 12),
+                    ),
+                    const SizedBox(height: 12),
+                    if (knownRecipes.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(Icons.menu_book, color: context.textTertiary, size: 40),
+                              const SizedBox(height: 8),
+                              Text(
+                                text.tr('recipesNoRecipes'),
+                                style: TextStyle(color: context.textSecondary),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    for (final recipe in knownRecipes) ...[
+                      _RecipeCard(
+                        recipe: recipe,
+                        controller: controller,
+                        onRefresh: () => setModalState(() {}),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AscensionPathView extends StatelessWidget {
+  const _AscensionPathView({
+    required this.path,
+    required this.controller,
+    required this.onRefresh,
+  });
+
+  final AscensionPath path;
+  final GameController controller;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = controller.text;
+    final nodes = GameController.ascensionNodes
+        .where((n) => n.path == path)
+        .toList();
+    nodes.sort((a, b) => a.tier.compareTo(b.tier));
+
+    if (controller.ascensionPoints == 0 && controller.unlockedAscensionNodes.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            text.tr('ascensionNoPoints'),
+            textAlign: TextAlign.center,
+            style: TextStyle(color: context.textSecondary),
+          ),
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: nodes.map((node) {
+        final isUnlocked = controller.unlockedAscensionNodes.contains(node.id);
+        final canUnlock = controller.canUnlockAscensionNode(node.id);
+        final name = controller.localeCode == 'de' ? node.nameDe : node.nameEn;
+        final desc = controller.localeCode == 'de' ? node.descDe : node.descEn;
+
+        return Container(
+          margin: EdgeInsets.only(
+            left: (node.tier - 1) * 16.0,
+            bottom: 8,
+          ),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: isUnlocked
+                ? const Color(0xFF1B5E20).withValues(alpha: 0.3)
+                : context.cardBg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isUnlocked
+                  ? const Color(0xFF4CAF50)
+                  : canUnlock
+                      ? const Color(0xFFFF9800).withValues(alpha: 0.7)
+                      : context.cardBorder,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    isUnlocked
+                        ? Icons.check_circle
+                        : canUnlock
+                            ? Icons.lock_open
+                            : Icons.lock,
+                    color: isUnlocked
+                        ? const Color(0xFF4CAF50)
+                        : canUnlock
+                            ? const Color(0xFFFF9800)
+                            : context.textTertiary,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: isUnlocked ? const Color(0xFF4CAF50) : context.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${node.cost} ${text.tr("ascensionPoints")}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: context.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 3),
+              Text(desc, style: TextStyle(fontSize: 12, color: context.textSecondary)),
+              if (node.requiredNodeId != null && !isUnlocked)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    '${text.tr("ascensionRequires")}: ${_getNodeName(node.requiredNodeId!, controller)}',
+                    style: const TextStyle(fontSize: 11, color: Colors.orange),
+                  ),
+                ),
+              if (canUnlock) ...[
+                const SizedBox(height: 6),
+                FilledButton.tonal(
+                  onPressed: () {
+                    controller.unlockAscensionNode(node.id);
+                    onRefresh();
+                  },
+                  child: Text(text.tr('ascensionUnlock')),
+                ),
+              ],
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  String _getNodeName(String nodeId, GameController controller) {
+    for (final node in GameController.ascensionNodes) {
+      if (node.id == nodeId) {
+        return controller.localeCode == 'de' ? node.nameDe : node.nameEn;
+      }
+    }
+    return nodeId;
+  }
 }
 
 class _MenuButton extends StatelessWidget {
@@ -4415,5 +4943,339 @@ class _Enemy extends StatelessWidget {
       ),
       child: _SvgIcon(path: 'assets/icons/enemy.svg', size: resolvedSize * (isBoss ? 0.68 : 0.69)),
     );
+  }
+}
+
+class _DifficultyCard extends StatelessWidget {
+  const _DifficultyCard({
+    required this.difficulty,
+    required this.controller,
+    required this.onStart,
+  });
+
+  final DungeonDifficulty difficulty;
+  final GameController controller;
+  final VoidCallback onStart;
+
+  @override
+  Widget build(BuildContext context) {
+    final dc = controller.dungeonController;
+    final cost = dc.energyCostForDifficulty(difficulty);
+    final canStart = dc.canStartDungeon(difficulty);
+    final text = controller.text;
+
+    final (label, color, desc) = switch (difficulty) {
+      DungeonDifficulty.normal => (
+          text.tr('dungeonDiffNormal'),
+          const Color(0xFF4CAF50),
+          '5 Stages | Reward: Uncommon+',
+        ),
+      DungeonDifficulty.hard => (
+          text.tr('dungeonDiffHard'),
+          const Color(0xFFFF9800),
+          '5 Stages | Reward: Rare+ | 1.6x Belohnung',
+        ),
+      DungeonDifficulty.nightmare => (
+          text.tr('dungeonDiffNightmare'),
+          const Color(0xFFE91E63),
+          '5 Stages | Reward: Epic+ | 2.5x Belohnung',
+        ),
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: canStart ? color.withValues(alpha: 0.5) : context.cardBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 50,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(desc, style: const TextStyle(fontSize: 11)),
+                Text(
+                  '${text.tr("dungeonEnergy")}: $cost',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: canStart ? context.textSecondary : Colors.red,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          FilledButton.tonal(
+            onPressed: canStart ? onStart : null,
+            child: Text(text.tr('dungeonStart')),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExpeditionSlotCard extends StatefulWidget {
+  const _ExpeditionSlotCard({
+    required this.slotIndex,
+    required this.controller,
+    required this.onRefresh,
+  });
+
+  final int slotIndex;
+  final GameController controller;
+  final VoidCallback onRefresh;
+
+  @override
+  State<_ExpeditionSlotCard> createState() => _ExpeditionSlotCardState();
+}
+
+class _ExpeditionSlotCardState extends State<_ExpeditionSlotCard> {
+  String? _selectedExpeditionId;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = widget.controller.text;
+    final expedition = widget.controller.expeditionSlots[widget.slotIndex];
+
+    if (expedition != null && !expedition.claimed) {
+      final def = GameController.expeditionDefinitions.firstWhere(
+        (d) => d.id == expedition.expeditionId,
+        orElse: () => GameController.expeditionDefinitions.first,
+      );
+      final isComplete = expedition.isComplete;
+      final remaining = expedition.remaining;
+
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: context.cardBg,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isComplete ? const Color(0xFF4CAF50) : context.cardBorder,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isComplete ? Icons.check_circle : Icons.explore,
+                  color: isComplete ? const Color(0xFF4CAF50) : context.iconColor,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    def.nameDe,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Text(
+                  '${def.durationHours}${text.tr("expeditionHours")}',
+                  style: TextStyle(color: context.textSecondary, fontSize: 12),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            if (!isComplete)
+              Text(
+                '${text.tr("expeditionInProgress")} — '
+                '${remaining.inHours}h ${remaining.inMinutes.remainder(60)}m',
+                style: TextStyle(color: context.textSecondary, fontSize: 12),
+              ),
+            if (isComplete)
+              Text(
+                text.tr('expeditionComplete'),
+                style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 12),
+              ),
+            const SizedBox(height: 8),
+            if (isComplete)
+              FilledButton.tonal(
+                onPressed: () {
+                  widget.controller.claimExpeditionReward(widget.slotIndex);
+                  widget.onRefresh();
+                },
+                child: Text(text.tr('expeditionClaim')),
+              ),
+          ],
+        ),
+      );
+    }
+
+    if (expedition != null && expedition.claimed) {
+      widget.controller.clearExpeditionSlot(widget.slotIndex);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: context.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${text.tr("expeditionSlot")} ${widget.slotIndex + 1}',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          DropdownButton<String>(
+            value: _selectedExpeditionId,
+            hint: Text(text.tr('expeditionEmpty'), style: const TextStyle(fontSize: 12)),
+            isExpanded: true,
+            items: GameController.expeditionDefinitions.map((def) {
+              return DropdownMenuItem<String>(
+                value: def.id,
+                child: Text(
+                  '${def.nameDe} (${def.durationHours}h)',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              );
+            }).toList(),
+            onChanged: (value) => setState(() => _selectedExpeditionId = value),
+          ),
+          const SizedBox(height: 6),
+          FilledButton.tonal(
+            onPressed: _selectedExpeditionId != null
+                ? () {
+                    widget.controller.startExpedition(widget.slotIndex, _selectedExpeditionId!);
+                    setState(() => _selectedExpeditionId = null);
+                    widget.onRefresh();
+                  }
+                : null,
+            child: Text(text.tr('expeditionStart')),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecipeCard extends StatelessWidget {
+  const _RecipeCard({
+    required this.recipe,
+    required this.controller,
+    required this.onRefresh,
+  });
+
+  final CraftingRecipe recipe;
+  final GameController controller;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = controller.text;
+    final canCraft = controller.canCraftRecipe(recipe.id);
+    final missing = controller.getMissingIngredients(recipe.id);
+    final name = controller.localeCode == 'de' ? recipe.nameDe : recipe.nameEn;
+    final desc = controller.localeCode == 'de' ? recipe.descDe : recipe.descEn;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: canCraft ? const Color(0xFF4CAF50).withValues(alpha: 0.6) : context.cardBorder,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: _tierColor(recipe.resultTier).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: _tierColor(recipe.resultTier).withValues(alpha: 0.5)),
+                ),
+                child: Text(
+                  controller.tierLabel(recipe.resultTier),
+                  style: TextStyle(fontSize: 11, color: _tierColor(recipe.resultTier)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(desc, style: TextStyle(color: context.textSecondary, fontSize: 12)),
+          const SizedBox(height: 8),
+          Text(
+            '${text.tr("recipesIngredients")}:',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 4),
+          for (final ingredient in recipe.ingredients)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(
+                '  • ${ingredient.count}x ${controller.slotLabel(ingredient.slot)} '
+                '(${controller.tierLabel(ingredient.minTier)}+)',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
+          const SizedBox(height: 6),
+          Text(
+            '${text.tr("recipesGoldCost")}: ${recipe.goldCost}  |  '
+            '${text.tr("recipesHammerCost")}: ${recipe.hammerCost}',
+            style: TextStyle(color: context.textSecondary, fontSize: 12),
+          ),
+          if (missing.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                text.tr('recipesMissing'),
+                style: const TextStyle(color: Colors.orange, fontSize: 12),
+              ),
+            ),
+          const SizedBox(height: 8),
+          FilledButton.tonal(
+            onPressed: canCraft
+                ? () {
+                    final result = controller.craftByRecipe(recipe.id);
+                    if (result != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${result.name} hergestellt!'),
+                        ),
+                      );
+                    }
+                    onRefresh();
+                  }
+                : null,
+            child: Text(text.tr('recipesCraft')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _tierColor(ItemTier tier) {
+    return switch (tier) {
+      ItemTier.common => const Color(0xFFAAAAAA),
+      ItemTier.uncommon => const Color(0xFF4CAF50),
+      ItemTier.rare => const Color(0xFF2196F3),
+      ItemTier.epic => const Color(0xFF9C27B0),
+      ItemTier.legendary => const Color(0xFFFF9800),
+    };
   }
 }
