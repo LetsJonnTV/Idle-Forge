@@ -2,7 +2,7 @@
 
 All notable changes to Idle Forge are documented here.
 
-## [1.0.2] - 2026-05-27
+## [1.0.3] - 2026-05-27
 
 ### Added
 - Tutorial-System: 8-schrittiges Onboarding beim ersten Spielstart
