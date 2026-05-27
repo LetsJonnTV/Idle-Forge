@@ -1,8 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_forge/game/game_controller.dart';
 import 'package:idle_forge/game/models.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
+  });
   group('Set Bonus', () {
     test('ember 6-piece gives 20% forge bonus', () {
       final gc = GameController();
