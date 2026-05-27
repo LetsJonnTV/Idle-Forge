@@ -101,15 +101,14 @@ class _FriendsScreenState extends State<FriendsScreen>
       await _load();
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (_) {}
   }
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
-  Color get _bg =>
-      _isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
+  Color get _bg => _isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
   Color get _cardBg =>
       _isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFFFFFF);
   Color get _accent => const Color(0xFFD4A84B);
@@ -159,8 +158,7 @@ class _FriendsScreenState extends State<FriendsScreen>
         children: [
           // Add friend search bar
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Column(
               children: [
                 Row(
@@ -180,7 +178,9 @@ class _FriendsScreenState extends State<FriendsScreen>
                             borderSide: BorderSide.none,
                           ),
                           contentPadding: const EdgeInsets.symmetric(
-                              vertical: 12, horizontal: 14),
+                            vertical: 12,
+                            horizontal: 14,
+                          ),
                         ),
                         textInputAction: TextInputAction.send,
                         onSubmitted: (_) => _sendRequest(),
@@ -192,7 +192,9 @@ class _FriendsScreenState extends State<FriendsScreen>
                       style: FilledButton.styleFrom(
                         backgroundColor: _accent,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 14),
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -216,7 +218,9 @@ class _FriendsScreenState extends State<FriendsScreen>
                     child: Text(
                       _sendError!,
                       style: const TextStyle(
-                          color: Color(0xFFE07070), fontSize: 12),
+                        color: Color(0xFFE07070),
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 if (_sendSuccess != null)
@@ -225,7 +229,9 @@ class _FriendsScreenState extends State<FriendsScreen>
                     child: Text(
                       _sendSuccess!,
                       style: const TextStyle(
-                          color: Color(0xFF7AC97A), fontSize: 12),
+                        color: Color(0xFF7AC97A),
+                        fontSize: 12,
+                      ),
                     ),
                   ),
               ],
@@ -238,14 +244,11 @@ class _FriendsScreenState extends State<FriendsScreen>
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _offline
-                    ? _buildOffline()
-                    : TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildFriendsList(),
-                          _buildRequestsList(),
-                        ],
-                      ),
+                ? _buildOffline()
+                : TabBarView(
+                    controller: _tabController,
+                    children: [_buildFriendsList(), _buildRequestsList()],
+                  ),
           ),
         ],
       ),
@@ -257,18 +260,14 @@ class _FriendsScreenState extends State<FriendsScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.signal_wifi_off_rounded,
-              size: 56, color: _textSecondary),
+          Icon(Icons.signal_wifi_off_rounded, size: 56, color: _textSecondary),
           const SizedBox(height: 16),
           Text(
             'Friends not available offline',
             style: TextStyle(color: _textSecondary, fontSize: 16),
           ),
           const SizedBox(height: 24),
-          FilledButton.tonal(
-            onPressed: _load,
-            child: const Text('Retry'),
-          ),
+          FilledButton.tonal(onPressed: _load, child: const Text('Retry')),
         ],
       ),
     );
@@ -294,8 +293,7 @@ class _FriendsScreenState extends State<FriendsScreen>
           final myId = ApiService.instance.currentPlayerId;
           final requester = f['requester'] as Map<String, dynamic>? ?? {};
           final addressee = f['addressee'] as Map<String, dynamic>? ?? {};
-          final friend =
-              requester['id'] == myId ? addressee : requester;
+          final friend = requester['id'] == myId ? addressee : requester;
 
           return _FriendCard(
             friend: friend,
@@ -377,8 +375,7 @@ class _FriendCard extends StatelessWidget {
         color: cardBg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color:
-              isDark ? const Color(0xFF3B3B3B) : const Color(0xFFDDDDDD),
+          color: isDark ? const Color(0xFF3B3B3B) : const Color(0xFFDDDDDD),
         ),
       ),
       child: Row(
@@ -387,8 +384,7 @@ class _FriendCard extends StatelessWidget {
             backgroundColor: accent.withAlpha(60),
             child: Text(
               username.isNotEmpty ? username[0].toUpperCase() : '?',
-              style: TextStyle(
-                  color: accent, fontWeight: FontWeight.bold),
+              style: TextStyle(color: accent, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(width: 12),
@@ -456,16 +452,15 @@ class _RequestCard extends StatelessWidget {
         border: Border.all(
           color: isIncoming
               ? accent.withAlpha(100)
-              : (isDark
-                  ? const Color(0xFF3B3B3B)
-                  : const Color(0xFFDDDDDD)),
+              : (isDark ? const Color(0xFF3B3B3B) : const Color(0xFFDDDDDD)),
         ),
       ),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor:
-                isIncoming ? accent.withAlpha(60) : Colors.grey.withAlpha(60),
+            backgroundColor: isIncoming
+                ? accent.withAlpha(60)
+                : Colors.grey.withAlpha(60),
             child: Text(
               username.isNotEmpty ? username[0].toUpperCase() : '?',
               style: TextStyle(
@@ -495,14 +490,15 @@ class _RequestCard extends StatelessWidget {
           ),
           if (isIncoming) ...[
             IconButton(
-              icon: const Icon(Icons.check_circle_outline,
-                  color: Color(0xFF7AC97A)),
+              icon: const Icon(
+                Icons.check_circle_outline,
+                color: Color(0xFF7AC97A),
+              ),
               onPressed: onAccept,
               tooltip: 'Accept',
             ),
             IconButton(
-              icon: const Icon(Icons.cancel_outlined,
-                  color: Color(0xFFE07070)),
+              icon: const Icon(Icons.cancel_outlined, color: Color(0xFFE07070)),
               onPressed: onReject,
               tooltip: 'Reject',
             ),

@@ -205,8 +205,7 @@ class _CoopScreenState extends State<CoopScreen> {
   }
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
-  Color get _bg =>
-      _isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
+  Color get _bg => _isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
   Color get _cardBg =>
       _isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFFFFFF);
   Color get _accent => const Color(0xFFD4A84B);
@@ -263,8 +262,7 @@ class _CoopScreenState extends State<CoopScreen> {
                         const SizedBox(height: 8),
                         Text(
                           'Start a co-op boss fight and invite a friend.',
-                          style: TextStyle(
-                              fontSize: 13, color: _textSecondary),
+                          style: TextStyle(fontSize: 13, color: _textSecondary),
                         ),
                         const SizedBox(height: 12),
                         FilledButton.icon(
@@ -346,7 +344,9 @@ class _CoopScreenState extends State<CoopScreen> {
                             child: Text(
                               _errorMessage!,
                               style: const TextStyle(
-                                  color: Color(0xFFE07070), fontSize: 12),
+                                color: Color(0xFFE07070),
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                       ],
@@ -364,22 +364,25 @@ class _CoopScreenState extends State<CoopScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    ..._sessions.map((s) => _SessionCard(
-                          session: s,
-                          isDark: _isDark,
-                          cardBg: _cardBg,
-                          textPrimary: _textPrimary,
-                          textSecondary: _textSecondary,
-                          accent: _accent,
-                          onJoin: () => _enterSession(s),
-                        )),
+                    ..._sessions.map(
+                      (s) => _SessionCard(
+                        session: s,
+                        isDark: _isDark,
+                        cardBg: _cardBg,
+                        textPrimary: _textPrimary,
+                        textSecondary: _textSecondary,
+                        accent: _accent,
+                        onJoin: () => _enterSession(s),
+                      ),
+                    ),
                   ],
                   if (_loading)
                     const Center(
-                        child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: CircularProgressIndicator(),
-                    )),
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -393,8 +396,7 @@ class _CoopScreenState extends State<CoopScreen> {
         color: _cardBg,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color:
-              _isDark ? const Color(0xFF3B3B3B) : const Color(0xFFDDDDDD),
+          color: _isDark ? const Color(0xFF3B3B3B) : const Color(0xFFDDDDDD),
         ),
       ),
       child: child,
@@ -406,8 +408,7 @@ class _CoopScreenState extends State<CoopScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.signal_wifi_off_rounded,
-              size: 56, color: _textSecondary),
+          Icon(Icons.signal_wifi_off_rounded, size: 56, color: _textSecondary),
           const SizedBox(height: 16),
           Text(
             'Co-op not available offline',
@@ -459,7 +460,8 @@ class _CoopScreenState extends State<CoopScreen> {
                 Clipboard.setData(ClipboardData(text: sessionId));
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                      content: Text('Session ID copied to clipboard')),
+                    content: Text('Session ID copied to clipboard'),
+                  ),
                 );
               },
               child: Container(
@@ -472,14 +474,12 @@ class _CoopScreenState extends State<CoopScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.copy_rounded,
-                        size: 16, color: _textSecondary),
+                    Icon(Icons.copy_rounded, size: 16, color: _textSecondary),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Session: $sessionId',
-                        style:
-                            TextStyle(fontSize: 11, color: _textSecondary),
+                        style: TextStyle(fontSize: 11, color: _textSecondary),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -493,11 +493,13 @@ class _CoopScreenState extends State<CoopScreen> {
             Row(
               children: [
                 Expanded(
-                    child: _PlayerBox(
-                        name: hostName,
-                        damage: _myDamage,
-                        accent: _accent,
-                        textPrimary: _textPrimary)),
+                  child: _PlayerBox(
+                    name: hostName,
+                    damage: _myDamage,
+                    accent: _accent,
+                    textPrimary: _textPrimary,
+                  ),
+                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text(
@@ -509,11 +511,13 @@ class _CoopScreenState extends State<CoopScreen> {
                   ),
                 ),
                 Expanded(
-                    child: _PlayerBox(
-                        name: guestName,
-                        damage: _partnerDamage,
-                        accent: const Color(0xFF7AC97A),
-                        textPrimary: _textPrimary)),
+                  child: _PlayerBox(
+                    name: guestName,
+                    damage: _partnerDamage,
+                    accent: const Color(0xFF7AC97A),
+                    textPrimary: _textPrimary,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 24),
@@ -534,14 +538,15 @@ class _CoopScreenState extends State<CoopScreen> {
               child: LinearProgressIndicator(
                 value: hpRatio,
                 minHeight: 20,
-                backgroundColor:
-                    _isDark ? const Color(0xFF3A3A3A) : const Color(0xFFDDDDDD),
+                backgroundColor: _isDark
+                    ? const Color(0xFF3A3A3A)
+                    : const Color(0xFFDDDDDD),
                 valueColor: AlwaysStoppedAnimation<Color>(
                   hpRatio > 0.5
                       ? const Color(0xFF7AC97A)
                       : hpRatio > 0.25
-                          ? const Color(0xFFD4A84B)
-                          : const Color(0xFFE07070),
+                      ? const Color(0xFFD4A84B)
+                      : const Color(0xFFE07070),
                 ),
               ),
             ),
@@ -558,15 +563,17 @@ class _CoopScreenState extends State<CoopScreen> {
               FilledButton.icon(
                 onPressed: _dealDamage,
                 icon: const Icon(Icons.flash_on_rounded, size: 22),
-                label: const Text('Attack!',
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
+                label: const Text(
+                  'Attack!',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFFB84040),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               )
             else
@@ -627,8 +634,7 @@ class _PlayerBox extends StatelessWidget {
             backgroundColor: accent.withAlpha(60),
             child: Text(
               name.isNotEmpty ? name[0].toUpperCase() : '?',
-              style: TextStyle(
-                  color: accent, fontWeight: FontWeight.bold),
+              style: TextStyle(color: accent, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(height: 6),
@@ -644,8 +650,11 @@ class _PlayerBox extends StatelessWidget {
           ),
           Text(
             '$damage dmg',
-            style:
-                TextStyle(color: accent, fontSize: 11, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: accent,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -685,8 +694,7 @@ class _SessionCard extends StatelessWidget {
         color: cardBg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color:
-              isDark ? const Color(0xFF3B3B3B) : const Color(0xFFDDDDDD),
+          color: isDark ? const Color(0xFF3B3B3B) : const Color(0xFFDDDDDD),
         ),
       ),
       child: Row(
@@ -716,10 +724,7 @@ class _SessionCard extends StatelessWidget {
               ],
             ),
           ),
-          FilledButton.tonal(
-            onPressed: onJoin,
-            child: const Text('Enter'),
-          ),
+          FilledButton.tonal(onPressed: onJoin, child: const Text('Enter')),
         ],
       ),
     );

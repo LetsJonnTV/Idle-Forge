@@ -7,7 +7,9 @@ import 'package:path_provider/path_provider.dart';
 
 /// Handles downloading and installing updates on Android and Windows.
 class UpdateInstaller {
-  static const _androidChannel = MethodChannel('com.example.idle_forge/install');
+  static const _androidChannel = MethodChannel(
+    'com.example.idle_forge/install',
+  );
 
   /// Downloads the update file and reports progress via [onProgress] (0.0–1.0).
   /// Returns the path to the downloaded file, or null on failure.
@@ -24,7 +26,9 @@ class UpdateInstaller {
       final file = File(filePath);
 
       final request = http.Request('GET', Uri.parse(url));
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 120));
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 120),
+      );
 
       if (streamedResponse.statusCode != 200) return null;
 
@@ -60,10 +64,9 @@ class UpdateInstaller {
 
   static Future<bool> _installAndroid(String apkPath) async {
     try {
-      final result = await _androidChannel.invokeMethod<bool>(
-        'installApk',
-        {'path': apkPath},
-      );
+      final result = await _androidChannel.invokeMethod<bool>('installApk', {
+        'path': apkPath,
+      });
       return result ?? false;
     } catch (e) {
       debugPrint('APK install failed: $e');
@@ -80,7 +83,8 @@ class UpdateInstaller {
 
       // Write update script
       final scriptPath = '$tempDir${Platform.pathSeparator}update.bat';
-      final script = '''
+      final script =
+          '''
 @echo off
 echo Updating Idle Forge...
 timeout /t 2 /nobreak >nul
@@ -95,11 +99,10 @@ del "%~f0"
       await File(scriptPath).writeAsString(script);
 
       // Launch updater script and exit app
-      await Process.start(
-        'cmd.exe',
-        ['/c', scriptPath],
-        mode: ProcessStartMode.detached,
-      );
+      await Process.start('cmd.exe', [
+        '/c',
+        scriptPath,
+      ], mode: ProcessStartMode.detached);
 
       // Exit the current app so files can be replaced
       exit(0);

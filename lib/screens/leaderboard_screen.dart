@@ -42,8 +42,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
       _offline = false;
     });
     try {
-      final entries =
-          await ApiService.instance.getLeaderboard(weekly: _weekly);
+      final entries = await ApiService.instance.getLeaderboard(weekly: _weekly);
       if (!mounted) return;
       setState(() {
         _entries = entries;
@@ -66,8 +65,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
-  Color get _bg =>
-      _isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
+  Color get _bg => _isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
   Color get _cardBg =>
       _isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFFFFFF);
   Color get _accent => const Color(0xFFD4A84B);
@@ -134,10 +132,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              FilledButton.tonal(
-                onPressed: _load,
-                child: const Text('Retry'),
-              ),
+              FilledButton.tonal(onPressed: _load, child: const Text('Retry')),
             ],
           ),
         ),
@@ -188,10 +183,10 @@ class _LeaderboardCard extends StatelessWidget {
     final rankColor = entry.rank == 1
         ? const Color(0xFFFFD700)
         : entry.rank == 2
-            ? const Color(0xFFC0C0C0)
-            : entry.rank == 3
-                ? const Color(0xFFCD7F32)
-                : textSecondary;
+        ? const Color(0xFFC0C0C0)
+        : entry.rank == 3
+        ? const Color(0xFFCD7F32)
+        : textSecondary;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -202,9 +197,7 @@ class _LeaderboardCard extends StatelessWidget {
         border: Border.all(
           color: isMe
               ? accent.withAlpha(150)
-              : (isDark
-                  ? const Color(0xFF3B3B3B)
-                  : const Color(0xFFDDDDDD)),
+              : (isDark ? const Color(0xFF3B3B3B) : const Color(0xFFDDDDDD)),
           width: isMe ? 1.5 : 1,
         ),
       ),
@@ -240,7 +233,9 @@ class _LeaderboardCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 1),
+                          horizontal: 6,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
                           color: accent.withAlpha(60),
                           borderRadius: BorderRadius.circular(999),
@@ -248,9 +243,10 @@ class _LeaderboardCard extends StatelessWidget {
                         child: Text(
                           'You',
                           style: TextStyle(
-                              fontSize: 10,
-                              color: accent,
-                              fontWeight: FontWeight.bold),
+                            fontSize: 10,
+                            color: accent,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],

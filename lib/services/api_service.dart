@@ -94,7 +94,11 @@ class ApiService {
     }
   }
 
-  Future<void> _persistCredentials(String token, String playerId, String username) async {
+  Future<void> _persistCredentials(
+    String token,
+    String playerId,
+    String username,
+  ) async {
     _cachedToken = token;
     _cachedPlayerId = playerId;
     _cachedUsername = username;
@@ -123,21 +127,27 @@ class ApiService {
   // ------------------------------------------------------------------ //
 
   Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        if (_cachedToken != null) 'Authorization': 'Bearer $_cachedToken',
-      };
+    'Content-Type': 'application/json',
+    if (_cachedToken != null) 'Authorization': 'Bearer $_cachedToken',
+  };
 
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
 
   /// Makes a POST request. Returns parsed JSON or throws ApiException.
-  Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> _post(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
     try {
       final response = await http
           .post(_uri(path), headers: _headers, body: jsonEncode(body))
           .timeout(const Duration(seconds: 15));
       return _handleResponse(response);
     } on SocketException {
-      throw const ApiException(message: 'No internet connection', isOffline: true);
+      throw const ApiException(
+        message: 'No internet connection',
+        isOffline: true,
+      );
     } on HttpException {
       throw const ApiException(message: 'Network error', isOffline: true);
     } on Exception catch (e) {
@@ -156,7 +166,10 @@ class ApiService {
           .timeout(const Duration(seconds: 15));
       return _handleResponse(response);
     } on SocketException {
-      throw const ApiException(message: 'No internet connection', isOffline: true);
+      throw const ApiException(
+        message: 'No internet connection',
+        isOffline: true,
+      );
     } on HttpException {
       throw const ApiException(message: 'Network error', isOffline: true);
     } on Exception catch (e) {
@@ -168,14 +181,20 @@ class ApiService {
   }
 
   /// Makes a PUT request. Returns parsed JSON or throws ApiException.
-  Future<Map<String, dynamic>> _put(String path, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> _put(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
     try {
       final response = await http
           .put(_uri(path), headers: _headers, body: jsonEncode(body))
           .timeout(const Duration(seconds: 15));
       return _handleResponse(response);
     } on SocketException {
-      throw const ApiException(message: 'No internet connection', isOffline: true);
+      throw const ApiException(
+        message: 'No internet connection',
+        isOffline: true,
+      );
     } on HttpException {
       throw const ApiException(message: 'Network error', isOffline: true);
     } on Exception catch (e) {
@@ -282,7 +301,9 @@ class ApiService {
   /// Fetch global or weekly leaderboard. Returns entries or empty list.
   Future<List<LeaderboardEntry>> getLeaderboard({bool weekly = false}) async {
     try {
-      final path = weekly ? '/api/leaderboard?scope=weekly' : '/api/leaderboard';
+      final path = weekly
+          ? '/api/leaderboard?scope=weekly'
+          : '/api/leaderboard';
       final data = await _get(path);
       final entries = (data['entries'] as List<dynamic>?) ?? [];
       return entries
@@ -358,10 +379,16 @@ class ApiService {
   }
 
   /// Create a new clan.
-  Future<Map<String, dynamic>?> createClan(String name, {String description = ''}) async {
+  Future<Map<String, dynamic>?> createClan(
+    String name, {
+    String description = '',
+  }) async {
     if (!isLoggedIn) return null;
     try {
-      final data = await _post('/api/clans', {'name': name, 'description': description});
+      final data = await _post('/api/clans', {
+        'name': name,
+        'description': description,
+      });
       return data['clan'] as Map<String, dynamic>?;
     } on ApiException {
       rethrow;
@@ -403,7 +430,9 @@ class ApiService {
   Future<Map<String, dynamic>?> challengePvp(String defenderUsername) async {
     if (!isLoggedIn) return null;
     try {
-      final data = await _post('/api/pvp', {'defenderUsername': defenderUsername});
+      final data = await _post('/api/pvp', {
+        'defenderUsername': defenderUsername,
+      });
       return data;
     } on ApiException {
       rethrow;

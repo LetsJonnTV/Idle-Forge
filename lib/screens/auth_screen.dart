@@ -3,11 +3,7 @@ import '../services/api_service.dart';
 
 /// Login / Register screen shown on first launch or after logout.
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({
-    super.key,
-    required this.onLoggedIn,
-    required this.onSkip,
-  });
+  const AuthScreen({super.key, required this.onLoggedIn, required this.onSkip});
 
   final VoidCallback onLoggedIn;
   final VoidCallback onSkip;
@@ -44,11 +40,9 @@ class _AuthScreenState extends State<AuthScreen>
     super.dispose();
   }
 
-  bool get _isDark =>
-      Theme.of(context).brightness == Brightness.dark;
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
-  Color get _bg =>
-      _isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
+  Color get _bg => _isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
 
   Color get _cardBg =>
       _isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFFFFFF);
@@ -179,7 +173,9 @@ class _AuthScreenState extends State<AuthScreen>
                                   controller: _usernameController,
                                   decoration: InputDecoration(
                                     labelText: 'Username',
-                                    prefixIcon: const Icon(Icons.person_outline),
+                                    prefixIcon: const Icon(
+                                      Icons.person_outline,
+                                    ),
                                     filled: true,
                                     fillColor: _isDark
                                         ? const Color(0xFF252525)
@@ -206,17 +202,17 @@ class _AuthScreenState extends State<AuthScreen>
                                   obscureText: _obscurePassword,
                                   decoration: InputDecoration(
                                     labelText: 'Password',
-                                    prefixIcon:
-                                        const Icon(Icons.lock_outline),
+                                    prefixIcon: const Icon(Icons.lock_outline),
                                     suffixIcon: IconButton(
                                       icon: Icon(
                                         _obscurePassword
                                             ? Icons.visibility_off_outlined
                                             : Icons.visibility_outlined,
                                       ),
-                                      onPressed: () => setState(() =>
-                                          _obscurePassword =
-                                              !_obscurePassword),
+                                      onPressed: () => setState(
+                                        () => _obscurePassword =
+                                            !_obscurePassword,
+                                      ),
                                     ),
                                     filled: true,
                                     fillColor: _isDark
@@ -241,8 +237,7 @@ class _AuthScreenState extends State<AuthScreen>
                                 // Error
                                 if (_errorMessage != null)
                                   Padding(
-                                    padding:
-                                        const EdgeInsets.only(bottom: 8),
+                                    padding: const EdgeInsets.only(bottom: 8),
                                     child: Text(
                                       _errorMessage!,
                                       style: const TextStyle(
@@ -261,7 +256,8 @@ class _AuthScreenState extends State<AuthScreen>
                                     backgroundColor: _accent,
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(
-                                        vertical: 14),
+                                      vertical: 14,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
                                     ),
@@ -280,7 +276,8 @@ class _AuthScreenState extends State<AuthScreen>
                                               ? 'Login'
                                               : 'Create Account',
                                           style: const TextStyle(
-                                              fontWeight: FontWeight.bold),
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                 ),
                               ],

@@ -17,10 +17,12 @@ class ComingSoonScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
-    final textPrimary =
-        isDark ? const Color(0xFFE2E2E2) : const Color(0xFF1A1A1A);
-    final textSecondary =
-        isDark ? const Color(0xFF888888) : const Color(0xFF666666);
+    final textPrimary = isDark
+        ? const Color(0xFFE2E2E2)
+        : const Color(0xFF1A1A1A);
+    final textSecondary = isDark
+        ? const Color(0xFF888888)
+        : const Color(0xFF666666);
     final accent = const Color(0xFFD4A84B);
 
     return Scaffold(
@@ -30,8 +32,7 @@ class ComingSoonScreen extends StatelessWidget {
         elevation: 0,
         title: Text(
           featureName,
-          style:
-              TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
+          style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
         ),
       ),
       body: Center(
@@ -54,7 +55,9 @@ class ComingSoonScreen extends StatelessWidget {
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 6),
+                  horizontal: 16,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: accent.withAlpha(40),
                   borderRadius: BorderRadius.circular(999),

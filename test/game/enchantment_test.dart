@@ -42,7 +42,13 @@ void main() {
       ctrl.runeInventory.add(rune);
       final result = ctrl.enchantItem('enc_item', 0);
       expect(result, isTrue);
-      expect(ctrl.inventory.firstWhere((i) => i.id == 'enc_item').enchantments.length, 1);
+      expect(
+        ctrl.inventory
+            .firstWhere((i) => i.id == 'enc_item')
+            .enchantments
+            .length,
+        1,
+      );
       expect(ctrl.runeInventory.isEmpty, isTrue);
     });
 
@@ -137,7 +143,12 @@ void main() {
 
   group('PetState serialization', () {
     test('toJson / fromJson roundtrip preserves all fields', () {
-      final pet = PetState(type: PetType.phoenix, level: 5, xp: 42, isActive: false);
+      final pet = PetState(
+        type: PetType.phoenix,
+        level: 5,
+        xp: 42,
+        isActive: false,
+      );
       final json = pet.toJson();
       final restored = PetState.fromJson(json);
       expect(restored.type, PetType.phoenix);

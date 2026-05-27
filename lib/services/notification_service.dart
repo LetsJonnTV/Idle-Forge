@@ -12,10 +12,10 @@ class NotificationService {
     // Windows not supported by flutter_local_notifications v17
     if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) return;
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initSettings = InitializationSettings(
-      android: androidSettings,
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
     );
+    const initSettings = InitializationSettings(android: androidSettings);
     await _plugin.initialize(initSettings);
     _initialized = true;
   }
@@ -47,4 +47,3 @@ class NotificationService {
     } catch (_) {}
   }
 }
-

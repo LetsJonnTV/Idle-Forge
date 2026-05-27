@@ -11,7 +11,11 @@ import 'dungeon_controller.dart';
 import 'models.dart';
 
 class OfflineReward {
-  const OfflineReward({required this.gold, required this.hammers, required this.minutes});
+  const OfflineReward({
+    required this.gold,
+    required this.hammers,
+    required this.minutes,
+  });
 
   final int gold;
   final int hammers;
@@ -71,13 +75,16 @@ class BalanceTuning {
     int? killsPerStage,
   }) {
     return BalanceTuning(
-      autoAttackIntervalSec: autoAttackIntervalSec ?? this.autoAttackIntervalSec,
-      playerDamageMultiplier: playerDamageMultiplier ?? this.playerDamageMultiplier,
+      autoAttackIntervalSec:
+          autoAttackIntervalSec ?? this.autoAttackIntervalSec,
+      playerDamageMultiplier:
+          playerDamageMultiplier ?? this.playerDamageMultiplier,
       enemyHpMultiplier: enemyHpMultiplier ?? this.enemyHpMultiplier,
       enemyApproachSpeedMultiplier:
           enemyApproachSpeedMultiplier ?? this.enemyApproachSpeedMultiplier,
       goldGainMultiplier: goldGainMultiplier ?? this.goldGainMultiplier,
-      offlineRewardMultiplier: offlineRewardMultiplier ?? this.offlineRewardMultiplier,
+      offlineRewardMultiplier:
+          offlineRewardMultiplier ?? this.offlineRewardMultiplier,
       forgeExtraBonus: forgeExtraBonus ?? this.forgeExtraBonus,
       killsPerStage: killsPerStage ?? this.killsPerStage,
     );
@@ -98,13 +105,16 @@ class BalanceTuning {
 
   factory BalanceTuning.fromJson(Map<String, dynamic> json) {
     return BalanceTuning(
-      autoAttackIntervalSec: (json['autoAttackIntervalSec'] as num?)?.toDouble() ?? 1,
-      playerDamageMultiplier: (json['playerDamageMultiplier'] as num?)?.toDouble() ?? 1,
+      autoAttackIntervalSec:
+          (json['autoAttackIntervalSec'] as num?)?.toDouble() ?? 1,
+      playerDamageMultiplier:
+          (json['playerDamageMultiplier'] as num?)?.toDouble() ?? 1,
       enemyHpMultiplier: (json['enemyHpMultiplier'] as num?)?.toDouble() ?? 1,
       enemyApproachSpeedMultiplier:
           (json['enemyApproachSpeedMultiplier'] as num?)?.toDouble() ?? 1,
       goldGainMultiplier: (json['goldGainMultiplier'] as num?)?.toDouble() ?? 1,
-      offlineRewardMultiplier: (json['offlineRewardMultiplier'] as num?)?.toDouble() ?? 1,
+      offlineRewardMultiplier:
+          (json['offlineRewardMultiplier'] as num?)?.toDouble() ?? 1,
       forgeExtraBonus: (json['forgeExtraBonus'] as num?)?.toDouble() ?? 0,
       killsPerStage: (json['killsPerStage'] as num?)?.toInt() ?? 10,
     );
@@ -112,7 +122,11 @@ class BalanceTuning {
 }
 
 class _ItemBlueprint {
-  const _ItemBlueprint({required this.name, required this.iconPath, required this.basePower});
+  const _ItemBlueprint({
+    required this.name,
+    required this.iconPath,
+    required this.basePower,
+  });
 
   final String name;
   final String iconPath;
@@ -122,7 +136,10 @@ class _ItemBlueprint {
 class GameController extends ChangeNotifier {
   GameController({this.localeCode = 'de'}) {
     _skills = _definitions
-        .map((definition) => SkillState(definition: definition, cooldownRemaining: 0))
+        .map(
+          (definition) =>
+              SkillState(definition: definition, cooldownRemaining: 0),
+        )
         .toList(growable: false);
     _dungeonController = DungeonController(random: _random);
   }
@@ -261,8 +278,16 @@ class GameController extends ChangeNotifier {
       descDe: 'Eine mit Runen verstärkte Klinge.',
       descEn: 'A blade empowered with runes.',
       ingredients: [
-        RecipeIngredient(slot: ItemSlot.weapon, minTier: ItemTier.rare, count: 2),
-        RecipeIngredient(slot: ItemSlot.ring, minTier: ItemTier.uncommon, count: 1),
+        RecipeIngredient(
+          slot: ItemSlot.weapon,
+          minTier: ItemTier.rare,
+          count: 2,
+        ),
+        RecipeIngredient(
+          slot: ItemSlot.ring,
+          minTier: ItemTier.uncommon,
+          count: 1,
+        ),
       ],
       resultSlot: ItemSlot.weapon,
       resultTier: ItemTier.epic,
@@ -277,8 +302,16 @@ class GameController extends ChangeNotifier {
       descDe: 'Schwerer Schutzpanzer aus Titan-Erz.',
       descEn: 'Heavy armor forged from titan ore.',
       ingredients: [
-        RecipeIngredient(slot: ItemSlot.armor, minTier: ItemTier.rare, count: 2),
-        RecipeIngredient(slot: ItemSlot.helm, minTier: ItemTier.uncommon, count: 1),
+        RecipeIngredient(
+          slot: ItemSlot.armor,
+          minTier: ItemTier.rare,
+          count: 2,
+        ),
+        RecipeIngredient(
+          slot: ItemSlot.helm,
+          minTier: ItemTier.uncommon,
+          count: 1,
+        ),
       ],
       resultSlot: ItemSlot.armor,
       resultTier: ItemTier.epic,
@@ -293,7 +326,11 @@ class GameController extends ChangeNotifier {
       descDe: 'Eine Klinge aus purem Schatten.',
       descEn: 'A dagger made of pure shadow.',
       ingredients: [
-        RecipeIngredient(slot: ItemSlot.weapon, minTier: ItemTier.uncommon, count: 3),
+        RecipeIngredient(
+          slot: ItemSlot.weapon,
+          minTier: ItemTier.uncommon,
+          count: 3,
+        ),
       ],
       resultSlot: ItemSlot.weapon,
       resultTier: ItemTier.rare,
@@ -308,8 +345,16 @@ class GameController extends ChangeNotifier {
       descDe: 'Ein Fragment der mächtigen Sturm-Rüstung.',
       descEn: 'A fragment of the mighty Storm armor.',
       ingredients: [
-        RecipeIngredient(slot: ItemSlot.armor, minTier: ItemTier.uncommon, count: 2),
-        RecipeIngredient(slot: ItemSlot.boots, minTier: ItemTier.uncommon, count: 1),
+        RecipeIngredient(
+          slot: ItemSlot.armor,
+          minTier: ItemTier.uncommon,
+          count: 2,
+        ),
+        RecipeIngredient(
+          slot: ItemSlot.boots,
+          minTier: ItemTier.uncommon,
+          count: 1,
+        ),
       ],
       resultSlot: ItemSlot.armor,
       resultTier: ItemTier.rare,
@@ -325,7 +370,11 @@ class GameController extends ChangeNotifier {
       descEn: 'A ring of eternal power.',
       ingredients: [
         RecipeIngredient(slot: ItemSlot.ring, minTier: ItemTier.rare, count: 2),
-        RecipeIngredient(slot: ItemSlot.weapon, minTier: ItemTier.epic, count: 1),
+        RecipeIngredient(
+          slot: ItemSlot.weapon,
+          minTier: ItemTier.epic,
+          count: 1,
+        ),
       ],
       resultSlot: ItemSlot.ring,
       resultTier: ItemTier.legendary,
@@ -798,7 +847,8 @@ class GameController extends ChangeNotifier {
     'Ewigkeitsring',
   ];
 
-  static final Map<ItemSlot, List<_ItemBlueprint>> _slotCatalogs = _buildSlotCatalogs();
+  static final Map<ItemSlot, List<_ItemBlueprint>> _slotCatalogs =
+      _buildSlotCatalogs();
 
   static Map<ItemSlot, List<_ItemBlueprint>> _buildSlotCatalogs() {
     return {
@@ -876,7 +926,8 @@ class GameController extends ChangeNotifier {
     };
   }
 
-  late final List<AchievementDefinition> _achievementDefinitions = _buildAchievementDefinitions();
+  late final List<AchievementDefinition> _achievementDefinitions =
+      _buildAchievementDefinitions();
 
   AppText get text => AppText(localeCode);
   bool get isLoaded => _isLoaded;
@@ -974,14 +1025,19 @@ class GameController extends ChangeNotifier {
 
   double get maxPlayerHp {
     final base = 140 + (totalStrength * 2.4);
-    final prestigeBoost = 1 + (prestigeLevel * 0.03) + (talentVitalityLevel * 0.08);
+    final prestigeBoost =
+        1 + (prestigeLevel * 0.03) + (talentVitalityLevel * 0.08);
     double lifeRuneBonus = 0.0;
     for (final item in equippedItems) {
       for (final rune in item.enchantments) {
         if (rune.type == RuneType.life) lifeRuneBonus += rune.bonusValue;
       }
     }
-    return base * prestigeBoost * setHpBonusMultiplier * ascensionHpMultiplier * (1 + lifeRuneBonus);
+    return base *
+        prestigeBoost *
+        setHpBonusMultiplier *
+        ascensionHpMultiplier *
+        (1 + lifeRuneBonus);
   }
 
   double get playerHpPercent {
@@ -1002,12 +1058,12 @@ class GameController extends ChangeNotifier {
 
   double get forgeBonusChance =>
       (forgeLevel * 0.018 +
-          prestigeForgeBonus +
-          (talentForgeLevel * 0.008) +
-          setForgeBonus +
-          ascensionForgeBonusChance +
-          petForgeBonus)
-        .clamp(0, 0.65);
+              prestigeForgeBonus +
+              (talentForgeLevel * 0.008) +
+              setForgeBonus +
+              ascensionForgeBonusChance +
+              petForgeBonus)
+          .clamp(0, 0.65);
 
   double get ascensionAttackMultiplier {
     return 1.0 + _sumAscensionBonus(AscensionBonusType.attackMultiplier);
@@ -1018,15 +1074,21 @@ class GameController extends ChangeNotifier {
   }
 
   double get ascensionSkillCooldownReduction {
-    return _sumAscensionBonus(AscensionBonusType.skillCooldownReduction).clamp(0, 0.5);
+    return _sumAscensionBonus(
+      AscensionBonusType.skillCooldownReduction,
+    ).clamp(0, 0.5);
   }
 
   double get ascensionForgeBonusChance {
-    return _sumAscensionBonus(AscensionBonusType.forgeBonusChance).clamp(0, 0.25);
+    return _sumAscensionBonus(
+      AscensionBonusType.forgeBonusChance,
+    ).clamp(0, 0.25);
   }
 
   double get ascensionHammerDropChance {
-    return _sumAscensionBonus(AscensionBonusType.hammerDropChance).clamp(0, 0.5);
+    return _sumAscensionBonus(
+      AscensionBonusType.hammerDropChance,
+    ).clamp(0, 0.5);
   }
 
   int get ascensionItemPowerBonus {
@@ -1071,7 +1133,11 @@ class GameController extends ChangeNotifier {
   }
 
   int get prestigeShardGain {
-    final raw = ((chapter - 1) * 3) + ((stage - 1) ~/ 5) + (forgeLevel ~/ 2) + (totalKills ~/ 120);
+    final raw =
+        ((chapter - 1) * 3) +
+        ((stage - 1) ~/ 5) +
+        (forgeLevel ~/ 2) +
+        (totalKills ~/ 120);
     return max(0, raw);
   }
 
@@ -1086,7 +1152,8 @@ class GameController extends ChangeNotifier {
   int get talentForgeCost => 4 + (talentForgeLevel * 3);
 
   int get clanXpRequired => 120 + ((clanLevel - 1) * 80);
-  double get clanXpProgress => clanXpRequired <= 0 ? 0 : (clanXp / clanXpRequired).clamp(0.0, 1.0);
+  double get clanXpProgress =>
+      clanXpRequired <= 0 ? 0 : (clanXp / clanXpRequired).clamp(0.0, 1.0);
   double get clanDamageBonusMultiplier => 1 + (clanWarpathLevel * 0.04);
   double get clanDefenseReduction => (clanBulwarkLevel * 0.03).clamp(0.0, 0.45);
   double get clanGoldBonusMultiplier => 1 + (clanProsperityLevel * 0.04);
@@ -1102,11 +1169,10 @@ class GameController extends ChangeNotifier {
   int get shopRefreshCost => 90 + (chapter * 12) + (shopManualRefreshes * 60);
 
   List<ShopOffer> get shopOffers => List<ShopOffer>.unmodifiable(_shopOffers);
-  List<ShopOffer> get dailyShopOffers => List<ShopOffer>.unmodifiable(_dailyShopOffers);
-  List<ShopOffer> get allShopOffers => List<ShopOffer>.unmodifiable([
-    ..._dailyShopOffers,
-    ..._shopOffers,
-  ]);
+  List<ShopOffer> get dailyShopOffers =>
+      List<ShopOffer>.unmodifiable(_dailyShopOffers);
+  List<ShopOffer> get allShopOffers =>
+      List<ShopOffer>.unmodifiable([..._dailyShopOffers, ..._shopOffers]);
 
   Duration get shopRefreshRemaining {
     final remaining = _shopRefreshAt.difference(DateTime.now());
@@ -1116,7 +1182,8 @@ class GameController extends ChangeNotifier {
     return remaining;
   }
 
-  double get shopAttackSpeedFactor => (1 - (shopSpeedLevel * 0.05)).clamp(0.45, 1.0);
+  double get shopAttackSpeedFactor =>
+      (1 - (shopSpeedLevel * 0.05)).clamp(0.45, 1.0);
   double get shopHammerBonusChance => (shopHammerLevel * 0.08).clamp(0.0, 0.6);
   double get shopRecoveryBonus => 1 + (shopRecoveryLevel * 0.12);
 
@@ -1152,7 +1219,8 @@ class GameController extends ChangeNotifier {
   int get healingFlaskCost => 80 + (healingFlasks * 35) + (chapter * 4);
   int get berserkFlaskCost => 140 + (berserkFlasks * 55) + (chapter * 6);
 
-  bool get allQuestsClaimed => questKillsClaimed && questCraftsClaimed && questBossClaimed;
+  bool get allQuestsClaimed =>
+      questKillsClaimed && questCraftsClaimed && questBossClaimed;
 
   int get currentBossPhase {
     if (!enemy.isBoss) {
@@ -1211,41 +1279,46 @@ class GameController extends ChangeNotifier {
 
   List<SetCollectionView> get setCollection {
     final total = ItemSlot.values.length;
-    return ItemSet.values.map((setId) {
-      final missing = <ItemSlot>[];
-      int owned = 0;
-      for (final slot in ItemSlot.values) {
-        if (discoveredSetSlots.contains(_collectionKey(setId, slot))) {
-          owned += 1;
-        } else {
-          missing.add(slot);
-        }
-      }
-      return SetCollectionView(
-        setId: setId,
-        ownedCount: owned,
-        totalCount: total,
-        missingSlots: missing,
-        rewardGold: setCompletionGoldReward(setId),
-        rewardShards: setCompletionShardReward(setId),
-        rewardClaimed: isSetCompletionRewardClaimed(setId),
-        rewardClaimable: missing.isEmpty && !isSetCompletionRewardClaimed(setId),
-      );
-    }).toList(growable: false);
+    return ItemSet.values
+        .map((setId) {
+          final missing = <ItemSlot>[];
+          int owned = 0;
+          for (final slot in ItemSlot.values) {
+            if (discoveredSetSlots.contains(_collectionKey(setId, slot))) {
+              owned += 1;
+            } else {
+              missing.add(slot);
+            }
+          }
+          return SetCollectionView(
+            setId: setId,
+            ownedCount: owned,
+            totalCount: total,
+            missingSlots: missing,
+            rewardGold: setCompletionGoldReward(setId),
+            rewardShards: setCompletionShardReward(setId),
+            rewardClaimed: isSetCompletionRewardClaimed(setId),
+            rewardClaimable:
+                missing.isEmpty && !isSetCompletionRewardClaimed(setId),
+          );
+        })
+        .toList(growable: false);
   }
 
   List<AchievementView> get achievements {
-    return _achievementDefinitions.map((definition) {
-      final raw = _achievementProgress(definition.metric);
-      final progress = raw.clamp(0, definition.target);
-      final claimed = claimedAchievements.contains(definition.id);
-      return AchievementView(
-        definition: definition,
-        progress: progress,
-        claimed: claimed,
-        canClaim: !claimed && raw >= definition.target,
-      );
-    }).toList(growable: false);
+    return _achievementDefinitions
+        .map((definition) {
+          final raw = _achievementProgress(definition.metric);
+          final progress = raw.clamp(0, definition.target);
+          final claimed = claimedAchievements.contains(definition.id);
+          return AchievementView(
+            definition: definition,
+            progress: progress,
+            claimed: claimed,
+            canClaim: !claimed && raw >= definition.target,
+          );
+        })
+        .toList(growable: false);
   }
 
   int get claimableAchievementCount {
@@ -1274,7 +1347,9 @@ class GameController extends ChangeNotifier {
   }
 
   int claimAllAchievements() {
-    final claimable = achievements.where((entry) => entry.canClaim).toList(growable: false);
+    final claimable = achievements
+        .where((entry) => entry.canClaim)
+        .toList(growable: false);
     if (claimable.isEmpty) {
       return 0;
     }
@@ -1551,7 +1626,9 @@ class GameController extends ChangeNotifier {
   }
 
   int get completedSetCount {
-    return setCollection.where((entry) => entry.ownedCount == entry.totalCount).length;
+    return setCollection
+        .where((entry) => entry.ownedCount == entry.totalCount)
+        .length;
   }
 
   SetCollectionView get chapterSetProgress {
@@ -1649,7 +1726,9 @@ class GameController extends ChangeNotifier {
 
   List<GameItem> get equippedItems {
     final equippedIds = equippedBySlot.values.toSet();
-    return inventory.where((item) => equippedIds.contains(item.id)).toList(growable: false);
+    return inventory
+        .where((item) => equippedIds.contains(item.id))
+        .toList(growable: false);
   }
 
   bool hasLoadoutPreset(int index) {
@@ -1691,7 +1770,9 @@ class GameController extends ChangeNotifier {
   }
 
   GameItem? bestItemForSlot(ItemSlot slot) {
-    final candidates = inventory.where((item) => item.slot == slot).toList(growable: false);
+    final candidates = inventory
+        .where((item) => item.slot == slot)
+        .toList(growable: false);
     if (candidates.isEmpty) {
       return null;
     }
@@ -1787,8 +1868,11 @@ class GameController extends ChangeNotifier {
       }
     }
     final attackInterval =
-      (tuning.autoAttackIntervalSec * shopAttackSpeedFactor * setAttackSpeedBonus * (1 - runeSpeedBonus))
-        .clamp(0.15, 3.0);
+        (tuning.autoAttackIntervalSec *
+                shopAttackSpeedFactor *
+                setAttackSpeedBonus *
+                (1 - runeSpeedBonus))
+            .clamp(0.15, 3.0);
     while (_autoAttackAccumulator >= attackInterval) {
       _autoAttackAccumulator -= attackInterval;
       double runeFireBonus = 0.0;
@@ -1824,14 +1908,20 @@ class GameController extends ChangeNotifier {
 
     final nextApproach = max(
       0.15,
-      enemy.approach - dt * (0.08 + chapter * 0.005) * tuning.enemyApproachSpeedMultiplier,
+      enemy.approach -
+          dt * (0.08 + chapter * 0.005) * tuning.enemyApproachSpeedMultiplier,
     ).toDouble();
     enemy = enemy.copyWith(approach: nextApproach);
 
     final inMeleeRange = enemy.approach <= 0.22;
-    final regenFactorInCombat = (inMeleeRange || _combatRecoveryBlockRemaining > 0) ? 0.0 : 1.0;
+    final regenFactorInCombat =
+        (inMeleeRange || _combatRecoveryBlockRemaining > 0) ? 0.0 : 1.0;
     final regenPerSecond =
-      maxPlayerHp * 0.015 * shopRecoveryBonus * combatRegenMultiplier * regenFactorInCombat;
+        maxPlayerHp *
+        0.015 *
+        shopRecoveryBonus *
+        combatRegenMultiplier *
+        regenFactorInCombat;
     playerHp = min(maxPlayerHp, playerHp + regenPerSecond * dt);
 
     if (inMeleeRange) {
@@ -1845,7 +1935,8 @@ class GameController extends ChangeNotifier {
       }
     }
 
-    if (_lastSaveAt == null || DateTime.now().difference(_lastSaveAt!).inSeconds >= 6) {
+    if (_lastSaveAt == null ||
+        DateTime.now().difference(_lastSaveAt!).inSeconds >= 6) {
       _save();
       _lastSaveAt = DateTime.now();
     }
@@ -1911,8 +2002,8 @@ class GameController extends ChangeNotifier {
 
   void _enemyAttack() {
     double damage = enemy.isBoss
-      ? (8 + chapter * 2.2 + stage * 1.2 + (maxPlayerHp * 0.022))
-      : (4 + chapter * 1.1 + stage * 0.65 + (maxPlayerHp * 0.012));
+        ? (8 + chapter * 2.2 + stage * 1.2 + (maxPlayerHp * 0.022))
+        : (4 + chapter * 1.1 + stage * 0.65 + (maxPlayerHp * 0.012));
 
     if (!enemy.isBoss) {
       damage *= switch (enemy.archetype) {
@@ -1933,7 +2024,8 @@ class GameController extends ChangeNotifier {
         _poisonTicksRemaining = max(_poisonTicksRemaining, 4);
       }
 
-      if (enemy.hp / enemy.maxHp <= 0.3 && enemy.archetype == EnemyArchetype.assassin) {
+      if (enemy.hp / enemy.maxHp <= 0.3 &&
+          enemy.archetype == EnemyArchetype.assassin) {
         damage *= 1.35;
         lastCombatEvent = 'Assassine wird rasend!';
       }
@@ -2021,7 +2113,10 @@ class GameController extends ChangeNotifier {
         if (rune.type == RuneType.gold) runeGoldBonus += rune.bonusValue;
       }
     }
-    final goldMultiplier = tuning.goldGainMultiplier * clanGoldBonusMultiplier * (1 + petGoldBonus + runeGoldBonus);
+    final goldMultiplier =
+        tuning.goldGainMultiplier *
+        clanGoldBonusMultiplier *
+        (1 + petGoldBonus + runeGoldBonus);
     final goldDrop = ((2 + chapter) * goldMultiplier).round();
     gold += goldDrop;
 
@@ -2065,8 +2160,8 @@ class GameController extends ChangeNotifier {
         ? '${names[_random.nextInt(names.length)]} ${text.tr('boss')}'
         : names[_random.nextInt(names.length)];
     final archetype = isBossStage
-      ? EnemyArchetype.guardian
-      : EnemyArchetype.values[_random.nextInt(EnemyArchetype.values.length)];
+        ? EnemyArchetype.guardian
+        : EnemyArchetype.values[_random.nextInt(EnemyArchetype.values.length)];
     final bossPattern = switch (chapter % 3) {
       1 => BossPattern.berserker,
       2 => BossPattern.venom,
@@ -2078,7 +2173,8 @@ class GameController extends ChangeNotifier {
     final stageGrowth = pow(stage.toDouble(), 1.15).toDouble() * 12;
     final hpBase = isBossStage ? 120 : 45;
     final hp =
-      (hpBase + chapterGrowth + stageGrowth + (stageScalar * 10)) * tuning.enemyHpMultiplier;
+        (hpBase + chapterGrowth + stageGrowth + (stageScalar * 10)) *
+        tuning.enemyHpMultiplier;
     enemy = EnemyState(
       name: enemyName,
       maxHp: hp,
@@ -2159,7 +2255,8 @@ class GameController extends ChangeNotifier {
     return favored;
   }
 
-  String _collectionKey(ItemSet setId, ItemSlot slot) => '${setId.name}:${slot.name}';
+  String _collectionKey(ItemSet setId, ItemSlot slot) =>
+      '${setId.name}:${slot.name}';
 
   bool activateSkill(int index) {
     if (index < 0 || index >= _skills.length) {
@@ -2180,13 +2277,14 @@ class GameController extends ChangeNotifier {
     final cooldownReduction = (level * 0.03).clamp(0.0, 0.35);
     final extraHits = index == 1 ? (level ~/ 4) : 0;
 
-        final burst = (totalStrength *
-            combatDamageMultiplier *
-        skill.definition.damageMultiplier *
-        damageBoost *
-        tuning.playerDamageMultiplier *
-        prestigeDamageBonus)
-      .roundToDouble();
+    final burst =
+        (totalStrength *
+                combatDamageMultiplier *
+                skill.definition.damageMultiplier *
+                damageBoost *
+                tuning.playerDamageMultiplier *
+                prestigeDamageBonus)
+            .roundToDouble();
     _damageEnemy(burst);
 
     final totalBonusHits = skill.definition.bonusHits + extraHits;
@@ -2195,7 +2293,8 @@ class GameController extends ChangeNotifier {
     }
 
     _skills[index] = skill.copyWith(
-      cooldownRemaining: skill.definition.cooldownSeconds * (1 - cooldownReduction),
+      cooldownRemaining:
+          skill.definition.cooldownSeconds * (1 - cooldownReduction),
     );
     notifyListeners();
     return true;
@@ -2211,7 +2310,8 @@ class GameController extends ChangeNotifier {
       ItemTier.epic: 17,
       ItemTier.legendary: 24,
     }[tier]!;
-    final power = (tierStrength + stageScore * 1.7 + _random.nextInt(5)).round();
+    final power = (tierStrength + stageScore * 1.7 + _random.nextInt(5))
+        .round();
     final sellValue = (power * 1.6).round() + (tier.index * 15);
     final setId = _rollSetForChapter();
 
@@ -2226,7 +2326,8 @@ class GameController extends ChangeNotifier {
       craftedIconPath = blueprint.iconPath;
       craftedPower += blueprint.basePower;
     } else {
-      craftedName = '${_slotName(slot)} ${_tierShortName(tier)} ${_setShortName(setId)}';
+      craftedName =
+          '${_slotName(slot)} ${_tierShortName(tier)} ${_setShortName(setId)}';
       craftedIconPath = 'assets/icons/forge.svg';
     }
 
@@ -2344,7 +2445,8 @@ class GameController extends ChangeNotifier {
       ItemTier.legendary: 24,
     }[tier]!;
 
-    final power = (tierStrength + stageScore * 1.7 + _random.nextInt(5)).round();
+    final power = (tierStrength + stageScore * 1.7 + _random.nextInt(5))
+        .round();
     final sellValue = (power * 1.6).round() + (tier.index * 15);
     final setId = _rollSetForChapter();
 
@@ -2359,7 +2461,8 @@ class GameController extends ChangeNotifier {
       craftedIconPath = blueprint.iconPath;
       craftedPower += blueprint.basePower;
     } else {
-      craftedName = '${_slotName(slot)} ${_tierShortName(tier)} ${_setShortName(setId)}';
+      craftedName =
+          '${_slotName(slot)} ${_tierShortName(tier)} ${_setShortName(setId)}';
       craftedIconPath = 'assets/icons/forge.svg';
     }
 
@@ -2385,11 +2488,13 @@ class GameController extends ChangeNotifier {
     if (autoSellEnabled && item.tier.index < autoSellKeepFromTier.index) {
       final soldFor = max(
         1,
-        (item.sellValue * tuning.goldGainMultiplier * clanGoldBonusMultiplier).round(),
+        (item.sellValue * tuning.goldGainMultiplier * clanGoldBonusMultiplier)
+            .round(),
       );
       gold += soldFor;
       _lastCraftAutoSold = true;
-      _lastCraftAutoSoldText = '${item.name} automatisch verkauft (+$soldFor Gold)';
+      _lastCraftAutoSoldText =
+          '${item.name} automatisch verkauft (+$soldFor Gold)';
       _save();
       notifyListeners();
       return item;
@@ -2433,7 +2538,8 @@ class GameController extends ChangeNotifier {
     inventory.removeWhere((entry) => entry.id == item.id);
     gold += max(
       1,
-      (item.sellValue * tuning.goldGainMultiplier * clanGoldBonusMultiplier).round(),
+      (item.sellValue * tuning.goldGainMultiplier * clanGoldBonusMultiplier)
+          .round(),
     );
     _gainClanXp(2);
     _save();
@@ -2447,13 +2553,19 @@ class GameController extends ChangeNotifier {
       return false;
     }
 
-    inventory[index] = inventory[index].copyWith(isLocked: !inventory[index].isLocked);
+    inventory[index] = inventory[index].copyWith(
+      isLocked: !inventory[index].isLocked,
+    );
     _save();
     notifyListeners();
     return true;
   }
 
-  void setAutoLock({required bool enabled, ItemTier? fromTier, bool applyToExisting = false}) {
+  void setAutoLock({
+    required bool enabled,
+    ItemTier? fromTier,
+    bool applyToExisting = false,
+  }) {
     autoLockEnabled = enabled;
     if (fromTier != null) {
       autoLockFromTier = fromTier;
@@ -2503,7 +2615,8 @@ class GameController extends ChangeNotifier {
       sellableCount += 1;
       estimatedGold += max(
         1,
-        (item.sellValue * tuning.goldGainMultiplier * clanGoldBonusMultiplier).round(),
+        (item.sellValue * tuning.goldGainMultiplier * clanGoldBonusMultiplier)
+            .round(),
       );
     }
 
@@ -2530,7 +2643,8 @@ class GameController extends ChangeNotifier {
       soldCount += 1;
       earnedGold += max(
         1,
-        (item.sellValue * tuning.goldGainMultiplier * clanGoldBonusMultiplier).round(),
+        (item.sellValue * tuning.goldGainMultiplier * clanGoldBonusMultiplier)
+            .round(),
       );
       return true;
     });
@@ -2550,7 +2664,9 @@ class GameController extends ChangeNotifier {
 
     if (!preferSetSynergy) {
       for (final slot in ItemSlot.values) {
-        final candidates = inventory.where((item) => item.slot == slot).toList(growable: false);
+        final candidates = inventory
+            .where((item) => item.slot == slot)
+            .toList(growable: false);
         if (candidates.isEmpty) {
           continue;
         }
@@ -2573,7 +2689,9 @@ class GameController extends ChangeNotifier {
     final counts = <ItemSet, int>{};
 
     for (final slot in ItemSlot.values) {
-      final candidates = inventory.where((item) => item.slot == slot).toList(growable: false);
+      final candidates = inventory
+          .where((item) => item.slot == slot)
+          .toList(growable: false);
       if (candidates.isEmpty) {
         continue;
       }
@@ -2760,7 +2878,8 @@ class GameController extends ChangeNotifier {
     return switch (type) {
       ClanPerkType.warpath => '+4% Gesamtschaden pro Stufe.',
       ClanPerkType.bulwark => '-3% erlittener Schaden pro Stufe.',
-      ClanPerkType.prosperity => '+4% Gold aus Belohnungen und Verkaeufen pro Stufe.',
+      ClanPerkType.prosperity =>
+        '+4% Gold aus Belohnungen und Verkaeufen pro Stufe.',
       ClanPerkType.rituals => '+5% Scherben aus Belohnungen pro Stufe.',
     };
   }
@@ -2789,7 +2908,10 @@ class GameController extends ChangeNotifier {
   }
 
   int _scaledGoldReward(int base) {
-    return max(1, (base * clanGoldBonusMultiplier * ascensionGoldMultiplier).round());
+    return max(
+      1,
+      (base * clanGoldBonusMultiplier * ascensionGoldMultiplier).round(),
+    );
   }
 
   bool canUnlockAscensionNode(String nodeId) {
@@ -2797,7 +2919,8 @@ class GameController extends ChangeNotifier {
     final node = _findAscensionNode(nodeId);
     if (node == null) return false;
     if (ascensionPoints < node.cost) return false;
-    if (node.requiredNodeId != null && !unlockedAscensionNodes.contains(node.requiredNodeId)) {
+    if (node.requiredNodeId != null &&
+        !unlockedAscensionNodes.contains(node.requiredNodeId)) {
       return false;
     }
     return true;
@@ -2884,12 +3007,9 @@ class GameController extends ChangeNotifier {
         'Dauerhaft +1 Shop-Level für Hammerdrop-Chance.',
       ShopOfferKind.recoveryUpgrade =>
         'Dauerhaft +1 Shop-Level für HP-Regeneration.',
-      ShopOfferKind.hammerPack =>
-        '+${offer.amount} Hammer sofort.',
-      ShopOfferKind.shardCache =>
-        '+${offer.amount} Scherben sofort.',
-      ShopOfferKind.healingFlask =>
-        '+${offer.amount} Heiltrank für den Kampf.',
+      ShopOfferKind.hammerPack => '+${offer.amount} Hammer sofort.',
+      ShopOfferKind.shardCache => '+${offer.amount} Scherben sofort.',
+      ShopOfferKind.healingFlask => '+${offer.amount} Heiltrank für den Kampf.',
       ShopOfferKind.berserkFlask =>
         '+${offer.amount} Berserkertrank für den Kampf.',
     };
@@ -3014,21 +3134,30 @@ class GameController extends ChangeNotifier {
       ShopOffer(
         id: 'speed_${DateTime.now().microsecondsSinceEpoch}',
         kind: ShopOfferKind.speedUpgrade,
-        cost: max(90, (shopSpeedCost * (0.88 + _random.nextDouble() * 0.16)).round()),
+        cost: max(
+          90,
+          (shopSpeedCost * (0.88 + _random.nextDouble() * 0.16)).round(),
+        ),
         stock: 1,
         amount: 1,
       ),
       ShopOffer(
         id: 'hammer_${DateTime.now().microsecondsSinceEpoch + 1}',
         kind: ShopOfferKind.hammerUpgrade,
-        cost: max(110, (shopHammerCost * (0.88 + _random.nextDouble() * 0.16)).round()),
+        cost: max(
+          110,
+          (shopHammerCost * (0.88 + _random.nextDouble() * 0.16)).round(),
+        ),
         stock: 1,
         amount: 1,
       ),
       ShopOffer(
         id: 'recovery_${DateTime.now().microsecondsSinceEpoch + 2}',
         kind: ShopOfferKind.recoveryUpgrade,
-        cost: max(95, (shopRecoveryCost * (0.88 + _random.nextDouble() * 0.16)).round()),
+        cost: max(
+          95,
+          (shopRecoveryCost * (0.88 + _random.nextDouble() * 0.16)).round(),
+        ),
         stock: 1,
         amount: 1,
       ),
@@ -3197,7 +3326,10 @@ class GameController extends ChangeNotifier {
 
     healingFlasks -= 1;
     flaskCooldownRemaining = 12;
-    final healAmount = maxPlayerHp * (0.35 + (talentVitalityLevel * 0.01)) * setFlaskEffectBonus;
+    final healAmount =
+        maxPlayerHp *
+        (0.35 + (talentVitalityLevel * 0.01)) *
+        setFlaskEffectBonus;
     playerHp = min(maxPlayerHp, playerHp + healAmount);
     lastCombatEvent = 'Heiltrank eingesetzt.';
     _save();
@@ -3254,7 +3386,10 @@ class GameController extends ChangeNotifier {
       autoAttackIntervalSec: value.autoAttackIntervalSec.clamp(0.2, 3.0),
       playerDamageMultiplier: value.playerDamageMultiplier.clamp(0.3, 4.0),
       enemyHpMultiplier: value.enemyHpMultiplier.clamp(0.3, 4.5),
-      enemyApproachSpeedMultiplier: value.enemyApproachSpeedMultiplier.clamp(0.3, 3.0),
+      enemyApproachSpeedMultiplier: value.enemyApproachSpeedMultiplier.clamp(
+        0.3,
+        3.0,
+      ),
       goldGainMultiplier: value.goldGainMultiplier.clamp(0.2, 5.0),
       offlineRewardMultiplier: value.offlineRewardMultiplier.clamp(0.2, 5.0),
       forgeExtraBonus: value.forgeExtraBonus.clamp(0, 0.25),
@@ -3375,7 +3510,12 @@ class GameController extends ChangeNotifier {
       4 => const StreakReward(gold: 0, hammers: 10, shards: 0),
       5 => const StreakReward(gold: 200, hammers: 0, shards: 1),
       6 => const StreakReward(gold: 0, hammers: 0, shards: 2),
-      _ => const StreakReward(gold: 300, hammers: 5, shards: 5, isSpecial: true),
+      _ => const StreakReward(
+        gold: 300,
+        hammers: 5,
+        shards: 5,
+        isSpecial: true,
+      ),
     };
   }
 
@@ -3412,7 +3552,9 @@ class GameController extends ChangeNotifier {
 
   EquipDiff calculateEquipDiff(GameItem item) {
     final currentItem = equippedInSlot(item.slot);
-    final currentPower = (currentItem != null && currentItem.id.isNotEmpty) ? currentItem.power : 0;
+    final currentPower = (currentItem != null && currentItem.id.isNotEmpty)
+        ? currentItem.power
+        : 0;
     return EquipDiff(currentPower: currentPower, newPower: item.power);
   }
 
@@ -3536,13 +3678,16 @@ class GameController extends ChangeNotifier {
     final map = jsonDecode(raw) as Map<String, dynamic>;
 
     playerName = (map['playerName'] as String?)?.trim().isNotEmpty == true
-      ? (map['playerName'] as String).trim()
-      : playerName;
+        ? (map['playerName'] as String).trim()
+        : playerName;
     darkModeEnabled = map['darkModeEnabled'] as bool? ?? darkModeEnabled;
     showCombatLog = map['showCombatLog'] as bool? ?? showCombatLog;
     reducedEffects = map['reducedEffects'] as bool? ?? reducedEffects;
     tutorialCompleted = map['tutorialCompleted'] as bool? ?? tutorialCompleted;
-    targetFps = ((map['targetFps'] as num?)?.toInt() ?? targetFps).clamp(30, 120);
+    targetFps = ((map['targetFps'] as num?)?.toInt() ?? targetFps).clamp(
+      30,
+      120,
+    );
 
     gold = map['gold'] as int? ?? gold;
     hammers = map['hammers'] as int? ?? hammers;
@@ -3557,17 +3702,20 @@ class GameController extends ChangeNotifier {
     bossDefeats = map['bossDefeats'] as int? ?? bossDefeats;
     questCycle = map['questCycle'] as int? ?? questCycle;
     questKillsClaimed = map['questKillsClaimed'] as bool? ?? questKillsClaimed;
-    questCraftsClaimed = map['questCraftsClaimed'] as bool? ?? questCraftsClaimed;
+    questCraftsClaimed =
+        map['questCraftsClaimed'] as bool? ?? questCraftsClaimed;
     questBossClaimed = map['questBossClaimed'] as bool? ?? questBossClaimed;
     talentAttackLevel = map['talentAttackLevel'] as int? ?? talentAttackLevel;
-    talentVitalityLevel = map['talentVitalityLevel'] as int? ?? talentVitalityLevel;
+    talentVitalityLevel =
+        map['talentVitalityLevel'] as int? ?? talentVitalityLevel;
     talentForgeLevel = map['talentForgeLevel'] as int? ?? talentForgeLevel;
     clanLevel = map['clanLevel'] as int? ?? clanLevel;
     clanXp = map['clanXp'] as int? ?? clanXp;
     clanPoints = map['clanPoints'] as int? ?? clanPoints;
     clanWarpathLevel = map['clanWarpathLevel'] as int? ?? clanWarpathLevel;
     clanBulwarkLevel = map['clanBulwarkLevel'] as int? ?? clanBulwarkLevel;
-    clanProsperityLevel = map['clanProsperityLevel'] as int? ?? clanProsperityLevel;
+    clanProsperityLevel =
+        map['clanProsperityLevel'] as int? ?? clanProsperityLevel;
     clanRitualsLevel = map['clanRitualsLevel'] as int? ?? clanRitualsLevel;
     skillStrikeLevel = map['skillStrikeLevel'] as int? ?? skillStrikeLevel;
     skillWhirlLevel = map['skillWhirlLevel'] as int? ?? skillWhirlLevel;
@@ -3575,10 +3723,12 @@ class GameController extends ChangeNotifier {
     shopSpeedLevel = map['shopSpeedLevel'] as int? ?? shopSpeedLevel;
     shopHammerLevel = map['shopHammerLevel'] as int? ?? shopHammerLevel;
     shopRecoveryLevel = map['shopRecoveryLevel'] as int? ?? shopRecoveryLevel;
-    shopManualRefreshes = map['shopManualRefreshes'] as int? ?? shopManualRefreshes;
+    shopManualRefreshes =
+        map['shopManualRefreshes'] as int? ?? shopManualRefreshes;
     healingFlasks = map['healingFlasks'] as int? ?? healingFlasks;
     berserkFlasks = map['berserkFlasks'] as int? ?? berserkFlasks;
-    flaskCooldownRemaining = (map['flaskCooldownRemaining'] as num?)?.toDouble() ?? 0;
+    flaskCooldownRemaining =
+        (map['flaskCooldownRemaining'] as num?)?.toDouble() ?? 0;
     berserkRemaining = (map['berserkRemaining'] as num?)?.toDouble() ?? 0;
     final stanceName = map['combatStance'] as String?;
     if (stanceName != null) {
@@ -3594,15 +3744,22 @@ class GameController extends ChangeNotifier {
     }
 
     final offersJson = (map['shopOffers'] as List<dynamic>? ?? [])
-        .map((entry) => ShopOffer.fromJson(Map<String, dynamic>.from(entry as Map)))
+        .map(
+          (entry) =>
+              ShopOffer.fromJson(Map<String, dynamic>.from(entry as Map)),
+        )
         .toList(growable: false);
     if (offersJson.isNotEmpty) {
       _shopOffers = offersJson;
     }
 
-    _dailyOfferDateKey = map['dailyOfferDateKey'] as String? ?? _dailyOfferDateKey;
+    _dailyOfferDateKey =
+        map['dailyOfferDateKey'] as String? ?? _dailyOfferDateKey;
     final dailyOffersJson = (map['dailyShopOffers'] as List<dynamic>? ?? [])
-        .map((entry) => ShopOffer.fromJson(Map<String, dynamic>.from(entry as Map)))
+        .map(
+          (entry) =>
+              ShopOffer.fromJson(Map<String, dynamic>.from(entry as Map)),
+        )
         .toList(growable: false);
     if (dailyOffersJson.isNotEmpty) {
       _dailyShopOffers = dailyOffersJson;
@@ -3626,10 +3783,14 @@ class GameController extends ChangeNotifier {
         orElse: () => autoLockFromTier,
       );
     }
-    tuning = BalanceTuning.fromJson(Map<String, dynamic>.from(map['tuning'] as Map? ?? {}));
+    tuning = BalanceTuning.fromJson(
+      Map<String, dynamic>.from(map['tuning'] as Map? ?? {}),
+    );
     discoveredSetSlots
       ..clear()
-      ..addAll((map['discoveredSetSlots'] as List<dynamic>? ?? []).cast<String>());
+      ..addAll(
+        (map['discoveredSetSlots'] as List<dynamic>? ?? []).cast<String>(),
+      );
     claimedSetRewards
       ..clear()
       ..addAll(
@@ -3642,23 +3803,30 @@ class GameController extends ChangeNotifier {
       );
     claimedAchievements
       ..clear()
-      ..addAll((map['claimedAchievements'] as List<dynamic>? ?? []).cast<String>());
+      ..addAll(
+        (map['claimedAchievements'] as List<dynamic>? ?? []).cast<String>(),
+      );
 
     autoSkillSlots
       ..clear()
       ..addAll(
-        (map['autoSkillSlots'] as List<dynamic>? ?? [])
-            .map((value) => (value as num).toInt()),
+        (map['autoSkillSlots'] as List<dynamic>? ?? []).map(
+          (value) => (value as num).toInt(),
+        ),
       );
 
     final inventoryJson = (map['inventory'] as List<dynamic>? ?? [])
-        .map((entry) => GameItem.fromJson(Map<String, dynamic>.from(entry as Map)))
+        .map(
+          (entry) => GameItem.fromJson(Map<String, dynamic>.from(entry as Map)),
+        )
         .toList();
     inventory
       ..clear()
       ..addAll(inventoryJson);
 
-    final equippedJson = Map<String, dynamic>.from(map['equippedBySlot'] as Map? ?? {});
+    final equippedJson = Map<String, dynamic>.from(
+      map['equippedBySlot'] as Map? ?? {},
+    );
     equippedBySlot
       ..clear()
       ..addEntries(
@@ -3671,13 +3839,17 @@ class GameController extends ChangeNotifier {
       );
 
     loadoutPresets.clear();
-    final loadoutsJson = Map<String, dynamic>.from(map['loadoutPresets'] as Map? ?? {});
+    final loadoutsJson = Map<String, dynamic>.from(
+      map['loadoutPresets'] as Map? ?? {},
+    );
     for (final presetEntry in loadoutsJson.entries) {
       final index = int.tryParse(presetEntry.key);
       if (index == null) {
         continue;
       }
-      final slotsJson = Map<String, dynamic>.from(presetEntry.value as Map? ?? {});
+      final slotsJson = Map<String, dynamic>.from(
+        presetEntry.value as Map? ?? {},
+      );
       final mapped = <ItemSlot, String>{};
       for (final slotEntry in slotsJson.entries) {
         final slot = ItemSlot.values.firstWhere(
@@ -3700,10 +3872,13 @@ class GameController extends ChangeNotifier {
 
     final lastActiveMillis = map['lastActiveMillis'] as int?;
     if (lastActiveMillis != null) {
-      _applyOfflineReward(DateTime.fromMillisecondsSinceEpoch(lastActiveMillis));
+      _applyOfflineReward(
+        DateTime.fromMillisecondsSinceEpoch(lastActiveMillis),
+      );
     }
 
-    final expeditionSlotsJson = (map['expeditionSlots'] as List<dynamic>? ?? []);
+    final expeditionSlotsJson =
+        (map['expeditionSlots'] as List<dynamic>? ?? []);
     for (int i = 0; i < expeditionSlotsJson.length && i < 3; i++) {
       final slotJson = expeditionSlotsJson[i];
       if (slotJson != null) {
@@ -3715,12 +3890,16 @@ class GameController extends ChangeNotifier {
 
     discoveredRecipes
       ..clear()
-      ..addAll((map['discoveredRecipes'] as List<dynamic>? ?? []).cast<String>());
+      ..addAll(
+        (map['discoveredRecipes'] as List<dynamic>? ?? []).cast<String>(),
+      );
 
     ascensionPoints = map['ascensionPoints'] as int? ?? 0;
     unlockedAscensionNodes
       ..clear()
-      ..addAll((map['unlockedAscensionNodes'] as List<dynamic>? ?? []).cast<String>());
+      ..addAll(
+        (map['unlockedAscensionNodes'] as List<dynamic>? ?? []).cast<String>(),
+      );
 
     final petJson = map['activePet'] as Map?;
     if (petJson != null) {
@@ -3730,8 +3909,9 @@ class GameController extends ChangeNotifier {
     runeInventory
       ..clear()
       ..addAll(
-        (map['runeInventory'] as List<dynamic>? ?? [])
-            .map((e) => Rune.fromJson(Map<String, dynamic>.from(e as Map))),
+        (map['runeInventory'] as List<dynamic>? ?? []).map(
+          (e) => Rune.fromJson(Map<String, dynamic>.from(e as Map)),
+        ),
       );
 
     loginStreakDays = map['loginStreakDays'] as int? ?? 0;
@@ -3747,12 +3927,13 @@ class GameController extends ChangeNotifier {
     final clampedMinutes = min(minutes, 240);
     final estimatedKills = max(1, (clampedMinutes / 2).floor());
 
-    final earnedGold = (estimatedKills *
-            (6 + chapter) *
-            tuning.offlineRewardMultiplier *
-            clanGoldBonusMultiplier *
-            ascensionOfflineMultiplier)
-        .round();
+    final earnedGold =
+        (estimatedKills *
+                (6 + chapter) *
+                tuning.offlineRewardMultiplier *
+                clanGoldBonusMultiplier *
+                ascensionOfflineMultiplier)
+            .round();
     final earnedHammers = estimatedKills;
 
     gold += earnedGold;
@@ -3768,7 +3949,8 @@ class GameController extends ChangeNotifier {
 
   bool startExpedition(int slotIndex, String expeditionId) {
     if (slotIndex < 0 || slotIndex >= expeditionSlotCount) return false;
-    if (expeditionSlots[slotIndex] != null && !expeditionSlots[slotIndex]!.claimed) {
+    if (expeditionSlots[slotIndex] != null &&
+        !expeditionSlots[slotIndex]!.claimed) {
       if (!expeditionSlots[slotIndex]!.isComplete) return false;
     }
 
@@ -3792,7 +3974,8 @@ class GameController extends ChangeNotifier {
   bool claimExpeditionReward(int slotIndex) {
     if (slotIndex < 0 || slotIndex >= expeditionSlotCount) return false;
     final expedition = expeditionSlots[slotIndex];
-    if (expedition == null || !expedition.isComplete || expedition.claimed) return false;
+    if (expedition == null || !expedition.isComplete || expedition.claimed)
+      return false;
 
     final def = expeditionDefinitions.firstWhere(
       (d) => d.id == expedition.expeditionId,
@@ -3803,11 +3986,15 @@ class GameController extends ChangeNotifier {
     gold += _scaledGoldReward((def.baseGold * progression / 2).round());
     hammers += (def.baseHammers * progression / 2).round();
     if (def.baseShards > 0) {
-      forgeShards += _scaledShardReward((def.baseShards * progression / 3).round());
+      forgeShards += _scaledShardReward(
+        (def.baseShards * progression / 3).round(),
+      );
     }
 
     if (_random.nextDouble() < def.itemDropChance) {
-      final tier = _random.nextDouble() < 0.2 ? ItemTier.rare : ItemTier.uncommon;
+      final tier = _random.nextDouble() < 0.2
+          ? ItemTier.rare
+          : ItemTier.uncommon;
       final item = _craftItemWithTier(tier);
       inventory.add(item);
     }
@@ -3829,7 +4016,8 @@ class GameController extends ChangeNotifier {
     }
   }
 
-  List<ActiveExpedition?> get currentExpeditions => List.unmodifiable(expeditionSlots);
+  List<ActiveExpedition?> get currentExpeditions =>
+      List.unmodifiable(expeditionSlots);
 
   List<CraftingRecipe> get knownRecipes {
     return craftingRecipes
@@ -3853,13 +4041,15 @@ class GameController extends ChangeNotifier {
   List<RecipeIngredient> _checkIngredients(CraftingRecipe recipe) {
     final missing = <RecipeIngredient>[];
     for (final ingredient in recipe.ingredients) {
-      final available = inventory.where(
-        (item) =>
-            item.slot == ingredient.slot &&
-            item.tier.index >= ingredient.minTier.index &&
-            !isEquipped(item) &&
-            !item.isLocked,
-      ).length;
+      final available = inventory
+          .where(
+            (item) =>
+                item.slot == ingredient.slot &&
+                item.tier.index >= ingredient.minTier.index &&
+                !isEquipped(item) &&
+                !item.isLocked,
+          )
+          .length;
       if (available < ingredient.count) {
         missing.add(ingredient);
       }
@@ -3873,13 +4063,15 @@ class GameController extends ChangeNotifier {
 
     for (final ingredient in recipe.ingredients) {
       var toConsume = ingredient.count;
-      final candidates = inventory.where(
-        (item) =>
-            item.slot == ingredient.slot &&
-            item.tier.index >= ingredient.minTier.index &&
-            !isEquipped(item) &&
-            !item.isLocked,
-      ).toList();
+      final candidates = inventory
+          .where(
+            (item) =>
+                item.slot == ingredient.slot &&
+                item.tier.index >= ingredient.minTier.index &&
+                !isEquipped(item) &&
+                !item.isLocked,
+          )
+          .toList();
 
       candidates.sort((a, b) => a.power.compareTo(b.power));
       for (final item in candidates) {
@@ -3915,7 +4107,8 @@ class GameController extends ChangeNotifier {
       if (discoveredRecipes.contains(recipe.id)) continue;
       if (_random.nextDouble() < recipe.dropChance * (1 + chapter * 0.1)) {
         discoveredRecipes.add(recipe.id);
-        lastCombatEvent = 'Neues Rezept gefunden: ${localeCode == 'de' ? recipe.nameDe : recipe.nameEn}!';
+        lastCombatEvent =
+            'Neues Rezept gefunden: ${localeCode == 'de' ? recipe.nameDe : recipe.nameEn}!';
       }
     }
   }
@@ -3976,13 +4169,23 @@ class GameController extends ChangeNotifier {
       'autoLockFromTier': autoLockFromTier.name,
       'tuning': tuning.toJson(),
       'discoveredSetSlots': discoveredSetSlots.toList(growable: false),
-      'claimedSetRewards': claimedSetRewards.map((setId) => setId.name).toList(growable: false),
+      'claimedSetRewards': claimedSetRewards
+          .map((setId) => setId.name)
+          .toList(growable: false),
       'claimedAchievements': claimedAchievements.toList(growable: false),
       'autoSkillSlots': autoSkillSlots.toList(growable: false),
-      'shopOffers': _shopOffers.map((offer) => offer.toJson()).toList(growable: false),
-      'dailyShopOffers': _dailyShopOffers.map((offer) => offer.toJson()).toList(growable: false),
-      'inventory': inventory.map((item) => item.toJson()).toList(growable: false),
-      'equippedBySlot': equippedBySlot.map((slot, id) => MapEntry(slot.name, id)),
+      'shopOffers': _shopOffers
+          .map((offer) => offer.toJson())
+          .toList(growable: false),
+      'dailyShopOffers': _dailyShopOffers
+          .map((offer) => offer.toJson())
+          .toList(growable: false),
+      'inventory': inventory
+          .map((item) => item.toJson())
+          .toList(growable: false),
+      'equippedBySlot': equippedBySlot.map(
+        (slot, id) => MapEntry(slot.name, id),
+      ),
       'loadoutPresets': loadoutPresets.map(
         (index, preset) => MapEntry(
           index.toString(),
@@ -3998,7 +4201,9 @@ class GameController extends ChangeNotifier {
       'unlockedAscensionNodes': unlockedAscensionNodes.toList(growable: false),
       'ascensionPoints': ascensionPoints,
       'activePet': activePet?.toJson(),
-      'runeInventory': runeInventory.map((r) => r.toJson()).toList(growable: false),
+      'runeInventory': runeInventory
+          .map((r) => r.toJson())
+          .toList(growable: false),
       'loginStreakDays': loginStreakDays,
       'lastLoginDateKey': _lastLoginDateKey,
     };

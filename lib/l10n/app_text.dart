@@ -53,7 +53,8 @@ class AppText {
       'appVersion': 'App Version',
       'reportBug': 'Bug melden',
       'newVersionAvailable': 'Neue Version verfügbar',
-      'newVersionMessage': 'Version {version} ist verfügbar. Jetzt aktualisieren?',
+      'newVersionMessage':
+          'Version {version} ist verfügbar. Jetzt aktualisieren?',
       'download': 'Herunterladen',
       'menuDungeon': 'Dungeon',
       'dungeonTitle': 'Dungeon',
@@ -198,7 +199,8 @@ class AppText {
       'clanOnlineMembersTitle': 'Online-Mitglieder',
       'clanChatSoon': 'Chat – Bald verfügbar',
       'comingSoonTitle': 'Bald verfügbar',
-      'comingSoonDesc': 'Dieses Feature ist in Entwicklung. Schau bald wieder vorbei!',
+      'comingSoonDesc':
+          'Dieses Feature ist in Entwicklung. Schau bald wieder vorbei!',
     },
     'en': {
       'appTitle': 'Idle Forge',
@@ -393,7 +395,7 @@ class AppText {
       'clanChatSoon': 'Chat — Coming Soon',
       'comingSoonTitle': 'Coming Soon',
       'comingSoonDesc': 'This feature is currently in development. Stay tuned!',
-    }
+    },
   };
 
   String tr(String key) {

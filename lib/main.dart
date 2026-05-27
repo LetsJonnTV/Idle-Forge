@@ -28,23 +28,14 @@ enum AchievementFilterMode { all, claimable, unclaimed, claimed }
 
 enum ShopPanelTab { all, daily, upgrades, resources, combat }
 
-double _uiScale(
-  BuildContext context, {
-  double min = 0.78,
-  double max = 1.28,
-}) {
+double _uiScale(BuildContext context, {double min = 0.78, double max = 1.28}) {
   final size = MediaQuery.sizeOf(context);
   final byWidth = size.width / 390;
   final byHeight = size.height / 844;
   return math.min(byWidth, byHeight).clamp(min, max).toDouble();
 }
 
-double _rs(
-  BuildContext context,
-  double base, {
-  double min = 0,
-  double? max,
-}) {
+double _rs(BuildContext context, double base, {double min = 0, double? max}) {
   final scaled = base * _uiScale(context);
   if (max != null) {
     return scaled.clamp(min, max).toDouble();
@@ -75,33 +66,46 @@ double _adaptiveSheetHeight(
 extension _AppColors on BuildContext {
   bool get _isDark => Theme.of(this).brightness == Brightness.dark;
 
-  Color get bodyBg => _isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
+  Color get bodyBg =>
+      _isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
 
-  Color get sheetBg => _isDark ? const Color(0xFF1F1F1F) : const Color(0xFFFFFFFF);
+  Color get sheetBg =>
+      _isDark ? const Color(0xFF1F1F1F) : const Color(0xFFFFFFFF);
 
-  Color get cardBg => _isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFFFFFF);
+  Color get cardBg =>
+      _isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFFFFFF);
 
-  Color get cardBgAlt => _isDark ? const Color(0xFF242424) : const Color(0xFFF8F8F8);
+  Color get cardBgAlt =>
+      _isDark ? const Color(0xFF242424) : const Color(0xFFF8F8F8);
 
-  Color get inputBg => _isDark ? const Color(0xFF252525) : const Color(0xFFF0F0F0);
+  Color get inputBg =>
+      _isDark ? const Color(0xFF252525) : const Color(0xFFF0F0F0);
 
-  Color get cardBorder => _isDark ? const Color(0xFF3B3B3B) : const Color(0xFFD0D0D0);
+  Color get cardBorder =>
+      _isDark ? const Color(0xFF3B3B3B) : const Color(0xFFD0D0D0);
 
-  Color get borderHeavy => _isDark ? const Color(0xFF474747) : const Color(0xFFBBBBBB);
+  Color get borderHeavy =>
+      _isDark ? const Color(0xFF474747) : const Color(0xFFBBBBBB);
 
-  Color get divider => _isDark ? const Color(0xFF3A3A3A) : const Color(0xFFDDDDDD);
+  Color get divider =>
+      _isDark ? const Color(0xFF3A3A3A) : const Color(0xFFDDDDDD);
 
-  Color get textPrimary => _isDark ? const Color(0xFFE2E2E2) : const Color(0xFF1A1A1A);
+  Color get textPrimary =>
+      _isDark ? const Color(0xFFE2E2E2) : const Color(0xFF1A1A1A);
 
-  Color get textSecondary => _isDark ? const Color(0xFFB5B5B5) : const Color(0xFF555555);
+  Color get textSecondary =>
+      _isDark ? const Color(0xFFB5B5B5) : const Color(0xFF555555);
 
-  Color get textTertiary => _isDark ? const Color(0xFFA9A9A9) : const Color(0xFF777777);
+  Color get textTertiary =>
+      _isDark ? const Color(0xFFA9A9A9) : const Color(0xFF777777);
 
   Color get textBright => _isDark ? Colors.white : const Color(0xFF111111);
 
-  Color get iconColor => _isDark ? const Color(0xFFD0D0D0) : const Color(0xFF444444);
+  Color get iconColor =>
+      _isDark ? const Color(0xFFD0D0D0) : const Color(0xFF444444);
 
-  Color get overlayBg => _isDark ? const Color(0xB0202020) : const Color(0xB0F0F0F0);
+  Color get overlayBg =>
+      _isDark ? const Color(0xB0202020) : const Color(0xB0F0F0F0);
 }
 
 Future<void> main() async {
@@ -179,10 +183,8 @@ class _IdleForgeAppState extends State<IdleForgeApp> {
         showDialog<void>(
           context: context,
           barrierDismissible: false,
-          builder: (context) => _UpdateDialog(
-            updateInfo: updateInfo,
-            controller: controller,
-          ),
+          builder: (context) =>
+              _UpdateDialog(updateInfo: updateInfo, controller: controller),
         );
       });
     }
@@ -202,7 +204,9 @@ class _IdleForgeAppState extends State<IdleForgeApp> {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: controller.text.tr('appTitle'),
-          themeMode: controller.darkModeEnabled ? ThemeMode.dark : ThemeMode.light,
+          themeMode: controller.darkModeEnabled
+              ? ThemeMode.dark
+              : ThemeMode.light,
           theme: ThemeData(
             brightness: Brightness.light,
             fontFamily: 'monospace',
@@ -239,7 +243,9 @@ class _IdleForgeAppState extends State<IdleForgeApp> {
           },
           home: controller.isLoaded
               ? IdleForgeHome(controller: controller)
-              : const Scaffold(body: Center(child: CircularProgressIndicator())),
+              : const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                ),
         );
       },
     );
@@ -298,7 +304,9 @@ class _IdleForgeHomeState extends State<IdleForgeHome> {
           child: Column(
             children: [
               _TopBar(controller: controller, dense: dense),
-              Expanded(child: _CombatArea(controller: controller, dense: dense)),
+              Expanded(
+                child: _CombatArea(controller: controller, dense: dense),
+              ),
               _BottomMenu(controller: controller, dense: dense),
             ],
           ),
@@ -353,7 +361,10 @@ class _TopBar extends StatelessWidget {
           ),
           child: Row(
             children: [
-              _SvgIcon(path: 'assets/icons/profile.svg', size: _rs(context, dense ? 30 : 34, min: 22)),
+              _SvgIcon(
+                path: 'assets/icons/profile.svg',
+                size: _rs(context, dense ? 30 : 34, min: 22),
+              ),
               SizedBox(width: _rs(context, 8, min: 5)),
               Expanded(
                 child: Column(
@@ -418,7 +429,10 @@ class _TopBar extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _SvgIcon(path: 'assets/icons/gold.svg', size: _rs(context, dense ? 18 : 20, min: 14)),
+          _SvgIcon(
+            path: 'assets/icons/gold.svg',
+            size: _rs(context, dense ? 18 : 20, min: 14),
+          ),
           SizedBox(width: _rs(context, 6, min: 4)),
           Text(
             '${controller.gold}',
@@ -449,12 +463,21 @@ class _TopBar extends StatelessWidget {
                 SizedBox(width: _rs(context, 8, min: 5)),
                 goldCard,
                 SizedBox(width: _rs(context, 8, min: 5)),
-                actionIcon(icon: Icons.auto_awesome, onTap: () => _showSkillTree(context, controller)),
+                actionIcon(
+                  icon: Icons.auto_awesome,
+                  onTap: () => _showSkillTree(context, controller),
+                ),
                 const SizedBox(width: 8),
-                actionIcon(icon: Icons.settings, onTap: () => _showSettingsPanel(context)),
+                actionIcon(
+                  icon: Icons.settings,
+                  onTap: () => _showSettingsPanel(context),
+                ),
                 if (devMode) ...[
                   SizedBox(width: _rs(context, 8, min: 5)),
-                  actionIcon(icon: Icons.tune, onTap: () => _showDeveloperPanel(context)),
+                  actionIcon(
+                    icon: Icons.tune,
+                    onTap: () => _showDeveloperPanel(context),
+                  ),
                 ],
               ],
             );
@@ -468,12 +491,21 @@ class _TopBar extends StatelessWidget {
                 children: [
                   Expanded(child: goldCard),
                   SizedBox(width: _rs(context, 8, min: 5)),
-                  actionIcon(icon: Icons.auto_awesome, onTap: () => _showSkillTree(context, controller)),
+                  actionIcon(
+                    icon: Icons.auto_awesome,
+                    onTap: () => _showSkillTree(context, controller),
+                  ),
                   const SizedBox(width: 8),
-                  actionIcon(icon: Icons.settings, onTap: () => _showSettingsPanel(context)),
+                  actionIcon(
+                    icon: Icons.settings,
+                    onTap: () => _showSettingsPanel(context),
+                  ),
                   if (devMode) ...[
                     SizedBox(width: _rs(context, 8, min: 5)),
-                    actionIcon(icon: Icons.tune, onTap: () => _showDeveloperPanel(context)),
+                    actionIcon(
+                      icon: Icons.tune,
+                      onTap: () => _showDeveloperPanel(context),
+                    ),
                   ],
                 ],
               ),
@@ -496,7 +528,12 @@ class _TopBar extends StatelessWidget {
       builder: (context) {
         return SafeArea(
           child: SizedBox(
-            height: _adaptiveSheetHeight(context, factor: 0.8, min: 360, max: 900),
+            height: _adaptiveSheetHeight(
+              context,
+              factor: 0.8,
+              min: 360,
+              max: 900,
+            ),
             child: StatefulBuilder(
               builder: (context, setModalState) {
                 final tuning = controller.tuning;
@@ -511,7 +548,10 @@ class _TopBar extends StatelessWidget {
                   children: [
                     const Text(
                       'Developer Panel',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     const Text(
@@ -524,7 +564,10 @@ class _TopBar extends StatelessWidget {
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () {
-                              controller.debugAddResources(goldDelta: 200, hammerDelta: 20);
+                              controller.debugAddResources(
+                                goldDelta: 200,
+                                hammerDelta: 20,
+                              );
                               setModalState(() {});
                             },
                             child: const Text('+200 Gold / +20 Hämmer'),
@@ -566,7 +609,10 @@ class _TopBar extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    const Text('Presets', style: TextStyle(fontWeight: FontWeight.w700)),
+                    const Text(
+                      'Presets',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
                     const SizedBox(height: 6),
                     Row(
                       children: [
@@ -647,7 +693,10 @@ class _TopBar extends StatelessWidget {
                       min: 0.3,
                       max: 4.5,
                       onChanged: (value) {
-                        update(tuning.copyWith(enemyHpMultiplier: value), refreshEnemy: true);
+                        update(
+                          tuning.copyWith(enemyHpMultiplier: value),
+                          refreshEnemy: true,
+                        );
                       },
                     ),
                     _TuningSlider(
@@ -656,7 +705,9 @@ class _TopBar extends StatelessWidget {
                       min: 0.3,
                       max: 3,
                       onChanged: (value) {
-                        update(tuning.copyWith(enemyApproachSpeedMultiplier: value));
+                        update(
+                          tuning.copyWith(enemyApproachSpeedMultiplier: value),
+                        );
                       },
                     ),
                     _TuningSlider(
@@ -738,11 +789,18 @@ class _TopBar extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, color: context.iconColor, size: 20),
+                      Icon(
+                        Icons.info_outline,
+                        color: context.iconColor,
+                        size: 20,
+                      ),
                       const SizedBox(width: 10),
                       Text(
                         '${controller.text.tr('appVersion')}: ${packageInfo.version}',
-                        style: TextStyle(color: context.textPrimary, fontSize: 14),
+                        style: TextStyle(
+                          color: context.textPrimary,
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
@@ -755,7 +813,10 @@ class _TopBar extends StatelessWidget {
                       'https://github.com/LetsJonnTV/Idle-Forge/issues/new',
                     );
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
                     }
                   },
                   child: Container(
@@ -767,14 +828,25 @@ class _TopBar extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.bug_report_outlined, color: context.iconColor, size: 20),
+                        Icon(
+                          Icons.bug_report_outlined,
+                          color: context.iconColor,
+                          size: 20,
+                        ),
                         const SizedBox(width: 10),
                         Text(
                           controller.text.tr('reportBug'),
-                          style: TextStyle(color: context.textPrimary, fontSize: 14),
+                          style: TextStyle(
+                            color: context.textPrimary,
+                            fontSize: 14,
+                          ),
                         ),
                         const Spacer(),
-                        Icon(Icons.open_in_new, color: context.textTertiary, size: 16),
+                        Icon(
+                          Icons.open_in_new,
+                          color: context.textTertiary,
+                          size: 16,
+                        ),
                       ],
                     ),
                   ),
@@ -800,146 +872,175 @@ class _TopBar extends StatelessWidget {
           child: AnimatedPadding(
             duration: const Duration(milliseconds: 160),
             curve: Curves.easeOut,
-            padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.viewInsetsOf(context).bottom,
+            ),
             child: SizedBox(
-              height: _adaptiveSheetHeight(context, factor: 0.62, min: 420, max: 820),
+              height: _adaptiveSheetHeight(
+                context,
+                factor: 0.62,
+                min: 420,
+                max: 820,
+              ),
               child: StatefulBuilder(
                 builder: (context, setModalState) {
                   return Padding(
                     padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: ListView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: ListView(
+                            children: [
+                              const Text(
+                                'Profil',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: nameController,
+                                maxLength: 20,
+                                decoration: const InputDecoration(
+                                  labelText: 'Spielername',
+                                  counterText: '',
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Kapitel ${controller.chapter} - Stage ${controller.stage}',
+                              ),
+                              Text('Gesamtstärke: ${controller.totalStrength}'),
+                              Text(
+                                'Prestige: ${controller.prestigeLevel} | Scherben: ${controller.forgeShards}',
+                              ),
+                              Text(
+                                'Bosse besiegt: ${controller.bossDefeats} | Tode: ${controller.deaths}',
+                              ),
+                              const SizedBox(height: 14),
+                              const Text(
+                                'Begleiter',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              _PetPanel(
+                                controller: controller,
+                                onRefresh: () => setModalState(() {}),
+                              ),
+                              const SizedBox(height: 14),
+                              const Text(
+                                'App Einstellungen',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Expanded(child: Text('Max FPS')),
+                                  const SizedBox(width: 10),
+                                  SizedBox(
+                                    width: 130,
+                                    child: DropdownButton<int>(
+                                      value: controller.targetFps,
+                                      isExpanded: true,
+                                      items: fpsOptions
+                                          .map(
+                                            (fps) => DropdownMenuItem<int>(
+                                              value: fps,
+                                              child: Text('$fps'),
+                                            ),
+                                          )
+                                          .toList(growable: false),
+                                      onChanged: (value) {
+                                        if (value == null) {
+                                          return;
+                                        }
+                                        controller.setTargetFps(value);
+                                        setModalState(() {});
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SwitchListTile.adaptive(
+                                contentPadding: EdgeInsets.zero,
+                                title: const Text('Dark Mode'),
+                                value: controller.darkModeEnabled,
+                                onChanged: (value) {
+                                  controller.setDarkModeEnabled(value);
+                                  setModalState(() {});
+                                },
+                              ),
+                              SwitchListTile.adaptive(
+                                contentPadding: EdgeInsets.zero,
+                                title: const Text('Kampf-Log anzeigen'),
+                                value: controller.showCombatLog,
+                                onChanged: (value) {
+                                  controller.setShowCombatLog(value);
+                                  setModalState(() {});
+                                },
+                              ),
+                              SwitchListTile.adaptive(
+                                contentPadding: EdgeInsets.zero,
+                                title: const Text('Reduzierte Effekte'),
+                                value: controller.reducedEffects,
+                                onChanged: (value) {
+                                  controller.setReducedEffects(value);
+                                  setModalState(() {});
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
                           children: [
-                            const Text(
-                              'Profil',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: nameController,
-                              maxLength: 20,
-                              decoration: const InputDecoration(
-                                labelText: 'Spielername',
-                                counterText: '',
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('Schliessen'),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Text('Kapitel ${controller.chapter} - Stage ${controller.stage}'),
-                            Text('Gesamtstärke: ${controller.totalStrength}'),
-                            Text(
-                              'Prestige: ${controller.prestigeLevel} | Scherben: ${controller.forgeShards}',
-                            ),
-                            Text('Bosse besiegt: ${controller.bossDefeats} | Tode: ${controller.deaths}'),
-                            const SizedBox(height: 14),
-                            const Text(
-                              'Begleiter',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 8),
-                            _PetPanel(controller: controller, onRefresh: () => setModalState(() {})),
-                            const SizedBox(height: 14),
-                            const Text(
-                              'App Einstellungen',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                const Expanded(child: Text('Max FPS')),
-                                const SizedBox(width: 10),
-                                SizedBox(
-                                  width: 130,
-                                  child: DropdownButton<int>(
-                                    value: controller.targetFps,
-                                    isExpanded: true,
-                                    items: fpsOptions
-                                        .map(
-                                          (fps) => DropdownMenuItem<int>(
-                                            value: fps,
-                                            child: Text('$fps'),
-                                          ),
-                                        )
-                                        .toList(growable: false),
-                                    onChanged: (value) {
-                                      if (value == null) {
-                                        return;
-                                      }
-                                      controller.setTargetFps(value);
-                                      setModalState(() {});
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SwitchListTile.adaptive(
-                              contentPadding: EdgeInsets.zero,
-                              title: const Text('Dark Mode'),
-                              value: controller.darkModeEnabled,
-                              onChanged: (value) {
-                                controller.setDarkModeEnabled(value);
-                                setModalState(() {});
-                              },
-                            ),
-                            SwitchListTile.adaptive(
-                              contentPadding: EdgeInsets.zero,
-                              title: const Text('Kampf-Log anzeigen'),
-                              value: controller.showCombatLog,
-                              onChanged: (value) {
-                                controller.setShowCombatLog(value);
-                                setModalState(() {});
-                              },
-                            ),
-                            SwitchListTile.adaptive(
-                              contentPadding: EdgeInsets.zero,
-                              title: const Text('Reduzierte Effekte'),
-                              value: controller.reducedEffects,
-                              onChanged: (value) {
-                                controller.setReducedEffects(value);
-                                setModalState(() {});
-                              },
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: FilledButton.tonal(
+                                onPressed: () {
+                                  final ok = controller.setPlayerName(
+                                    nameController.text,
+                                  );
+                                  if (!ok &&
+                                      nameController.text.trim() !=
+                                          controller.playerName) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Name ungültig oder unverändert (2-20 Zeichen).',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  setModalState(() {});
+                                  FocusScope.of(context).unfocus();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Profil gespeichert.'),
+                                    ),
+                                  );
+                                },
+                                child: const Text('Speichern'),
+                              ),
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text('Schliessen'),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: FilledButton.tonal(
-                              onPressed: () {
-                                final ok = controller.setPlayerName(nameController.text);
-                                if (!ok && nameController.text.trim() != controller.playerName) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Name ungültig oder unverändert (2-20 Zeichen).',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                setModalState(() {});
-                                FocusScope.of(context).unfocus();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Profil gespeichert.')),
-                                );
-                              },
-                              child: const Text('Speichern'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
                     ),
                   );
                 },
@@ -989,12 +1090,18 @@ class _PetPanel extends StatelessWidget {
                   final ok = controller.adoptPet(type);
                   if (!ok) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Nicht genug Gold (200 benötigt).')),
+                      const SnackBar(
+                        content: Text('Nicht genug Gold (200 benötigt).'),
+                      ),
                     );
                   }
                   onRefresh();
                 },
-                child: Text('$label\n(200 Gold)', textAlign: TextAlign.center, style: const TextStyle(fontSize: 11)),
+                child: Text(
+                  '$label\n(200 Gold)',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 11),
+                ),
               );
             }).toList(),
           ),
@@ -1008,9 +1115,12 @@ class _PetPanel extends StatelessWidget {
       PetType.golem => 'Golem',
     };
     final bonusText = switch (pet.type) {
-      PetType.wolf => '+${(controller.petGoldBonus * 100).toStringAsFixed(1)}% Gold',
-      PetType.phoenix => '+${(controller.petForgeBonus * 100).toStringAsFixed(1)}% Schmiedechance',
-      PetType.golem => '+${(controller.petDefenseBonus * 100).toStringAsFixed(1)}% Rüstung',
+      PetType.wolf =>
+        '+${(controller.petGoldBonus * 100).toStringAsFixed(1)}% Gold',
+      PetType.phoenix =>
+        '+${(controller.petForgeBonus * 100).toStringAsFixed(1)}% Schmiedechance',
+      PetType.golem =>
+        '+${(controller.petDefenseBonus * 100).toStringAsFixed(1)}% Rüstung',
     };
     final maxXp = pet.level < 20 ? pet.level * 100 : 1;
     final xpRatio = pet.level < 20 ? (pet.xp / maxXp).clamp(0.0, 1.0) : 1.0;
@@ -1034,31 +1144,44 @@ class _PetPanel extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const Spacer(),
-              Text(bonusText, style: const TextStyle(fontSize: 12, color: Color(0xFF8FD39E))),
+              Text(
+                bonusText,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF8FD39E)),
+              ),
             ],
           ),
           const SizedBox(height: 6),
           if (pet.level < 20) ...[
-            Text('XP: ${pet.xp} / ${pet.level * 100}', style: const TextStyle(fontSize: 12)),
+            Text(
+              'XP: ${pet.xp} / ${pet.level * 100}',
+              style: const TextStyle(fontSize: 12),
+            ),
             const SizedBox(height: 4),
             ClipRRect(
               borderRadius: BorderRadius.circular(999),
               child: LinearProgressIndicator(
                 value: xpRatio,
                 minHeight: 6,
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFD4A44C)),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  Color(0xFFD4A44C),
+                ),
                 backgroundColor: const Color(0xFF3A3A3A),
               ),
             ),
           ] else
-            const Text('Max Level erreicht!', style: TextStyle(fontSize: 12, color: Color(0xFFD4A44C))),
+            const Text(
+              'Max Level erreicht!',
+              style: TextStyle(fontSize: 12, color: Color(0xFFD4A44C)),
+            ),
           const SizedBox(height: 8),
           FilledButton.tonal(
             onPressed: () {
               const feedCost = 5;
               if (controller.hammers < feedCost) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Nicht genug Hammer (5 benötigt).')),
+                  const SnackBar(
+                    content: Text('Nicht genug Hammer (5 benötigt).'),
+                  ),
                 );
                 return;
               }
@@ -1127,7 +1250,9 @@ class _CombatArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = controller.text;
-    final hpPercent = (controller.enemy.hp / controller.enemy.maxHp).clamp(0.0, 1.0).toDouble();
+    final hpPercent = (controller.enemy.hp / controller.enemy.maxHp)
+        .clamp(0.0, 1.0)
+        .toDouble();
     final playerPod = _rs(context, dense ? 64 : 72, min: 54, max: 90);
     final enemyPod = controller.enemy.isBoss
         ? _rs(context, dense ? 74 : 82, min: 62, max: 96)
@@ -1152,345 +1277,423 @@ class _CombatArea extends StatelessWidget {
             ),
             child: Column(
               children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                _rs(context, 12, min: 8),
-                _rs(context, dense ? 8 : 10, min: 6),
-                _rs(context, 12, min: 8),
-                _rs(context, 6, min: 4),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    '${text.tr('chapter')} ${controller.chapter}-${controller.stage}',
-                    style: TextStyle(
-                      fontSize: _rs(context, dense ? 12 : 13, min: 10),
-                      color: context.textPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    _rs(context, 12, min: 8),
+                    _rs(context, dense ? 8 : 10, min: 6),
+                    _rs(context, 12, min: 8),
+                    _rs(context, 6, min: 4),
                   ),
-                  const Spacer(),
-                  Text(
-                    '${controller.killsInStage}/${controller.stageTargetKills}',
-                    style: TextStyle(
-                      color: context.textSecondary,
-                      fontSize: _rs(context, dense ? 11 : 12, min: 9.5),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (controller.showCombatLog && controller.lastCombatEvent.isNotEmpty)
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  _rs(context, 12, min: 8),
-                  0,
-                  _rs(context, 12, min: 8),
-                  _rs(context, 6, min: 4),
-                ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    controller.lastCombatEvent,
-                    style: TextStyle(
-                      fontSize: _rs(context, dense ? 10 : 11, min: 9),
-                      color: const Color(0xFFC9A8A8),
-                    ),
-                  ),
-                ),
-              ),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final width = constraints.maxWidth;
-                  final enemyX =
-                      (width * controller.enemy.approach).clamp(width * 0.5, width - (enemyPod + 12));
-                  final playerYBob = controller.animationBob;
-
-                  return Stack(
+                  child: Row(
                     children: [
-                      Positioned(
-                        left: width * 0.5 - (playerPod / 2),
-                        bottom: _rs(context, dense ? 18 : 28, min: 14) + playerYBob,
-                        child: Column(
-                          children: [
-                            SizedBox(
-                              width: playerPod + _rs(context, 6, min: 4),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(999),
-                                child: LinearProgressIndicator(
-                                  value: controller.playerHpPercent,
-                                  minHeight: _rs(context, 5, min: 4),
-                                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF8FBCE3)),
-                                  backgroundColor: context.borderHeavy,
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: _rs(context, 4, min: 3)),
-                            _Runner(size: playerPod),
-                          ],
+                      Text(
+                        '${text.tr('chapter')} ${controller.chapter}-${controller.stage}',
+                        style: TextStyle(
+                          fontSize: _rs(context, dense ? 12 : 13, min: 10),
+                          color: context.textPrimary,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 220),
-                        curve: Curves.easeOut,
-                        left: enemyX,
-                        bottom: _rs(context, dense ? 14 : 24, min: 10),
-                        child: Column(
-                          children: [
-                            SizedBox(
-                              width: enemyPod + _rs(context, 6, min: 4),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(999),
-                                child: LinearProgressIndicator(
-                                  value: hpPercent,
-                                  minHeight: _rs(context, 6, min: 4.5),
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    controller.enemy.isBoss
-                                        ? const Color(0xFFE06767)
-                                        : context.textPrimary,
-                                  ),
-                                  backgroundColor: context.borderHeavy,
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: _rs(context, 3, min: 2)),
-                            Text(
-                              controller.enemy.name,
-                              style: TextStyle(
-                                fontSize: _rs(context, dense ? 9 : 10, min: 8),
-                                color: context.textPrimary,
-                              ),
-                            ),
-                            SizedBox(height: _rs(context, 2, min: 1)),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: _rs(context, 6, min: 4),
-                                vertical: _rs(context, 2, min: 1),
-                              ),
-                              decoration: BoxDecoration(
-                                color: context.cardBg,
-                                borderRadius: BorderRadius.circular(999),
-                                border: Border.all(color: context.borderHeavy),
-                              ),
-                              child: Text(
-                                controller.enemy.isBoss
-                                    ? 'Boss ${controller.bossPatternLabel(controller.currentBossPattern)} P${controller.currentBossPhase}'
-                                    : controller.archetypeLabel(controller.enemy.archetype),
-                                style: TextStyle(
-                                  fontSize: _rs(context, dense ? 8 : 9, min: 7),
-                                  color: context.textPrimary,
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: _rs(context, 4, min: 3)),
-                            _Enemy(isBoss: controller.enemy.isBoss, size: enemyPod),
-                          ],
+                      const Spacer(),
+                      Text(
+                        '${controller.killsInStage}/${controller.stageTargetKills}',
+                        style: TextStyle(
+                          color: context.textSecondary,
+                          fontSize: _rs(context, dense ? 11 : 12, min: 9.5),
                         ),
                       ),
                     ],
-                  );
-                },
-              ),
-            ),
-            if (!ultraCompact)
-              Padding(
-              padding: EdgeInsets.fromLTRB(
-                _rs(context, 8, min: 6),
-                _rs(context, 4, min: 2),
-                _rs(context, 8, min: 6),
-                _rs(context, 10, min: 6),
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final compact = dense || constraints.maxWidth < 560;
-
-                  Widget skillCard(int index, {double? width}) {
-                    final state = controller.skills[index];
-                    final available = state.cooldownRemaining <= 0;
-                    final autoEnabled = controller.isAutoSkillEnabled(index);
-                    final iconPath = switch (index) {
-                      0 => 'assets/icons/skill_strike.svg',
-                      1 => 'assets/icons/skill_whirl.svg',
-                      _ => 'assets/icons/skill_focus.svg',
-                    };
-
-                    return SizedBox(
-                      width: width,
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: _rs(context, 4, min: 2),
-                          vertical: _rs(context, 4, min: 2),
+                  ),
+                ),
+                if (controller.showCombatLog &&
+                    controller.lastCombatEvent.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      _rs(context, 12, min: 8),
+                      0,
+                      _rs(context, 12, min: 8),
+                      _rs(context, 6, min: 4),
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        controller.lastCombatEvent,
+                        style: TextStyle(
+                          fontSize: _rs(context, dense ? 10 : 11, min: 9),
+                          color: const Color(0xFFC9A8A8),
                         ),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(_rs(context, 10, min: 7)),
-                          onTap: () => controller.activateSkill(index),
-                          onLongPress: () {
-                            final enabled = controller.toggleAutoSkill(index);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  enabled
-                                      ? 'Auto-Skill aktiv für ${controller.text.tr(state.definition.labelKey)}'
-                                      : 'Auto-Skill deaktiviert für ${controller.text.tr(state.definition.labelKey)}',
-                                ),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            height: _rs(context, dense ? 48 : 54, min: 42, max: 72),
-                            decoration: BoxDecoration(
-                              color: available ? context.cardBg : context.inputBg,
-                              borderRadius: BorderRadius.circular(_rs(context, 10, min: 7)),
-                              border: Border.all(
-                                color: autoEnabled
-                                    ? const Color(0xFF8BAF85)
-                                    : available
-                                    ? context.borderHeavy
-                                    : context.borderHeavy,
-                              ),
-                            ),
-                            child: Stack(
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = constraints.maxWidth;
+                      final enemyX = (width * controller.enemy.approach).clamp(
+                        width * 0.5,
+                        width - (enemyPod + 12),
+                      );
+                      final playerYBob = controller.animationBob;
+
+                      return Stack(
+                        children: [
+                          Positioned(
+                            left: width * 0.5 - (playerPod / 2),
+                            bottom:
+                                _rs(context, dense ? 18 : 28, min: 14) +
+                                playerYBob,
+                            child: Column(
                               children: [
-                                Positioned(
-                                  left: _rs(context, 8, min: 5),
-                                  top: _rs(context, 8, min: 5),
-                                  child: _SvgIcon(path: iconPath, size: _rs(context, 18, min: 14)),
-                                ),
-                                Positioned(
-                                  left: _rs(context, 30, min: 24),
-                                  top: _rs(context, 8, min: 5),
-                                  right: _rs(context, 4, min: 3),
-                                  child: Text(
-                                    controller.text.tr(state.definition.labelKey),
-                                    style: TextStyle(
-                                      fontSize: _rs(context, dense ? 9 : 10, min: 8),
-                                      color: context.textBright,
+                                SizedBox(
+                                  width: playerPod + _rs(context, 6, min: 4),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(999),
+                                    child: LinearProgressIndicator(
+                                      value: controller.playerHpPercent,
+                                      minHeight: _rs(context, 5, min: 4),
+                                      valueColor:
+                                          const AlwaysStoppedAnimation<Color>(
+                                            Color(0xFF8FBCE3),
+                                          ),
+                                      backgroundColor: context.borderHeavy,
                                     ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                if (autoEnabled)
-                                  Positioned(
-                                    right: _rs(context, 6, min: 4),
-                                    bottom: _rs(context, 5, min: 3),
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: _rs(context, 5, min: 3),
-                                        vertical: _rs(context, 2, min: 1),
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF3E5A3B),
-                                        borderRadius: BorderRadius.circular(999),
-                                      ),
-                                      child: Text(
-                                        'AUTO',
-                                        style: TextStyle(
-                                          fontSize: _rs(context, 8, min: 7),
-                                          color: const Color(0xFFDDE9DA),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                if (!available)
-                                  Positioned.fill(
-                                    child: Container(
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(_rs(context, 10, min: 7)),
-                                        color: context.overlayBg,
-                                      ),
-                                      child: Text(
-                                        '${state.cooldownRemaining.toStringAsFixed(1)}s',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: context.textPrimary,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                                SizedBox(height: _rs(context, 4, min: 3)),
+                                _Runner(size: playerPod),
                               ],
                             ),
                           ),
-                        ),
-                      ),
-                    );
-                  }
-
-                  final skillStrip = !compact
-                      ? Row(
-                          children: List.generate(
-                            controller.skills.length,
-                            (index) => Expanded(child: skillCard(index)),
-                          ),
-                        )
-                      : Wrap(
-                          spacing: _rs(context, 4, min: 2),
-                          runSpacing: _rs(context, 4, min: 2),
-                          children: List.generate(
-                            controller.skills.length,
-                            (index) => skillCard(index, width: (constraints.maxWidth - 12) / 2),
-                          ),
-                        );
-
-                  return Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      key: const PageStorageKey<String>('combat-skills-tile'),
-                      initiallyExpanded: false,
-                      tilePadding: EdgeInsets.symmetric(
-                        horizontal: _rs(context, 10, min: 6),
-                        vertical: 0,
-                      ),
-                      childrenPadding: EdgeInsets.only(bottom: _rs(context, 4, min: 2)),
-                      collapsedIconColor: context.iconColor,
-                      iconColor: context.iconColor,
-                      title: Text(
-                        'Fähigkeiten',
-                        style: TextStyle(
-                          fontSize: _rs(context, dense ? 11.5 : 12.5, min: 10),
-                          fontWeight: FontWeight.w700,
-                          color: context.textPrimary,
-                        ),
-                      ),
-                      subtitle: Text(
-                        controller.autoSkillSlots.isEmpty
-                            ? 'Tippen zum Aufklappen'
-                            : '${controller.autoSkillSlots.length} Auto-Skill${controller.autoSkillSlots.length > 1 ? 's' : ''} aktiv',
-                        style: TextStyle(
-                          fontSize: _rs(context, dense ? 9.5 : 10.5, min: 8.5),
-                          color: controller.autoSkillSlots.isEmpty
-                              ? context.textSecondary
-                              : const Color(0xFF8BAF85),
-                        ),
-                      ),
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: _rs(context, 4, min: 2)),
-                          child: skillStrip,
-                        ),
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: _rs(context, 10, min: 6),
-                            vertical: _rs(context, 4, min: 2),
-                          ),
-                          child: Text(
-                            'Lang drücken für Auto-Aktivierung',
-                            style: TextStyle(
-                              fontSize: _rs(context, 9, min: 7.5),
-                              color: context.textTertiary,
-                              fontStyle: FontStyle.italic,
+                          AnimatedPositioned(
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOut,
+                            left: enemyX,
+                            bottom: _rs(context, dense ? 14 : 24, min: 10),
+                            child: Column(
+                              children: [
+                                SizedBox(
+                                  width: enemyPod + _rs(context, 6, min: 4),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(999),
+                                    child: LinearProgressIndicator(
+                                      value: hpPercent,
+                                      minHeight: _rs(context, 6, min: 4.5),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        controller.enemy.isBoss
+                                            ? const Color(0xFFE06767)
+                                            : context.textPrimary,
+                                      ),
+                                      backgroundColor: context.borderHeavy,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: _rs(context, 3, min: 2)),
+                                Text(
+                                  controller.enemy.name,
+                                  style: TextStyle(
+                                    fontSize: _rs(
+                                      context,
+                                      dense ? 9 : 10,
+                                      min: 8,
+                                    ),
+                                    color: context.textPrimary,
+                                  ),
+                                ),
+                                SizedBox(height: _rs(context, 2, min: 1)),
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: _rs(context, 6, min: 4),
+                                    vertical: _rs(context, 2, min: 1),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: context.cardBg,
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: context.borderHeavy,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    controller.enemy.isBoss
+                                        ? 'Boss ${controller.bossPatternLabel(controller.currentBossPattern)} P${controller.currentBossPhase}'
+                                        : controller.archetypeLabel(
+                                            controller.enemy.archetype,
+                                          ),
+                                    style: TextStyle(
+                                      fontSize: _rs(
+                                        context,
+                                        dense ? 8 : 9,
+                                        min: 7,
+                                      ),
+                                      color: context.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: _rs(context, 4, min: 3)),
+                                _Enemy(
+                                  isBoss: controller.enemy.isBoss,
+                                  size: enemyPod,
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                if (!ultraCompact)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      _rs(context, 8, min: 6),
+                      _rs(context, 4, min: 2),
+                      _rs(context, 8, min: 6),
+                      _rs(context, 10, min: 6),
                     ),
-                  );
-                },
-              ),
-            ),
-          ],
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final compact = dense || constraints.maxWidth < 560;
+
+                        Widget skillCard(int index, {double? width}) {
+                          final state = controller.skills[index];
+                          final available = state.cooldownRemaining <= 0;
+                          final autoEnabled = controller.isAutoSkillEnabled(
+                            index,
+                          );
+                          final iconPath = switch (index) {
+                            0 => 'assets/icons/skill_strike.svg',
+                            1 => 'assets/icons/skill_whirl.svg',
+                            _ => 'assets/icons/skill_focus.svg',
+                          };
+
+                          return SizedBox(
+                            width: width,
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: _rs(context, 4, min: 2),
+                                vertical: _rs(context, 4, min: 2),
+                              ),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(
+                                  _rs(context, 10, min: 7),
+                                ),
+                                onTap: () => controller.activateSkill(index),
+                                onLongPress: () {
+                                  final enabled = controller.toggleAutoSkill(
+                                    index,
+                                  );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        enabled
+                                            ? 'Auto-Skill aktiv für ${controller.text.tr(state.definition.labelKey)}'
+                                            : 'Auto-Skill deaktiviert für ${controller.text.tr(state.definition.labelKey)}',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  height: _rs(
+                                    context,
+                                    dense ? 48 : 54,
+                                    min: 42,
+                                    max: 72,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: available
+                                        ? context.cardBg
+                                        : context.inputBg,
+                                    borderRadius: BorderRadius.circular(
+                                      _rs(context, 10, min: 7),
+                                    ),
+                                    border: Border.all(
+                                      color: autoEnabled
+                                          ? const Color(0xFF8BAF85)
+                                          : available
+                                          ? context.borderHeavy
+                                          : context.borderHeavy,
+                                    ),
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      Positioned(
+                                        left: _rs(context, 8, min: 5),
+                                        top: _rs(context, 8, min: 5),
+                                        child: _SvgIcon(
+                                          path: iconPath,
+                                          size: _rs(context, 18, min: 14),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        left: _rs(context, 30, min: 24),
+                                        top: _rs(context, 8, min: 5),
+                                        right: _rs(context, 4, min: 3),
+                                        child: Text(
+                                          controller.text.tr(
+                                            state.definition.labelKey,
+                                          ),
+                                          style: TextStyle(
+                                            fontSize: _rs(
+                                              context,
+                                              dense ? 9 : 10,
+                                              min: 8,
+                                            ),
+                                            color: context.textBright,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      if (autoEnabled)
+                                        Positioned(
+                                          right: _rs(context, 6, min: 4),
+                                          bottom: _rs(context, 5, min: 3),
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: _rs(
+                                                context,
+                                                5,
+                                                min: 3,
+                                              ),
+                                              vertical: _rs(context, 2, min: 1),
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF3E5A3B),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            child: Text(
+                                              'AUTO',
+                                              style: TextStyle(
+                                                fontSize: _rs(
+                                                  context,
+                                                  8,
+                                                  min: 7,
+                                                ),
+                                                color: const Color(0xFFDDE9DA),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      if (!available)
+                                        Positioned.fill(
+                                          child: Container(
+                                            alignment: Alignment.center,
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    _rs(context, 10, min: 7),
+                                                  ),
+                                              color: context.overlayBg,
+                                            ),
+                                            child: Text(
+                                              '${state.cooldownRemaining.toStringAsFixed(1)}s',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: context.textPrimary,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+
+                        final skillStrip = !compact
+                            ? Row(
+                                children: List.generate(
+                                  controller.skills.length,
+                                  (index) => Expanded(child: skillCard(index)),
+                                ),
+                              )
+                            : Wrap(
+                                spacing: _rs(context, 4, min: 2),
+                                runSpacing: _rs(context, 4, min: 2),
+                                children: List.generate(
+                                  controller.skills.length,
+                                  (index) => skillCard(
+                                    index,
+                                    width: (constraints.maxWidth - 12) / 2,
+                                  ),
+                                ),
+                              );
+
+                        return Theme(
+                          data: Theme.of(
+                            context,
+                          ).copyWith(dividerColor: Colors.transparent),
+                          child: ExpansionTile(
+                            key: const PageStorageKey<String>(
+                              'combat-skills-tile',
+                            ),
+                            initiallyExpanded: false,
+                            tilePadding: EdgeInsets.symmetric(
+                              horizontal: _rs(context, 10, min: 6),
+                              vertical: 0,
+                            ),
+                            childrenPadding: EdgeInsets.only(
+                              bottom: _rs(context, 4, min: 2),
+                            ),
+                            collapsedIconColor: context.iconColor,
+                            iconColor: context.iconColor,
+                            title: Text(
+                              'Fähigkeiten',
+                              style: TextStyle(
+                                fontSize: _rs(
+                                  context,
+                                  dense ? 11.5 : 12.5,
+                                  min: 10,
+                                ),
+                                fontWeight: FontWeight.w700,
+                                color: context.textPrimary,
+                              ),
+                            ),
+                            subtitle: Text(
+                              controller.autoSkillSlots.isEmpty
+                                  ? 'Tippen zum Aufklappen'
+                                  : '${controller.autoSkillSlots.length} Auto-Skill${controller.autoSkillSlots.length > 1 ? 's' : ''} aktiv',
+                              style: TextStyle(
+                                fontSize: _rs(
+                                  context,
+                                  dense ? 9.5 : 10.5,
+                                  min: 8.5,
+                                ),
+                                color: controller.autoSkillSlots.isEmpty
+                                    ? context.textSecondary
+                                    : const Color(0xFF8BAF85),
+                              ),
+                            ),
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: _rs(context, 4, min: 2),
+                                ),
+                                child: skillStrip,
+                              ),
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: _rs(context, 10, min: 6),
+                                  vertical: _rs(context, 4, min: 2),
+                                ),
+                                child: Text(
+                                  'Lang drücken für Auto-Aktivierung',
+                                  style: TextStyle(
+                                    fontSize: _rs(context, 9, min: 7.5),
+                                    color: context.textTertiary,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
             ),
           ),
         );
@@ -1563,59 +1766,82 @@ class _RunesPanelState extends State<_RunesPanel> {
                     OutlinedButton(
                       onPressed: () => _showEnchantDialog(context, i),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: const Text('Anlegen', style: TextStyle(fontSize: 11)),
+                      child: const Text(
+                        'Anlegen',
+                        style: TextStyle(fontSize: 11),
+                      ),
                     ),
                   ],
                 ),
               );
             }),
           const SizedBox(height: 8),
-          Text('Verzauberte Items:', style: TextStyle(fontSize: 12, color: context.textSecondary)),
+          Text(
+            'Verzauberte Items:',
+            style: TextStyle(fontSize: 12, color: context.textSecondary),
+          ),
           const SizedBox(height: 4),
-          ...controller.equippedItems.where((item) => item.enchantments.isNotEmpty).map((item) {
-            return Container(
-              margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: context.cardBgAlt,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: context.cardBorder),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                  ...item.enchantments.asMap().entries.map((e) {
-                    final rune = e.value;
-                    return Row(
-                      children: [
-                        Text(
-                          '  ${_runeLabel(rune.type)} T${rune.tier} +${(rune.bonusValue * 100).toStringAsFixed(0)}%',
-                          style: const TextStyle(fontSize: 11),
+          ...controller.equippedItems
+              .where((item) => item.enchantments.isNotEmpty)
+              .map((item) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: context.cardBgAlt,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: context.cardBorder),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
                         ),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: () {
-                            controller.removeEnchantment(item.id, e.key);
-                            setState(() {});
-                          },
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            minimumSize: Size.zero,
-                          ),
-                          child: const Text('Entfernen', style: TextStyle(fontSize: 10)),
-                        ),
-                      ],
-                    );
-                  }),
-                ],
-              ),
-            );
-          }),
+                      ),
+                      ...item.enchantments.asMap().entries.map((e) {
+                        final rune = e.value;
+                        return Row(
+                          children: [
+                            Text(
+                              '  ${_runeLabel(rune.type)} T${rune.tier} +${(rune.bonusValue * 100).toStringAsFixed(0)}%',
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: () {
+                                controller.removeEnchantment(item.id, e.key);
+                                setState(() {});
+                              },
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                minimumSize: Size.zero,
+                              ),
+                              child: const Text(
+                                'Entfernen',
+                                style: TextStyle(fontSize: 10),
+                              ),
+                            ),
+                          ],
+                        );
+                      }),
+                    ],
+                  ),
+                );
+              }),
         ],
       ),
     );
@@ -1639,16 +1865,23 @@ class _RunesPanelState extends State<_RunesPanel> {
                   child: ListView(
                     children: controller.inventory
                         .where((item) => item.enchantments.length < 2)
-                        .map((item) => ListTile(
-                              dense: true,
-                              title: Text(item.name, style: const TextStyle(fontSize: 12)),
-                              subtitle: Text('+${item.power} | ${item.enchantments.length}/2 Runen'),
-                              onTap: () {
-                                controller.enchantItem(item.id, runeIndex);
-                                setState(() {});
-                                Navigator.of(context).pop();
-                              },
-                            ))
+                        .map(
+                          (item) => ListTile(
+                            dense: true,
+                            title: Text(
+                              item.name,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            subtitle: Text(
+                              '+${item.power} | ${item.enchantments.length}/2 Runen',
+                            ),
+                            onTap: () {
+                              controller.enchantItem(item.id, runeIndex);
+                              setState(() {});
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        )
                         .toList(),
                   ),
                 ),
@@ -1709,7 +1942,11 @@ class _ForgePanel extends StatelessWidget {
                 if (controller.consumeLastCraftAutoSoldFlag()) {
                   final message = controller.consumeLastCraftAutoSoldText();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(message.isEmpty ? 'Auto-Sell aktiv' : message)),
+                    SnackBar(
+                      content: Text(
+                        message.isEmpty ? 'Auto-Sell aktiv' : message,
+                      ),
+                    ),
                   );
                   return;
                 }
@@ -1728,7 +1965,10 @@ class _ForgePanel extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    _SvgIcon(path: 'assets/icons/forge.svg', size: _rs(context, dense ? 24 : 30, min: 18)),
+                    _SvgIcon(
+                      path: 'assets/icons/forge.svg',
+                      size: _rs(context, dense ? 24 : 30, min: 18),
+                    ),
                     SizedBox(width: _rs(context, 8, min: 5)),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1738,7 +1978,11 @@ class _ForgePanel extends StatelessWidget {
                           style: TextStyle(
                             color: context.textBright,
                             fontWeight: FontWeight.bold,
-                            fontSize: _rs(context, dense ? 12.5 : 14, min: 10.5),
+                            fontSize: _rs(
+                              context,
+                              dense ? 12.5 : 14,
+                              min: 10.5,
+                            ),
                           ),
                         ),
                         Text(
@@ -1855,25 +2099,25 @@ class _ForgePanel extends StatelessWidget {
     final powerDelta = item.power - equippedPower;
     final comparisonLabel = hasEquipped
         ? powerDelta > 0
-            ? 'Besser (+$powerDelta)'
-            : powerDelta < 0
-                ? 'Schlechter (${powerDelta.toString()})'
-                : 'Gleich stark (0)'
+              ? 'Besser (+$powerDelta)'
+              : powerDelta < 0
+              ? 'Schlechter (${powerDelta.toString()})'
+              : 'Gleich stark (0)'
         : 'Neuer Slot (+${item.power})';
     final comparisonColor = hasEquipped
         ? powerDelta > 0
-            ? const Color(0xFF8FD39E)
-            : powerDelta < 0
-                ? const Color(0xFFE39A9A)
-                : context.textPrimary
+              ? const Color(0xFF8FD39E)
+              : powerDelta < 0
+              ? const Color(0xFFE39A9A)
+              : context.textPrimary
         : context.textPrimary;
     final comparisonIcon = hasEquipped
-      ? powerDelta > 0
-        ? Icons.arrow_upward_rounded
-        : powerDelta < 0
-          ? Icons.arrow_downward_rounded
-          : Icons.remove_rounded
-      : Icons.fiber_new_rounded;
+        ? powerDelta > 0
+              ? Icons.arrow_upward_rounded
+              : powerDelta < 0
+              ? Icons.arrow_downward_rounded
+              : Icons.remove_rounded
+        : Icons.fiber_new_rounded;
 
     await showDialog<void>(
       context: context,
@@ -1889,7 +2133,10 @@ class _ForgePanel extends StatelessWidget {
                   _SvgIcon(path: item.iconPath, size: 22),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text(
+                      item.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ],
               ),
@@ -1947,7 +2194,11 @@ class _ForgePanel extends StatelessWidget {
                 final sold = controller.sellItem(item);
                 if (!sold) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Item ist gesperrt und kann nicht verkauft werden.')),
+                    const SnackBar(
+                      content: Text(
+                        'Item ist gesperrt und kann nicht verkauft werden.',
+                      ),
+                    ),
                   );
                   return;
                 }
@@ -1961,7 +2212,10 @@ class _ForgePanel extends StatelessWidget {
     );
   }
 
-  Future<void> _showPrestigeDialog(BuildContext context, GameController controller) async {
+  Future<void> _showPrestigeDialog(
+    BuildContext context,
+    GameController controller,
+  ) async {
     final canPrestige = controller.canPrestige;
     final gain = controller.prestigeShardGain;
 
@@ -1978,7 +2232,9 @@ class _ForgePanel extends StatelessWidget {
               Text('Scherben: ${controller.forgeShards}'),
               const SizedBox(height: 8),
               Text('Gewinn bei Reset: +$gain Scherben'),
-              Text('Dauerbonus Schaden: x${controller.prestigeDamageBonus.toStringAsFixed(2)}'),
+              Text(
+                'Dauerbonus Schaden: x${controller.prestigeDamageBonus.toStringAsFixed(2)}',
+              ),
               Text(
                 'Dauerbonus Schmiede: +${(controller.prestigeForgeBonus * 100).toStringAsFixed(1)}%',
               ),
@@ -2045,8 +2301,8 @@ void _showStreakDialog(BuildContext context, GameController controller) {
                     color: isCurrent
                         ? const Color(0xFFD4A44C)
                         : isPast
-                            ? const Color(0xFF3E5A3B)
-                            : context.cardBgAlt,
+                        ? const Color(0xFF3E5A3B)
+                        : context.cardBgAlt,
                     border: Border.all(color: context.borderHeavy),
                   ),
                   child: Text(
@@ -2054,7 +2310,9 @@ void _showStreakDialog(BuildContext context, GameController controller) {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: isCurrent ? const Color(0xFF1A1A1A) : context.textPrimary,
+                      color: isCurrent
+                          ? const Color(0xFF1A1A1A)
+                          : context.textPrimary,
                     ),
                   ),
                 );
@@ -2062,7 +2320,13 @@ void _showStreakDialog(BuildContext context, GameController controller) {
             ),
             const SizedBox(height: 12),
             if (reward.isSpecial)
-              Text(text.tr('streakSpecial'), style: const TextStyle(color: Color(0xFFD4A44C), fontWeight: FontWeight.bold)),
+              Text(
+                text.tr('streakSpecial'),
+                style: const TextStyle(
+                  color: Color(0xFFD4A44C),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             if (reward.gold > 0) Text('+${reward.gold} Gold'),
             if (reward.hammers > 0) Text('+${reward.hammers} Hammer'),
             if (reward.shards > 0) Text('+${reward.shards} Scherben'),
@@ -2079,7 +2343,10 @@ void _showStreakDialog(BuildContext context, GameController controller) {
   );
 }
 
-Future<void> _showSkillTree(BuildContext context, GameController controller) async {
+Future<void> _showSkillTree(
+  BuildContext context,
+  GameController controller,
+) async {
   await showModalBottomSheet<void>(
     context: context,
     backgroundColor: context.sheetBg,
@@ -2087,7 +2354,12 @@ Future<void> _showSkillTree(BuildContext context, GameController controller) asy
     builder: (context) {
       return SafeArea(
         child: SizedBox(
-          height: _adaptiveSheetHeight(context, factor: 0.58, min: 320, max: 760),
+          height: _adaptiveSheetHeight(
+            context,
+            factor: 0.58,
+            min: 320,
+            max: 760,
+          ),
           child: StatefulBuilder(
             builder: (context, setModalState) {
               Widget skillCard({
@@ -2108,13 +2380,19 @@ Future<void> _showSkillTree(BuildContext context, GameController controller) asy
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(
+                        title,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       const SizedBox(height: 2),
                       Text(desc, style: const TextStyle(fontSize: 12)),
                       const SizedBox(height: 4),
                       Text('Level $level | Kosten $cost Scherben'),
                       const SizedBox(height: 6),
-                      FilledButton.tonal(onPressed: onUpgrade, child: const Text('Skill verbessern')),
+                      FilledButton.tonal(
+                        onPressed: onUpgrade,
+                        child: const Text('Skill verbessern'),
+                      ),
                     ],
                   ),
                 );
@@ -2274,13 +2552,16 @@ class _BottomMenu extends StatelessWidget {
 
           if (!compact) {
             return Row(
-              children: buttons.map((button) => Expanded(child: button)).toList(growable: false),
+              children: buttons
+                  .map((button) => Expanded(child: button))
+                  .toList(growable: false),
             );
           }
 
           final columns = constraints.maxWidth < 390 ? 2 : 3;
           final spacing = _rs(context, 6, min: 4);
-          final itemWidth = (constraints.maxWidth - ((columns - 1) * spacing)) / columns;
+          final itemWidth =
+              (constraints.maxWidth - ((columns - 1) * spacing)) / columns;
           return Wrap(
             spacing: spacing,
             runSpacing: spacing,
@@ -2293,7 +2574,10 @@ class _BottomMenu extends StatelessWidget {
     );
   }
 
-  Future<void> _showForgePanel(BuildContext context, GameController controller) async {
+  Future<void> _showForgePanel(
+    BuildContext context,
+    GameController controller,
+  ) async {
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: context.sheetBg,
@@ -2301,7 +2585,12 @@ class _BottomMenu extends StatelessWidget {
       builder: (context) {
         return SafeArea(
           child: SizedBox(
-            height: _adaptiveSheetHeight(context, factor: 0.52, min: 320, max: 760),
+            height: _adaptiveSheetHeight(
+              context,
+              factor: 0.52,
+              min: 320,
+              max: 760,
+            ),
             child: ListView(
               padding: const EdgeInsets.only(top: 10, bottom: 8),
               children: [
@@ -2309,20 +2598,27 @@ class _BottomMenu extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     controller.text.tr('forge'),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
                 AnimatedBuilder(
                   animation: controller,
-                  builder: (context, _) => _ForgePanel(controller: controller, dense: true),
+                  builder: (context, _) =>
+                      _ForgePanel(controller: controller, dense: true),
                 ),
                 const SizedBox(height: 12),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     controller.text.tr('runesTitle'),
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -2338,7 +2634,10 @@ class _BottomMenu extends StatelessWidget {
     );
   }
 
-  Future<void> _showFlaskPanel(BuildContext context, GameController controller) async {
+  Future<void> _showFlaskPanel(
+    BuildContext context,
+    GameController controller,
+  ) async {
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: context.sheetBg,
@@ -2346,7 +2645,12 @@ class _BottomMenu extends StatelessWidget {
       builder: (context) {
         return SafeArea(
           child: SizedBox(
-            height: _adaptiveSheetHeight(context, factor: 0.56, min: 340, max: 760),
+            height: _adaptiveSheetHeight(
+              context,
+              factor: 0.56,
+              min: 340,
+              max: 760,
+            ),
             child: AnimatedBuilder(
               animation: controller,
               builder: (context, _) {
@@ -2360,10 +2664,16 @@ class _BottomMenu extends StatelessWidget {
                   children: [
                     const Text(
                       'Tränke',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
-                    Text(cooldownText, style: TextStyle(color: context.textPrimary)),
+                    Text(
+                      cooldownText,
+                      style: TextStyle(color: context.textPrimary),
+                    ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -2373,7 +2683,8 @@ class _BottomMenu extends StatelessWidget {
                             (stance) => ChoiceChip(
                               label: Text(controller.combatStanceLabel(stance)),
                               selected: controller.combatStance == stance,
-                              onSelected: (_) => controller.setCombatStance(stance),
+                              onSelected: (_) =>
+                                  controller.setCombatStance(stance),
                             ),
                           )
                           .toList(growable: false),
@@ -2386,7 +2697,9 @@ class _BottomMenu extends StatelessWidget {
                             width: double.infinity,
                             child: FilledButton.tonal(
                               onPressed: controller.useHealingFlask,
-                              child: Text('Heiltrank nutzen (${controller.healingFlasks})'),
+                              child: Text(
+                                'Heiltrank nutzen (${controller.healingFlasks})',
+                              ),
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -2394,14 +2707,20 @@ class _BottomMenu extends StatelessWidget {
                             width: double.infinity,
                             child: OutlinedButton(
                               onPressed: () {
-                                final ok = controller.buyFlask(FlaskType.healing);
+                                final ok = controller.buyFlask(
+                                  FlaskType.healing,
+                                );
                                 if (!ok) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Nicht genug Gold.')),
+                                    const SnackBar(
+                                      content: Text('Nicht genug Gold.'),
+                                    ),
                                   );
                                 }
                               },
-                              child: Text('Heiltrank kaufen (${controller.healingFlaskCost}G)'),
+                              child: Text(
+                                'Heiltrank kaufen (${controller.healingFlaskCost}G)',
+                              ),
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -2409,7 +2728,9 @@ class _BottomMenu extends StatelessWidget {
                             width: double.infinity,
                             child: FilledButton.tonal(
                               onPressed: controller.useBerserkFlask,
-                              child: Text('Berserk nutzen (${controller.berserkFlasks})'),
+                              child: Text(
+                                'Berserk nutzen (${controller.berserkFlasks})',
+                              ),
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -2417,14 +2738,20 @@ class _BottomMenu extends StatelessWidget {
                             width: double.infinity,
                             child: OutlinedButton(
                               onPressed: () {
-                                final ok = controller.buyFlask(FlaskType.berserk);
+                                final ok = controller.buyFlask(
+                                  FlaskType.berserk,
+                                );
                                 if (!ok) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Nicht genug Gold.')),
+                                    const SnackBar(
+                                      content: Text('Nicht genug Gold.'),
+                                    ),
                                   );
                                 }
                               },
-                              child: Text('Berserk kaufen (${controller.berserkFlaskCost}G)'),
+                              child: Text(
+                                'Berserk kaufen (${controller.berserkFlaskCost}G)',
+                              ),
                             ),
                           ),
                         ],
@@ -2437,21 +2764,31 @@ class _BottomMenu extends StatelessWidget {
                               Expanded(
                                 child: FilledButton.tonal(
                                   onPressed: controller.useHealingFlask,
-                                  child: Text('Heiltrank (${controller.healingFlasks})'),
+                                  child: Text(
+                                    'Heiltrank (${controller.healingFlasks})',
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: OutlinedButton(
                                   onPressed: () {
-                                    final ok = controller.buyFlask(FlaskType.healing);
+                                    final ok = controller.buyFlask(
+                                      FlaskType.healing,
+                                    );
                                     if (!ok) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Nicht genug Gold.')),
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Nicht genug Gold.'),
+                                        ),
                                       );
                                     }
                                   },
-                                  child: Text('Kaufen ${controller.healingFlaskCost}G'),
+                                  child: Text(
+                                    'Kaufen ${controller.healingFlaskCost}G',
+                                  ),
                                 ),
                               ),
                             ],
@@ -2462,21 +2799,31 @@ class _BottomMenu extends StatelessWidget {
                               Expanded(
                                 child: FilledButton.tonal(
                                   onPressed: controller.useBerserkFlask,
-                                  child: Text('Berserk (${controller.berserkFlasks})'),
+                                  child: Text(
+                                    'Berserk (${controller.berserkFlasks})',
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: OutlinedButton(
                                   onPressed: () {
-                                    final ok = controller.buyFlask(FlaskType.berserk);
+                                    final ok = controller.buyFlask(
+                                      FlaskType.berserk,
+                                    );
                                     if (!ok) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Nicht genug Gold.')),
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Nicht genug Gold.'),
+                                        ),
                                       );
                                     }
                                   },
-                                  child: Text('Kaufen ${controller.berserkFlaskCost}G'),
+                                  child: Text(
+                                    'Kaufen ${controller.berserkFlaskCost}G',
+                                  ),
                                 ),
                               ),
                             ],
@@ -2493,7 +2840,10 @@ class _BottomMenu extends StatelessWidget {
     );
   }
 
-  Future<void> _showQuestBoard(BuildContext context, GameController controller) async {
+  Future<void> _showQuestBoard(
+    BuildContext context,
+    GameController controller,
+  ) async {
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: context.sheetBg,
@@ -2501,7 +2851,12 @@ class _BottomMenu extends StatelessWidget {
       builder: (context) {
         return SafeArea(
           child: SizedBox(
-            height: _adaptiveSheetHeight(context, factor: 0.6, min: 340, max: 780),
+            height: _adaptiveSheetHeight(
+              context,
+              factor: 0.6,
+              min: 340,
+              max: 780,
+            ),
             child: StatefulBuilder(
               builder: (context, setModalState) {
                 final quests = controller.questBoard;
@@ -2511,7 +2866,8 @@ class _BottomMenu extends StatelessWidget {
                     final wide = constraints.maxWidth >= 900;
 
                     Widget questCard(QuestStateView quest, {double? width}) {
-                      final progressRatio = (quest.progress / quest.target).clamp(0.0, 1.0);
+                      final progressRatio = (quest.progress / quest.target)
+                          .clamp(0.0, 1.0);
                       final rewardText =
                           '+${quest.rewardGold} Gold | +${quest.rewardHammers} Hämmer'
                           '${quest.rewardShards > 0 ? ' | +${quest.rewardShards} Scherben' : ''}';
@@ -2529,27 +2885,40 @@ class _BottomMenu extends StatelessWidget {
                           children: [
                             Text(
                               quest.title,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 2),
-                            Text(quest.description, style: const TextStyle(fontSize: 12)),
+                            Text(
+                              quest.description,
+                              style: const TextStyle(fontSize: 12),
+                            ),
                             const SizedBox(height: 6),
                             ClipRRect(
                               borderRadius: BorderRadius.circular(999),
                               child: LinearProgressIndicator(
                                 value: progressRatio,
                                 minHeight: 6,
-                                valueColor: AlwaysStoppedAnimation<Color>(context.textPrimary),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  context.textPrimary,
+                                ),
                                 backgroundColor: context.borderHeavy,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text('${quest.progress}/${quest.target}'),
                             const SizedBox(height: 4),
-                            Text(rewardText, style: const TextStyle(fontSize: 12)),
+                            Text(
+                              rewardText,
+                              style: const TextStyle(fontSize: 12),
+                            ),
                             const SizedBox(height: 6),
                             if (quest.claimed)
-                              const Text('Belohnung geholt', style: TextStyle(color: Color(0xFF9BC89E)))
+                              const Text(
+                                'Belohnung geholt',
+                                style: TextStyle(color: Color(0xFF9BC89E)),
+                              )
                             else
                               FilledButton.tonal(
                                 onPressed: quest.canClaim
@@ -2570,10 +2939,15 @@ class _BottomMenu extends StatelessWidget {
                       children: [
                         const Text(
                           'Quest Board',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(height: 4),
-                        const Text('Schliesse Quests ab und hole dir Belohnungen.'),
+                        const Text(
+                          'Schliesse Quests ab und hole dir Belohnungen.',
+                        ),
                         const SizedBox(height: 6),
                         Row(
                           children: [
@@ -2591,12 +2965,19 @@ class _BottomMenu extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 10),
-                        if (!wide) ...quests.map((quest) => questCard(quest)) else ...[
+                        if (!wide)
+                          ...quests.map((quest) => questCard(quest))
+                        else ...[
                           Wrap(
                             spacing: 10,
                             runSpacing: 0,
                             children: quests
-                                .map((quest) => questCard(quest, width: (constraints.maxWidth - 10) / 2))
+                                .map(
+                                  (quest) => questCard(
+                                    quest,
+                                    width: (constraints.maxWidth - 10) / 2,
+                                  ),
+                                )
                                 .toList(growable: false),
                           ),
                         ],
@@ -2612,7 +2993,10 @@ class _BottomMenu extends StatelessWidget {
     );
   }
 
-  Future<void> _showTalentTree(BuildContext context, GameController controller) async {
+  Future<void> _showTalentTree(
+    BuildContext context,
+    GameController controller,
+  ) async {
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: context.sheetBg,
@@ -2620,7 +3004,12 @@ class _BottomMenu extends StatelessWidget {
       builder: (context) {
         return SafeArea(
           child: SizedBox(
-            height: _adaptiveSheetHeight(context, factor: 0.72, min: 420, max: 920),
+            height: _adaptiveSheetHeight(
+              context,
+              factor: 0.72,
+              min: 420,
+              max: 920,
+            ),
             child: StatefulBuilder(
               builder: (context, setModalState) {
                 Future<void> tryUpgrade(TalentType type) async {
@@ -2661,13 +3050,19 @@ class _BottomMenu extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                          title,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 2),
                         Text(desc, style: const TextStyle(fontSize: 12)),
                         const SizedBox(height: 4),
                         Text('Level $level | Kosten $cost Scherben'),
                         const SizedBox(height: 6),
-                        FilledButton.tonal(onPressed: onUpgrade, child: const Text('Upgrade')),
+                        FilledButton.tonal(
+                          onPressed: onUpgrade,
+                          child: const Text('Upgrade'),
+                        ),
                       ],
                     ),
                   );
@@ -2695,14 +3090,19 @@ class _BottomMenu extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                          title,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 2),
                         Text(desc, style: const TextStyle(fontSize: 12)),
                         const SizedBox(height: 4),
                         Text('Perk-Level $level | Kosten $cost Clan-Punkte'),
                         const SizedBox(height: 6),
                         FilledButton.tonal(
-                          onPressed: affordable ? () => tryUpgradeClanPerk(type) : null,
+                          onPressed: affordable
+                              ? () => tryUpgradeClanPerk(type)
+                              : null,
                           child: const Text('Perk verbessern'),
                         ),
                       ],
@@ -2718,7 +3118,10 @@ class _BottomMenu extends StatelessWidget {
                           if (!wide) {
                             return clanPerkCard(type: type);
                           }
-                          return clanPerkCard(type: type, width: (constraints.maxWidth - 10) / 2);
+                          return clanPerkCard(
+                            type: type,
+                            width: (constraints.maxWidth - 10) / 2,
+                          );
                         })
                         .toList(growable: false);
 
@@ -2751,40 +3154,51 @@ class _BottomMenu extends StatelessWidget {
                       children: [
                         Text(
                           'Clan Stufe ${controller.clanLevel}',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(height: 4),
-                        Text('Clan-XP: ${controller.clanXp}/${controller.clanXpRequired}'),
+                        Text(
+                          'Clan-XP: ${controller.clanXp}/${controller.clanXpRequired}',
+                        ),
                         const SizedBox(height: 6),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(999),
                           child: LinearProgressIndicator(
                             value: controller.clanXpProgress,
                             minHeight: 8,
-                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF9BC89E)),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              Color(0xFF9BC89E),
+                            ),
                             backgroundColor: context.borderHeavy,
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Text('Clan-Punkte: ${controller.clanPoints} | Scherben: ${controller.forgeShards}'),
+                        Text(
+                          'Clan-Punkte: ${controller.clanPoints} | Scherben: ${controller.forgeShards}',
+                        ),
                         const SizedBox(height: 12),
                         const Text(
                           'Clan Perks',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         if (!wide)
                           ...clanCards
                         else
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 0,
-                            children: clanCards,
-                          ),
+                          Wrap(spacing: 10, runSpacing: 0, children: clanCards),
                         const SizedBox(height: 8),
                         const Text(
                           'Talentzweig (Scherben)',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(height: 10),
                         if (!wide)
@@ -2794,7 +3208,12 @@ class _BottomMenu extends StatelessWidget {
                             spacing: 10,
                             runSpacing: 0,
                             children: talentCards
-                                .map((card) => SizedBox(width: (constraints.maxWidth - 10) / 2, child: card))
+                                .map(
+                                  (card) => SizedBox(
+                                    width: (constraints.maxWidth - 10) / 2,
+                                    child: card,
+                                  ),
+                                )
                                 .toList(growable: false),
                           ),
                       ],
@@ -2809,7 +3228,10 @@ class _BottomMenu extends StatelessWidget {
     );
   }
 
-  Future<void> _showInventory(BuildContext context, GameController controller) async {
+  Future<void> _showInventory(
+    BuildContext context,
+    GameController controller,
+  ) async {
     final text = controller.text;
     ItemSet? setFilter;
     ItemSlot? slotFilter;
@@ -2824,28 +3246,40 @@ class _BottomMenu extends StatelessWidget {
       builder: (context) {
         return SafeArea(
           child: SizedBox(
-            height: _adaptiveSheetHeight(context, factor: 0.72, min: 420, max: 940),
+            height: _adaptiveSheetHeight(
+              context,
+              factor: 0.72,
+              min: 420,
+              max: 940,
+            ),
             child: StatefulBuilder(
               builder: (context, setModalState) {
                 void refresh() {
                   setModalState(() {});
                 }
 
-                final filteredInventory = controller.inventory
-                    .where((item) {
-                      final matchesSet = setFilter == null || item.setId == setFilter;
-                      final matchesSlot = slotFilter == null || item.slot == slotFilter;
-                      final matchesTier = tierFilter == null || item.tier == tierFilter;
-                      return matchesSet && matchesSlot && matchesTier;
-                    })
-                    .toList();
+                final filteredInventory = controller.inventory.where((item) {
+                  final matchesSet =
+                      setFilter == null || item.setId == setFilter;
+                  final matchesSlot =
+                      slotFilter == null || item.slot == slotFilter;
+                  final matchesTier =
+                      tierFilter == null || item.tier == tierFilter;
+                  return matchesSet && matchesSlot && matchesTier;
+                }).toList();
 
                 filteredInventory.sort((a, b) {
                   return switch (sortMode) {
                     InventorySortMode.powerDesc => b.power.compareTo(a.power),
-                    InventorySortMode.tierDesc => b.tier.index.compareTo(a.tier.index),
-                    InventorySortMode.sellValueDesc => b.sellValue.compareTo(a.sellValue),
-                    InventorySortMode.nameAsc => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+                    InventorySortMode.tierDesc => b.tier.index.compareTo(
+                      a.tier.index,
+                    ),
+                    InventorySortMode.sellValueDesc => b.sellValue.compareTo(
+                      a.sellValue,
+                    ),
+                    InventorySortMode.nameAsc => a.name.toLowerCase().compareTo(
+                      b.name.toLowerCase(),
+                    ),
                   };
                 });
 
@@ -2853,939 +3287,1256 @@ class _BottomMenu extends StatelessWidget {
 
                 return LayoutBuilder(
                   builder: (context, sheetConstraints) {
-                    final itemListHeight =
-                        (sheetConstraints.maxHeight * 0.42).clamp(220.0, 520.0).toDouble();
+                    final itemListHeight = (sheetConstraints.maxHeight * 0.42)
+                        .clamp(220.0, 520.0)
+                        .toDouble();
 
                     return SingleChildScrollView(
                       child: ConstrainedBox(
-                        constraints: BoxConstraints(minHeight: sheetConstraints.maxHeight),
+                        constraints: BoxConstraints(
+                          minHeight: sheetConstraints.maxHeight,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          _SvgIcon(path: 'assets/icons/inventory.svg', size: 24),
-                          const SizedBox(width: 8),
-                          Text(
-                            text.tr('inventory'),
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: List.generate(3, (idx) {
-                          final slot = idx + 1;
-                          final hasPreset = controller.hasLoadoutPreset(slot);
-                          return SizedBox(
-                            width: compact ? 140 : 180,
-                            child: OutlinedButton(
-                              onPressed: () {
-                                showDialog<void>(
-                                  context: context,
-                                  builder: (dialogContext) {
-                                    return AlertDialog(
-                                      title: Text('Loadout $slot'),
-                                      content: Text(
-                                        hasPreset
-                                            ? 'Loadout laden oder aktuellen Stand überschreiben?'
-                                            : 'Diesen Slot als aktuelles Loadout speichern?',
-                                      ),
-                                      actions: [
-                                        if (hasPreset)
-                                          TextButton(
-                                            onPressed: () {
-                                              final changes = controller.applyLoadout(slot);
-                                              Navigator.of(dialogContext).pop();
-                                              final msg = changes > 0
-                                                  ? 'Loadout $slot geladen ($changes Aenderungen).'
-                                                  : 'Loadout $slot ist bereits aktiv oder teilweise nicht verfügbar.';
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(content: Text(msg)),
-                                              );
-                                              refresh();
-                                            },
-                                            child: const Text('Laden'),
-                                          ),
-                                        FilledButton.tonal(
-                                          onPressed: () {
-                                            final saved = controller.saveCurrentLoadout(slot);
-                                            Navigator.of(dialogContext).pop();
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  'Loadout $slot gespeichert ($saved Slots).',
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                children: [
+                                  _SvgIcon(
+                                    path: 'assets/icons/inventory.svg',
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    text.tr('inventory'),
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: List.generate(3, (idx) {
+                                  final slot = idx + 1;
+                                  final hasPreset = controller.hasLoadoutPreset(
+                                    slot,
+                                  );
+                                  return SizedBox(
+                                    width: compact ? 140 : 180,
+                                    child: OutlinedButton(
+                                      onPressed: () {
+                                        showDialog<void>(
+                                          context: context,
+                                          builder: (dialogContext) {
+                                            return AlertDialog(
+                                              title: Text('Loadout $slot'),
+                                              content: Text(
+                                                hasPreset
+                                                    ? 'Loadout laden oder aktuellen Stand überschreiben?'
+                                                    : 'Diesen Slot als aktuelles Loadout speichern?',
+                                              ),
+                                              actions: [
+                                                if (hasPreset)
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      final changes = controller
+                                                          .applyLoadout(slot);
+                                                      Navigator.of(
+                                                        dialogContext,
+                                                      ).pop();
+                                                      final msg = changes > 0
+                                                          ? 'Loadout $slot geladen ($changes Aenderungen).'
+                                                          : 'Loadout $slot ist bereits aktiv oder teilweise nicht verfügbar.';
+                                                      ScaffoldMessenger.of(
+                                                        context,
+                                                      ).showSnackBar(
+                                                        SnackBar(
+                                                          content: Text(msg),
+                                                        ),
+                                                      );
+                                                      refresh();
+                                                    },
+                                                    child: const Text('Laden'),
+                                                  ),
+                                                FilledButton.tonal(
+                                                  onPressed: () {
+                                                    final saved = controller
+                                                        .saveCurrentLoadout(
+                                                          slot,
+                                                        );
+                                                    Navigator.of(
+                                                      dialogContext,
+                                                    ).pop();
+                                                    ScaffoldMessenger.of(
+                                                      context,
+                                                    ).showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(
+                                                          'Loadout $slot gespeichert ($saved Slots).',
+                                                        ),
+                                                      ),
+                                                    );
+                                                    refresh();
+                                                  },
+                                                  child: const Text(
+                                                    'Speichern',
+                                                  ),
                                                 ),
-                                              ),
-                                            );
-                                            refresh();
-                                          },
-                                          child: const Text('Speichern'),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                              },
-                              child: Text(hasPreset ? 'L$slot (S)' : 'L$slot'),
-                            ),
-                          );
-                        }),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final cols = constraints.maxWidth < 500
-                              ? 1
-                              : constraints.maxWidth < 860
-                              ? 2
-                              : 3;
-                          return GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: cols,
-                              childAspectRatio: cols == 1 ? 3.6 : 2.5,
-                            ),
-                            itemCount: ItemSlot.values.length,
-                            itemBuilder: (context, index) {
-                              final slot = ItemSlot.values[index];
-                          final equipped = controller.equippedInSlot(slot);
-                          final best = controller.bestItemForSlot(slot);
-                          final upgradeDelta = controller.bestUpgradeDelta(slot);
-                          return Container(
-                            margin: const EdgeInsets.all(6),
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: context.cardBg,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: context.borderHeavy),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(controller.slotLabel(slot), style: const TextStyle(fontSize: 11)),
-                                const SizedBox(height: 2),
-                                Text(
-                                  equipped?.name ?? '-',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: context.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  best == null
-                                      ? 'Keine Items'
-                                      : upgradeDelta > 0
-                                      ? 'Upgrade +$upgradeDelta'
-                                      : 'Best in Slot',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: best == null
-                                        ? const Color(0xFF989898)
-                                        : upgradeDelta > 0
-                                        ? const Color(0xFFBFD8BF)
-                                        : context.textTertiary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    const Divider(color: Color(0xFF2D3F5E), height: 1),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Text('Filter', style: TextStyle(fontSize: 12)),
-                              const Spacer(),
-                              Text(
-                                '${filteredInventory.length}/${controller.inventory.length}',
-                                style: TextStyle(fontSize: 12, color: context.textPrimary),
-                              ),
-                              const SizedBox(width: 8),
-                              TextButton(
-                                onPressed: () {
-                                  setFilter = null;
-                                  slotFilter = null;
-                                  tierFilter = null;
-                                  setModalState(() {});
-                                },
-                                child: const Text('Reset'),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          if (compact)
-                            Column(
-                              children: [
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: OutlinedButton(
-                                    onPressed: () {
-                                      final changed = controller.smartEquipBestItems(
-                                        preferSetSynergy: smartEquipMode == SmartEquipMode.setSynergy,
-                                      );
-                                      final msg = changed > 0
-                                          ? 'Smart Equip: $changed Slots aktualisiert.'
-                                          : 'Smart Equip: Keine bessere Ausrüstung gefunden.';
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text(msg)),
-                                      );
-                                      refresh();
-                                    },
-                                    child: const Text('Smart Equip'),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: OutlinedButton(
-                                    onPressed: () async {
-                                      if (filteredInventory.isEmpty) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Keine Items im aktuellen Filter.')),
-                                        );
-                                        return;
-                                      }
-
-                                      final preview = controller.getBulkSellPreview(
-                                        filteredInventory.map((item) => item.id),
-                                      );
-                                      final confirmed = await showDialog<bool>(
-                                        context: context,
-                                        builder: (dialogContext) {
-                                          return AlertDialog(
-                                            title: const Text('Massenverkauf bestaetigen'),
-                                            content: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text('Im Filter: ${preview.candidateCount} Items'),
-                                                Text('Verkaufbar: ${preview.sellableCount}'),
-                                                Text('Geschützt: ${preview.protectedCount}'),
-                                                const SizedBox(height: 8),
-                                                Text('Erwartetes Gold: +${preview.estimatedGold}'),
                                               ],
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.of(dialogContext).pop(false),
-                                                child: const Text('Abbrechen'),
-                                              ),
-                                              FilledButton.tonal(
-                                                onPressed: () => Navigator.of(dialogContext).pop(true),
-                                                child: const Text('Verkaufen'),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      );
-                                      if (confirmed != true) {
-                                        return;
-                                      }
-                                      if (!context.mounted) {
-                                        return;
-                                      }
-
-                                      final result = controller.sellItemsByIds(
-                                        filteredInventory.map((item) => item.id),
-                                      );
-                                      final msg = result.soldCount > 0
-                                          ? 'Massenverkauf: ${result.soldCount} Items für +${result.earnedGold} Gold.'
-                                          : 'Massenverkauf: Keine verkaufbaren Items (gesperrt/ausgerüstet).';
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text(msg)),
-                                      );
-                                      refresh();
-                                    },
-                                    child: const Text('Massenverkauf'),
-                                  ),
-                                ),
-                              ],
-                            )
-                          else
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton(
-                                    onPressed: () {
-                                      final changed = controller.smartEquipBestItems(
-                                        preferSetSynergy: smartEquipMode == SmartEquipMode.setSynergy,
-                                      );
-                                      final msg = changed > 0
-                                          ? 'Smart Equip: $changed Slots aktualisiert.'
-                                          : 'Smart Equip: Keine bessere Ausrüstung gefunden.';
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text(msg)),
-                                      );
-                                      refresh();
-                                    },
-                                    child: const Text('Smart Equip'),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: OutlinedButton(
-                                    onPressed: () async {
-                                    if (filteredInventory.isEmpty) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Keine Items im aktuellen Filter.')),
-                                      );
-                                      return;
-                                    }
-
-                                    final preview = controller.getBulkSellPreview(
-                                      filteredInventory.map((item) => item.id),
-                                    );
-                                    final confirmed = await showDialog<bool>(
-                                      context: context,
-                                      builder: (dialogContext) {
-                                        return AlertDialog(
-                                          title: const Text('Massenverkauf bestaetigen'),
-                                          content: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text('Im Filter: ${preview.candidateCount} Items'),
-                                              Text('Verkaufbar: ${preview.sellableCount}'),
-                                              Text('Geschützt: ${preview.protectedCount}'),
-                                              const SizedBox(height: 8),
-                                              Text('Erwartetes Gold: +${preview.estimatedGold}'),
-                                            ],
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Navigator.of(dialogContext).pop(false),
-                                              child: const Text('Abbrechen'),
-                                            ),
-                                            FilledButton.tonal(
-                                              onPressed: () => Navigator.of(dialogContext).pop(true),
-                                              child: const Text('Verkaufen'),
-                                            ),
-                                          ],
+                                            );
+                                          },
                                         );
                                       },
-                                    );
-                                    if (confirmed != true) {
-                                      return;
-                                    }
-                                    if (!context.mounted) {
-                                      return;
-                                    }
-
-                                    final result = controller.sellItemsByIds(
-                                      filteredInventory.map((item) => item.id),
-                                    );
-                                    final msg = result.soldCount > 0
-                                        ? 'Massenverkauf: ${result.soldCount} Items für +${result.earnedGold} Gold.'
-                                        : 'Massenverkauf: Keine verkaufbaren Items (gesperrt/ausgerüstet).';
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(msg)),
-                                    );
-                                    refresh();
-                                    },
-                                    child: const Text('Massenverkauf'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          const SizedBox(height: 6),
-                          if (compact)
-                            Column(
-                              children: [
-                                DropdownButton<ItemSet?>(
-                                  value: setFilter,
-                                  isExpanded: true,
-                                  dropdownColor: context.cardBg,
-                                  items: [
-                                    const DropdownMenuItem<ItemSet?>(
-                                      value: null,
-                                      child: Text('Alle Sets'),
-                                    ),
-                                    ...ItemSet.values.map(
-                                      (setId) => DropdownMenuItem<ItemSet?>(
-                                        value: setId,
-                                        child: Text(controller.setLabel(setId)),
+                                      child: Text(
+                                        hasPreset ? 'L$slot (S)' : 'L$slot',
                                       ),
                                     ),
-                                  ],
-                                  onChanged: (value) {
-                                    setFilter = value;
-                                    setModalState(() {});
-                                  },
-                                ),
-                                const SizedBox(height: 8),
-                                DropdownButton<ItemSlot?>(
-                                  value: slotFilter,
-                                  isExpanded: true,
-                                  dropdownColor: context.cardBg,
-                                  items: [
-                                    const DropdownMenuItem<ItemSlot?>(
-                                      value: null,
-                                      child: Text('Alle Slots'),
-                                    ),
-                                    ...ItemSlot.values.map(
-                                      (slot) => DropdownMenuItem<ItemSlot?>(
-                                        value: slot,
-                                        child: Text(controller.slotLabel(slot)),
-                                      ),
-                                    ),
-                                  ],
-                                  onChanged: (value) {
-                                    slotFilter = value;
-                                    setModalState(() {});
-                                  },
-                                ),
-                                const SizedBox(height: 8),
-                                DropdownButton<ItemTier?>(
-                                  value: tierFilter,
-                                  isExpanded: true,
-                                  dropdownColor: context.cardBg,
-                                  items: [
-                                    const DropdownMenuItem<ItemTier?>(
-                                      value: null,
-                                      child: Text('Alle Tiers'),
-                                    ),
-                                    ...ItemTier.values.map(
-                                      (tier) => DropdownMenuItem<ItemTier?>(
-                                        value: tier,
-                                        child: Text(controller.tierLabel(tier)),
-                                      ),
-                                    ),
-                                  ],
-                                  onChanged: (value) {
-                                    tierFilter = value;
-                                    setModalState(() {});
-                                  },
-                                ),
-                              ],
-                            )
-                          else
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: DropdownButton<ItemSet?>(
-                                    value: setFilter,
-                                    isExpanded: true,
-                                    dropdownColor: context.cardBg,
-                                    items: [
-                                      const DropdownMenuItem<ItemSet?>(
-                                        value: null,
-                                        child: Text('Alle Sets'),
-                                      ),
-                                      ...ItemSet.values.map(
-                                        (setId) => DropdownMenuItem<ItemSet?>(
-                                          value: setId,
-                                          child: Text(controller.setLabel(setId)),
-                                        ),
-                                      ),
-                                    ],
-                                    onChanged: (value) {
-                                      setFilter = value;
-                                      setModalState(() {});
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: DropdownButton<ItemSlot?>(
-                                    value: slotFilter,
-                                    isExpanded: true,
-                                    dropdownColor: context.cardBg,
-                                    items: [
-                                      const DropdownMenuItem<ItemSlot?>(
-                                        value: null,
-                                        child: Text('Alle Slots'),
-                                      ),
-                                      ...ItemSlot.values.map(
-                                        (slot) => DropdownMenuItem<ItemSlot?>(
-                                          value: slot,
-                                          child: Text(controller.slotLabel(slot)),
-                                        ),
-                                      ),
-                                    ],
-                                    onChanged: (value) {
-                                      slotFilter = value;
-                                      setModalState(() {});
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: DropdownButton<ItemTier?>(
-                                    value: tierFilter,
-                                    isExpanded: true,
-                                    dropdownColor: context.cardBg,
-                                    items: [
-                                      const DropdownMenuItem<ItemTier?>(
-                                        value: null,
-                                        child: Text('Alle Tiers'),
-                                      ),
-                                      ...ItemTier.values.map(
-                                        (tier) => DropdownMenuItem<ItemTier?>(
-                                          value: tier,
-                                          child: Text(controller.tierLabel(tier)),
-                                        ),
-                                      ),
-                                    ],
-                                    onChanged: (value) {
-                                      tierFilter = value;
-                                      setModalState(() {});
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          const SizedBox(height: 8),
-                          if (compact)
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Smart:', style: TextStyle(fontSize: 12)),
-                                DropdownButton<SmartEquipMode>(
-                                  value: smartEquipMode,
-                                  isExpanded: true,
-                                  dropdownColor: context.cardBg,
-                                  items: const [
-                                    DropdownMenuItem(
-                                      value: SmartEquipMode.purePower,
-                                      child: Text('Power-Fokus'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: SmartEquipMode.setSynergy,
-                                      child: Text('Set-Synergie'),
-                                    ),
-                                  ],
-                                  onChanged: (value) {
-                                    if (value == null) {
-                                      return;
-                                    }
-                                    smartEquipMode = value;
-                                    setModalState(() {});
-                                  },
-                                ),
-                                const SizedBox(height: 8),
-                                const Text('Sortierung:', style: TextStyle(fontSize: 12)),
-                                DropdownButton<InventorySortMode>(
-                                  value: sortMode,
-                                  isExpanded: true,
-                                  dropdownColor: context.cardBg,
-                                  items: const [
-                                    DropdownMenuItem(
-                                      value: InventorySortMode.powerDesc,
-                                      child: Text('Power absteigend'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: InventorySortMode.tierDesc,
-                                      child: Text('Tier absteigend'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: InventorySortMode.sellValueDesc,
-                                      child: Text('Wert absteigend'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: InventorySortMode.nameAsc,
-                                      child: Text('Name A-Z'),
-                                    ),
-                                  ],
-                                  onChanged: (value) {
-                                    if (value == null) {
-                                      return;
-                                    }
-                                    sortMode = value;
-                                    setModalState(() {});
-                                  },
-                                ),
-                              ],
-                            )
-                          else
-                            Column(
-                              children: [
-                                Row(
-                                  children: [
-                                    const Text('Smart:', style: TextStyle(fontSize: 12)),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: DropdownButton<SmartEquipMode>(
-                                        value: smartEquipMode,
-                                        isExpanded: true,
-                                        dropdownColor: context.cardBg,
-                                        items: const [
-                                          DropdownMenuItem(
-                                            value: SmartEquipMode.purePower,
-                                            child: Text('Power-Fokus'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: SmartEquipMode.setSynergy,
-                                            child: Text('Set-Synergie'),
-                                          ),
-                                        ],
-                                        onChanged: (value) {
-                                          if (value == null) {
-                                            return;
-                                          }
-                                          smartEquipMode = value;
-                                          setModalState(() {});
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    const Text('Sortierung:', style: TextStyle(fontSize: 12)),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: DropdownButton<InventorySortMode>(
-                                        value: sortMode,
-                                        isExpanded: true,
-                                        dropdownColor: context.cardBg,
-                                        items: const [
-                                          DropdownMenuItem(
-                                            value: InventorySortMode.powerDesc,
-                                            child: Text('Power absteigend'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: InventorySortMode.tierDesc,
-                                            child: Text('Tier absteigend'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: InventorySortMode.sellValueDesc,
-                                            child: Text('Wert absteigend'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: InventorySortMode.nameAsc,
-                                            child: Text('Name A-Z'),
-                                          ),
-                                        ],
-                                        onChanged: (value) {
-                                          if (value == null) {
-                                            return;
-                                          }
-                                          sortMode = value;
-                                          setModalState(() {});
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          const SizedBox(height: 8),
-                          if (compact)
-                            Column(
-                              children: [
-                                SwitchListTile.adaptive(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: const Text('Auto-Lock', style: TextStyle(fontSize: 12)),
-                                  value: controller.autoLockEnabled,
-                                  onChanged: (value) {
-                                    controller.setAutoLock(
-                                      enabled: value,
-                                      fromTier: controller.autoLockFromTier,
-                                    );
-                                    setModalState(() {});
-                                  },
-                                ),
-                                DropdownButton<ItemTier>(
-                                  value: controller.autoLockFromTier,
-                                  isExpanded: true,
-                                  dropdownColor: context.cardBg,
-                                  items: ItemTier.values
-                                      .map(
-                                        (tier) => DropdownMenuItem<ItemTier>(
-                                          value: tier,
-                                          child: Text('Lock ab ${controller.tierLabel(tier)}'),
-                                        ),
-                                      )
-                                      .toList(growable: false),
-                                  onChanged: (value) {
-                                    if (value == null) {
-                                      return;
-                                    }
-                                    controller.setAutoLock(
-                                      enabled: controller.autoLockEnabled,
-                                      fromTier: value,
-                                    );
-                                    setModalState(() {});
-                                  },
-                                ),
-                              ],
-                            )
-                          else
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: SwitchListTile.adaptive(
-                                    contentPadding: EdgeInsets.zero,
-                                    title: const Text('Auto-Lock', style: TextStyle(fontSize: 12)),
-                                    value: controller.autoLockEnabled,
-                                    onChanged: (value) {
-                                      controller.setAutoLock(
-                                        enabled: value,
-                                        fromTier: controller.autoLockFromTier,
-                                      );
-                                      setModalState(() {});
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: DropdownButton<ItemTier>(
-                                    value: controller.autoLockFromTier,
-                                    isExpanded: true,
-                                    dropdownColor: context.cardBg,
-                                    items: ItemTier.values
-                                        .map(
-                                          (tier) => DropdownMenuItem<ItemTier>(
-                                            value: tier,
-                                            child: Text('Lock ab ${controller.tierLabel(tier)}'),
-                                          ),
-                                        )
-                                        .toList(growable: false),
-                                    onChanged: (value) {
-                                      if (value == null) {
-                                        return;
-                                      }
-                                      controller.setAutoLock(
-                                        enabled: controller.autoLockEnabled,
-                                        fromTier: value,
-                                      );
-                                      setModalState(() {});
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: TextButton(
-                              onPressed: () {
-                                final changed = controller.applyAutoLockToInventory();
-                                final msg = changed > 0
-                                    ? 'Auto-Lock auf Bestand angewendet: $changed Items geaendert.'
-                                    : 'Keine vorhandenen Items mussten angepasst werden.';
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-                                refresh();
-                              },
-                              child: const Text('Auto-Lock auf Bestand anwenden'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (controller.completedSetCount > 0)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Komplette Sets: ${controller.completedSetCount}/${ItemSet.values.length}',
-                            style: const TextStyle(fontSize: 12, color: Color(0xFFBFD8BF)),
-                          ),
-                        ),
-                      ),
-                    if (controller.activeSetBonuses.isNotEmpty)
-                      Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.fromLTRB(12, 10, 12, 4),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: context.cardBg,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: context.borderHeavy),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Aktive Set-Boni',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 4),
-                            ...controller.activeSetBonuses.map(
-                              (bonus) => Text(
-                                bonus,
-                                style: TextStyle(fontSize: 12, color: context.textPrimary),
+                                  );
+                                }),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    SizedBox(
-                      height: itemListHeight,
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final grid = constraints.maxWidth >= 920;
-
-                          Widget card(GameItem item) {
-                            final equipped = controller.isEquipped(item);
-                            return Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: context.cardBg,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: context.borderHeavy),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
                               ),
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final cols = constraints.maxWidth < 500
+                                      ? 1
+                                      : constraints.maxWidth < 860
+                                      ? 2
+                                      : 3;
+                                  return GridView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    gridDelegate:
+                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: cols,
+                                          childAspectRatio: cols == 1
+                                              ? 3.6
+                                              : 2.5,
+                                        ),
+                                    itemCount: ItemSlot.values.length,
+                                    itemBuilder: (context, index) {
+                                      final slot = ItemSlot.values[index];
+                                      final equipped = controller
+                                          .equippedInSlot(slot);
+                                      final best = controller.bestItemForSlot(
+                                        slot,
+                                      );
+                                      final upgradeDelta = controller
+                                          .bestUpgradeDelta(slot);
+                                      return Container(
+                                        margin: const EdgeInsets.all(6),
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: context.cardBg,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border: Border.all(
+                                            color: context.borderHeavy,
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              controller.slotLabel(slot),
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              equipped?.name ?? '-',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                color: context.textPrimary,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              best == null
+                                                  ? 'Keine Items'
+                                                  : upgradeDelta > 0
+                                                  ? 'Upgrade +$upgradeDelta'
+                                                  : 'Best in Slot',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: best == null
+                                                    ? const Color(0xFF989898)
+                                                    : upgradeDelta > 0
+                                                    ? const Color(0xFFBFD8BF)
+                                                    : context.textTertiary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                            const Divider(color: Color(0xFF2D3F5E), height: 1),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
                                     children: [
-                                      _SvgIcon(path: item.iconPath, size: 18),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          item.name,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: context.textBright,
-                                          ),
+                                      const Text(
+                                        'Filter',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                      const Spacer(),
+                                      Text(
+                                        '${filteredInventory.length}/${controller.inventory.length}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: context.textPrimary,
                                         ),
                                       ),
-                                      if (equipped)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                          decoration: BoxDecoration(
-                                            color: context.divider,
-                                            borderRadius: BorderRadius.circular(20),
-                                          ),
-                                          child: Text(
-                                            text.tr('equipped'),
-                                            style: const TextStyle(fontSize: 10),
-                                          ),
-                                        ),
+                                      const SizedBox(width: 8),
+                                      TextButton(
+                                        onPressed: () {
+                                          setFilter = null;
+                                          slotFilter = null;
+                                          tierFilter = null;
+                                          setModalState(() {});
+                                        },
+                                        child: const Text('Reset'),
+                                      ),
                                     ],
                                   ),
-                                  const SizedBox(height: 3),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          '${controller.tierLabel(item.tier)} | ${controller.setLabel(item.setId)} | +${item.power} | ${controller.slotLabel(item.slot)}',
-                                          style: TextStyle(color: context.textPrimary, fontSize: 12),
+                                  const SizedBox(height: 6),
+                                  if (compact)
+                                    Column(
+                                      children: [
+                                        SizedBox(
+                                          width: double.infinity,
+                                          child: OutlinedButton(
+                                            onPressed: () {
+                                              final changed = controller
+                                                  .smartEquipBestItems(
+                                                    preferSetSynergy:
+                                                        smartEquipMode ==
+                                                        SmartEquipMode
+                                                            .setSynergy,
+                                                  );
+                                              final msg = changed > 0
+                                                  ? 'Smart Equip: $changed Slots aktualisiert.'
+                                                  : 'Smart Equip: Keine bessere Ausrüstung gefunden.';
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(content: Text(msg)),
+                                              );
+                                              refresh();
+                                            },
+                                            child: const Text('Smart Equip'),
+                                          ),
                                         ),
-                                      ),
-                                      if (!equipped) ...[
-                                        const SizedBox(width: 6),
-                                        Builder(builder: (ctx) {
-                                          final diff = controller.calculateEquipDiff(item);
-                                          final color = diff.delta > 0
-                                              ? const Color(0xFF8FD39E)
-                                              : diff.delta < 0
-                                                  ? const Color(0xFFE39A9A)
-                                                  : context.textTertiary;
-                                          final label = diff.delta > 0
-                                              ? '+${diff.delta}'
-                                              : diff.delta < 0
-                                                  ? '${diff.delta}'
-                                                  : '±0';
-                                          return Text(
-                                            label,
-                                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
-                                          );
-                                        }),
+                                        const SizedBox(height: 8),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          child: OutlinedButton(
+                                            onPressed: () async {
+                                              if (filteredInventory.isEmpty) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'Keine Items im aktuellen Filter.',
+                                                    ),
+                                                  ),
+                                                );
+                                                return;
+                                              }
+
+                                              final preview = controller
+                                                  .getBulkSellPreview(
+                                                    filteredInventory.map(
+                                                      (item) => item.id,
+                                                    ),
+                                                  );
+                                              final confirmed = await showDialog<bool>(
+                                                context: context,
+                                                builder: (dialogContext) {
+                                                  return AlertDialog(
+                                                    title: const Text(
+                                                      'Massenverkauf bestaetigen',
+                                                    ),
+                                                    content: Column(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          'Im Filter: ${preview.candidateCount} Items',
+                                                        ),
+                                                        Text(
+                                                          'Verkaufbar: ${preview.sellableCount}',
+                                                        ),
+                                                        Text(
+                                                          'Geschützt: ${preview.protectedCount}',
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 8,
+                                                        ),
+                                                        Text(
+                                                          'Erwartetes Gold: +${preview.estimatedGold}',
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.of(
+                                                              dialogContext,
+                                                            ).pop(false),
+                                                        child: const Text(
+                                                          'Abbrechen',
+                                                        ),
+                                                      ),
+                                                      FilledButton.tonal(
+                                                        onPressed: () =>
+                                                            Navigator.of(
+                                                              dialogContext,
+                                                            ).pop(true),
+                                                        child: const Text(
+                                                          'Verkaufen',
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  );
+                                                },
+                                              );
+                                              if (confirmed != true) {
+                                                return;
+                                              }
+                                              if (!context.mounted) {
+                                                return;
+                                              }
+
+                                              final result = controller
+                                                  .sellItemsByIds(
+                                                    filteredInventory.map(
+                                                      (item) => item.id,
+                                                    ),
+                                                  );
+                                              final msg = result.soldCount > 0
+                                                  ? 'Massenverkauf: ${result.soldCount} Items für +${result.earnedGold} Gold.'
+                                                  : 'Massenverkauf: Keine verkaufbaren Items (gesperrt/ausgerüstet).';
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(content: Text(msg)),
+                                              );
+                                              refresh();
+                                            },
+                                            child: const Text('Massenverkauf'),
+                                          ),
+                                        ),
                                       ],
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      IconButton(
-                                        onPressed: () {
-                                          controller.toggleItemLock(item.id);
-                                          refresh();
-                                        },
-                                        icon: Icon(
-                                          item.isLocked ? Icons.lock : Icons.lock_open,
-                                          size: 18,
-                                          color: item.isLocked
-                                              ? const Color(0xFFE2D18D)
-                                              : const Color(0xFFA8A8A8),
+                                    )
+                                  else
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: OutlinedButton(
+                                            onPressed: () {
+                                              final changed = controller
+                                                  .smartEquipBestItems(
+                                                    preferSetSynergy:
+                                                        smartEquipMode ==
+                                                        SmartEquipMode
+                                                            .setSynergy,
+                                                  );
+                                              final msg = changed > 0
+                                                  ? 'Smart Equip: $changed Slots aktualisiert.'
+                                                  : 'Smart Equip: Keine bessere Ausrüstung gefunden.';
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(content: Text(msg)),
+                                              );
+                                              refresh();
+                                            },
+                                            child: const Text('Smart Equip'),
+                                          ),
                                         ),
-                                        tooltip: item.isLocked ? 'Entsperren' : 'Sperren',
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          if (equipped) {
-                                            controller.unequipSlot(item.slot);
-                                          } else {
-                                            controller.equipItem(item);
-                                          }
-                                          refresh();
-                                        },
-                                        child: Text(equipped ? text.tr('unequip') : text.tr('equip')),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      TextButton(
-                                        onPressed: () {
-                                          final sold = controller.sellItem(item);
-                                          if (!sold) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(
-                                                content: Text('Item ist gesperrt und kann nicht verkauft werden.'),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: OutlinedButton(
+                                            onPressed: () async {
+                                              if (filteredInventory.isEmpty) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'Keine Items im aktuellen Filter.',
+                                                    ),
+                                                  ),
+                                                );
+                                                return;
+                                              }
+
+                                              final preview = controller
+                                                  .getBulkSellPreview(
+                                                    filteredInventory.map(
+                                                      (item) => item.id,
+                                                    ),
+                                                  );
+                                              final confirmed = await showDialog<bool>(
+                                                context: context,
+                                                builder: (dialogContext) {
+                                                  return AlertDialog(
+                                                    title: const Text(
+                                                      'Massenverkauf bestaetigen',
+                                                    ),
+                                                    content: Column(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          'Im Filter: ${preview.candidateCount} Items',
+                                                        ),
+                                                        Text(
+                                                          'Verkaufbar: ${preview.sellableCount}',
+                                                        ),
+                                                        Text(
+                                                          'Geschützt: ${preview.protectedCount}',
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 8,
+                                                        ),
+                                                        Text(
+                                                          'Erwartetes Gold: +${preview.estimatedGold}',
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.of(
+                                                              dialogContext,
+                                                            ).pop(false),
+                                                        child: const Text(
+                                                          'Abbrechen',
+                                                        ),
+                                                      ),
+                                                      FilledButton.tonal(
+                                                        onPressed: () =>
+                                                            Navigator.of(
+                                                              dialogContext,
+                                                            ).pop(true),
+                                                        child: const Text(
+                                                          'Verkaufen',
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  );
+                                                },
+                                              );
+                                              if (confirmed != true) {
+                                                return;
+                                              }
+                                              if (!context.mounted) {
+                                                return;
+                                              }
+
+                                              final result = controller
+                                                  .sellItemsByIds(
+                                                    filteredInventory.map(
+                                                      (item) => item.id,
+                                                    ),
+                                                  );
+                                              final msg = result.soldCount > 0
+                                                  ? 'Massenverkauf: ${result.soldCount} Items für +${result.earnedGold} Gold.'
+                                                  : 'Massenverkauf: Keine verkaufbaren Items (gesperrt/ausgerüstet).';
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(content: Text(msg)),
+                                              );
+                                              refresh();
+                                            },
+                                            child: const Text('Massenverkauf'),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  const SizedBox(height: 6),
+                                  if (compact)
+                                    Column(
+                                      children: [
+                                        DropdownButton<ItemSet?>(
+                                          value: setFilter,
+                                          isExpanded: true,
+                                          dropdownColor: context.cardBg,
+                                          items: [
+                                            const DropdownMenuItem<ItemSet?>(
+                                              value: null,
+                                              child: Text('Alle Sets'),
+                                            ),
+                                            ...ItemSet.values.map(
+                                              (setId) =>
+                                                  DropdownMenuItem<ItemSet?>(
+                                                    value: setId,
+                                                    child: Text(
+                                                      controller.setLabel(
+                                                        setId,
+                                                      ),
+                                                    ),
+                                                  ),
+                                            ),
+                                          ],
+                                          onChanged: (value) {
+                                            setFilter = value;
+                                            setModalState(() {});
+                                          },
+                                        ),
+                                        const SizedBox(height: 8),
+                                        DropdownButton<ItemSlot?>(
+                                          value: slotFilter,
+                                          isExpanded: true,
+                                          dropdownColor: context.cardBg,
+                                          items: [
+                                            const DropdownMenuItem<ItemSlot?>(
+                                              value: null,
+                                              child: Text('Alle Slots'),
+                                            ),
+                                            ...ItemSlot.values.map(
+                                              (slot) =>
+                                                  DropdownMenuItem<ItemSlot?>(
+                                                    value: slot,
+                                                    child: Text(
+                                                      controller.slotLabel(
+                                                        slot,
+                                                      ),
+                                                    ),
+                                                  ),
+                                            ),
+                                          ],
+                                          onChanged: (value) {
+                                            slotFilter = value;
+                                            setModalState(() {});
+                                          },
+                                        ),
+                                        const SizedBox(height: 8),
+                                        DropdownButton<ItemTier?>(
+                                          value: tierFilter,
+                                          isExpanded: true,
+                                          dropdownColor: context.cardBg,
+                                          items: [
+                                            const DropdownMenuItem<ItemTier?>(
+                                              value: null,
+                                              child: Text('Alle Tiers'),
+                                            ),
+                                            ...ItemTier.values.map(
+                                              (tier) =>
+                                                  DropdownMenuItem<ItemTier?>(
+                                                    value: tier,
+                                                    child: Text(
+                                                      controller.tierLabel(
+                                                        tier,
+                                                      ),
+                                                    ),
+                                                  ),
+                                            ),
+                                          ],
+                                          onChanged: (value) {
+                                            tierFilter = value;
+                                            setModalState(() {});
+                                          },
+                                        ),
+                                      ],
+                                    )
+                                  else
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: DropdownButton<ItemSet?>(
+                                            value: setFilter,
+                                            isExpanded: true,
+                                            dropdownColor: context.cardBg,
+                                            items: [
+                                              const DropdownMenuItem<ItemSet?>(
+                                                value: null,
+                                                child: Text('Alle Sets'),
                                               ),
-                                            );
-                                            return;
-                                          }
-                                          refresh();
-                                        },
-                                        child: Text(
-                                          item.isLocked
-                                              ? 'Gesperrt'
-                                              : '${text.tr('sell')} (${item.sellValue})',
+                                              ...ItemSet.values.map(
+                                                (setId) =>
+                                                    DropdownMenuItem<ItemSet?>(
+                                                      value: setId,
+                                                      child: Text(
+                                                        controller.setLabel(
+                                                          setId,
+                                                        ),
+                                                      ),
+                                                    ),
+                                              ),
+                                            ],
+                                            onChanged: (value) {
+                                              setFilter = value;
+                                              setModalState(() {});
+                                            },
+                                          ),
                                         ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: DropdownButton<ItemSlot?>(
+                                            value: slotFilter,
+                                            isExpanded: true,
+                                            dropdownColor: context.cardBg,
+                                            items: [
+                                              const DropdownMenuItem<ItemSlot?>(
+                                                value: null,
+                                                child: Text('Alle Slots'),
+                                              ),
+                                              ...ItemSlot.values.map(
+                                                (slot) =>
+                                                    DropdownMenuItem<ItemSlot?>(
+                                                      value: slot,
+                                                      child: Text(
+                                                        controller.slotLabel(
+                                                          slot,
+                                                        ),
+                                                      ),
+                                                    ),
+                                              ),
+                                            ],
+                                            onChanged: (value) {
+                                              slotFilter = value;
+                                              setModalState(() {});
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: DropdownButton<ItemTier?>(
+                                            value: tierFilter,
+                                            isExpanded: true,
+                                            dropdownColor: context.cardBg,
+                                            items: [
+                                              const DropdownMenuItem<ItemTier?>(
+                                                value: null,
+                                                child: Text('Alle Tiers'),
+                                              ),
+                                              ...ItemTier.values.map(
+                                                (tier) =>
+                                                    DropdownMenuItem<ItemTier?>(
+                                                      value: tier,
+                                                      child: Text(
+                                                        controller.tierLabel(
+                                                          tier,
+                                                        ),
+                                                      ),
+                                                    ),
+                                              ),
+                                            ],
+                                            onChanged: (value) {
+                                              tierFilter = value;
+                                              setModalState(() {});
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  const SizedBox(height: 8),
+                                  if (compact)
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Smart:',
+                                          style: TextStyle(fontSize: 12),
+                                        ),
+                                        DropdownButton<SmartEquipMode>(
+                                          value: smartEquipMode,
+                                          isExpanded: true,
+                                          dropdownColor: context.cardBg,
+                                          items: const [
+                                            DropdownMenuItem(
+                                              value: SmartEquipMode.purePower,
+                                              child: Text('Power-Fokus'),
+                                            ),
+                                            DropdownMenuItem(
+                                              value: SmartEquipMode.setSynergy,
+                                              child: Text('Set-Synergie'),
+                                            ),
+                                          ],
+                                          onChanged: (value) {
+                                            if (value == null) {
+                                              return;
+                                            }
+                                            smartEquipMode = value;
+                                            setModalState(() {});
+                                          },
+                                        ),
+                                        const SizedBox(height: 8),
+                                        const Text(
+                                          'Sortierung:',
+                                          style: TextStyle(fontSize: 12),
+                                        ),
+                                        DropdownButton<InventorySortMode>(
+                                          value: sortMode,
+                                          isExpanded: true,
+                                          dropdownColor: context.cardBg,
+                                          items: const [
+                                            DropdownMenuItem(
+                                              value:
+                                                  InventorySortMode.powerDesc,
+                                              child: Text('Power absteigend'),
+                                            ),
+                                            DropdownMenuItem(
+                                              value: InventorySortMode.tierDesc,
+                                              child: Text('Tier absteigend'),
+                                            ),
+                                            DropdownMenuItem(
+                                              value: InventorySortMode
+                                                  .sellValueDesc,
+                                              child: Text('Wert absteigend'),
+                                            ),
+                                            DropdownMenuItem(
+                                              value: InventorySortMode.nameAsc,
+                                              child: Text('Name A-Z'),
+                                            ),
+                                          ],
+                                          onChanged: (value) {
+                                            if (value == null) {
+                                              return;
+                                            }
+                                            sortMode = value;
+                                            setModalState(() {});
+                                          },
+                                        ),
+                                      ],
+                                    )
+                                  else
+                                    Column(
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Text(
+                                              'Smart:',
+                                              style: TextStyle(fontSize: 12),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child:
+                                                  DropdownButton<
+                                                    SmartEquipMode
+                                                  >(
+                                                    value: smartEquipMode,
+                                                    isExpanded: true,
+                                                    dropdownColor:
+                                                        context.cardBg,
+                                                    items: const [
+                                                      DropdownMenuItem(
+                                                        value: SmartEquipMode
+                                                            .purePower,
+                                                        child: Text(
+                                                          'Power-Fokus',
+                                                        ),
+                                                      ),
+                                                      DropdownMenuItem(
+                                                        value: SmartEquipMode
+                                                            .setSynergy,
+                                                        child: Text(
+                                                          'Set-Synergie',
+                                                        ),
+                                                      ),
+                                                    ],
+                                                    onChanged: (value) {
+                                                      if (value == null) {
+                                                        return;
+                                                      }
+                                                      smartEquipMode = value;
+                                                      setModalState(() {});
+                                                    },
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            const Text(
+                                              'Sortierung:',
+                                              style: TextStyle(fontSize: 12),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child:
+                                                  DropdownButton<
+                                                    InventorySortMode
+                                                  >(
+                                                    value: sortMode,
+                                                    isExpanded: true,
+                                                    dropdownColor:
+                                                        context.cardBg,
+                                                    items: const [
+                                                      DropdownMenuItem(
+                                                        value: InventorySortMode
+                                                            .powerDesc,
+                                                        child: Text(
+                                                          'Power absteigend',
+                                                        ),
+                                                      ),
+                                                      DropdownMenuItem(
+                                                        value: InventorySortMode
+                                                            .tierDesc,
+                                                        child: Text(
+                                                          'Tier absteigend',
+                                                        ),
+                                                      ),
+                                                      DropdownMenuItem(
+                                                        value: InventorySortMode
+                                                            .sellValueDesc,
+                                                        child: Text(
+                                                          'Wert absteigend',
+                                                        ),
+                                                      ),
+                                                      DropdownMenuItem(
+                                                        value: InventorySortMode
+                                                            .nameAsc,
+                                                        child: Text('Name A-Z'),
+                                                      ),
+                                                    ],
+                                                    onChanged: (value) {
+                                                      if (value == null) {
+                                                        return;
+                                                      }
+                                                      sortMode = value;
+                                                      setModalState(() {});
+                                                    },
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  const SizedBox(height: 8),
+                                  if (compact)
+                                    Column(
+                                      children: [
+                                        SwitchListTile.adaptive(
+                                          contentPadding: EdgeInsets.zero,
+                                          title: const Text(
+                                            'Auto-Lock',
+                                            style: TextStyle(fontSize: 12),
+                                          ),
+                                          value: controller.autoLockEnabled,
+                                          onChanged: (value) {
+                                            controller.setAutoLock(
+                                              enabled: value,
+                                              fromTier:
+                                                  controller.autoLockFromTier,
+                                            );
+                                            setModalState(() {});
+                                          },
+                                        ),
+                                        DropdownButton<ItemTier>(
+                                          value: controller.autoLockFromTier,
+                                          isExpanded: true,
+                                          dropdownColor: context.cardBg,
+                                          items: ItemTier.values
+                                              .map(
+                                                (
+                                                  tier,
+                                                ) => DropdownMenuItem<ItemTier>(
+                                                  value: tier,
+                                                  child: Text(
+                                                    'Lock ab ${controller.tierLabel(tier)}',
+                                                  ),
+                                                ),
+                                              )
+                                              .toList(growable: false),
+                                          onChanged: (value) {
+                                            if (value == null) {
+                                              return;
+                                            }
+                                            controller.setAutoLock(
+                                              enabled:
+                                                  controller.autoLockEnabled,
+                                              fromTier: value,
+                                            );
+                                            setModalState(() {});
+                                          },
+                                        ),
+                                      ],
+                                    )
+                                  else
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: SwitchListTile.adaptive(
+                                            contentPadding: EdgeInsets.zero,
+                                            title: const Text(
+                                              'Auto-Lock',
+                                              style: TextStyle(fontSize: 12),
+                                            ),
+                                            value: controller.autoLockEnabled,
+                                            onChanged: (value) {
+                                              controller.setAutoLock(
+                                                enabled: value,
+                                                fromTier:
+                                                    controller.autoLockFromTier,
+                                              );
+                                              setModalState(() {});
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: DropdownButton<ItemTier>(
+                                            value: controller.autoLockFromTier,
+                                            isExpanded: true,
+                                            dropdownColor: context.cardBg,
+                                            items: ItemTier.values
+                                                .map(
+                                                  (
+                                                    tier,
+                                                  ) => DropdownMenuItem<ItemTier>(
+                                                    value: tier,
+                                                    child: Text(
+                                                      'Lock ab ${controller.tierLabel(tier)}',
+                                                    ),
+                                                  ),
+                                                )
+                                                .toList(growable: false),
+                                            onChanged: (value) {
+                                              if (value == null) {
+                                                return;
+                                              }
+                                              controller.setAutoLock(
+                                                enabled:
+                                                    controller.autoLockEnabled,
+                                                fromTier: value,
+                                              );
+                                              setModalState(() {});
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: TextButton(
+                                      onPressed: () {
+                                        final changed = controller
+                                            .applyAutoLockToInventory();
+                                        final msg = changed > 0
+                                            ? 'Auto-Lock auf Bestand angewendet: $changed Items geaendert.'
+                                            : 'Keine vorhandenen Items mussten angepasst werden.';
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(content: Text(msg)),
+                                        );
+                                        refresh();
+                                      },
+                                      child: const Text(
+                                        'Auto-Lock auf Bestand anwenden',
                                       ),
-                                    ],
+                                    ),
                                   ),
                                 ],
                               ),
-                            );
-                          }
-
-                          if (!grid) {
-                            return ListView.builder(
-                              itemCount: filteredInventory.length,
-                              itemBuilder: (context, index) => card(filteredInventory[index]),
-                            );
-                          }
-
-                          return GridView.builder(
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              childAspectRatio: 2.5,
                             ),
-                            itemCount: filteredInventory.length,
-                            itemBuilder: (context, index) => card(filteredInventory[index]),
-                          );
-                        },
-                      ),
-                    ),
+                            if (controller.completedSetCount > 0)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  12,
+                                  0,
+                                  12,
+                                  4,
+                                ),
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    'Komplette Sets: ${controller.completedSetCount}/${ItemSet.values.length}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFFBFD8BF),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            if (controller.activeSetBonuses.isNotEmpty)
+                              Container(
+                                width: double.infinity,
+                                margin: const EdgeInsets.fromLTRB(
+                                  12,
+                                  10,
+                                  12,
+                                  4,
+                                ),
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: context.cardBg,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: context.borderHeavy,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Aktive Set-Boni',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    ...controller.activeSetBonuses.map(
+                                      (bonus) => Text(
+                                        bonus,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: context.textPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            SizedBox(
+                              height: itemListHeight,
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final grid = constraints.maxWidth >= 920;
+
+                                  Widget card(GameItem item) {
+                                    final equipped = controller.isEquipped(
+                                      item,
+                                    );
+                                    return Container(
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: context.cardBg,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: context.borderHeavy,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              _SvgIcon(
+                                                path: item.iconPath,
+                                                size: 18,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  item.name,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: context.textBright,
+                                                  ),
+                                                ),
+                                              ),
+                                              if (equipped)
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 3,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: context.divider,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          20,
+                                                        ),
+                                                  ),
+                                                  child: Text(
+                                                    text.tr('equipped'),
+                                                    style: const TextStyle(
+                                                      fontSize: 10,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  '${controller.tierLabel(item.tier)} | ${controller.setLabel(item.setId)} | +${item.power} | ${controller.slotLabel(item.slot)}',
+                                                  style: TextStyle(
+                                                    color: context.textPrimary,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ),
+                                              if (!equipped) ...[
+                                                const SizedBox(width: 6),
+                                                Builder(
+                                                  builder: (ctx) {
+                                                    final diff = controller
+                                                        .calculateEquipDiff(
+                                                          item,
+                                                        );
+                                                    final color = diff.delta > 0
+                                                        ? const Color(
+                                                            0xFF8FD39E,
+                                                          )
+                                                        : diff.delta < 0
+                                                        ? const Color(
+                                                            0xFFE39A9A,
+                                                          )
+                                                        : context.textTertiary;
+                                                    final label = diff.delta > 0
+                                                        ? '+${diff.delta}'
+                                                        : diff.delta < 0
+                                                        ? '${diff.delta}'
+                                                        : '±0';
+                                                    return Text(
+                                                      label,
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: color,
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            children: [
+                                              IconButton(
+                                                onPressed: () {
+                                                  controller.toggleItemLock(
+                                                    item.id,
+                                                  );
+                                                  refresh();
+                                                },
+                                                icon: Icon(
+                                                  item.isLocked
+                                                      ? Icons.lock
+                                                      : Icons.lock_open,
+                                                  size: 18,
+                                                  color: item.isLocked
+                                                      ? const Color(0xFFE2D18D)
+                                                      : const Color(0xFFA8A8A8),
+                                                ),
+                                                tooltip: item.isLocked
+                                                    ? 'Entsperren'
+                                                    : 'Sperren',
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  if (equipped) {
+                                                    controller.unequipSlot(
+                                                      item.slot,
+                                                    );
+                                                  } else {
+                                                    controller.equipItem(item);
+                                                  }
+                                                  refresh();
+                                                },
+                                                child: Text(
+                                                  equipped
+                                                      ? text.tr('unequip')
+                                                      : text.tr('equip'),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              TextButton(
+                                                onPressed: () {
+                                                  final sold = controller
+                                                      .sellItem(item);
+                                                  if (!sold) {
+                                                    ScaffoldMessenger.of(
+                                                      context,
+                                                    ).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text(
+                                                          'Item ist gesperrt und kann nicht verkauft werden.',
+                                                        ),
+                                                      ),
+                                                    );
+                                                    return;
+                                                  }
+                                                  refresh();
+                                                },
+                                                child: Text(
+                                                  item.isLocked
+                                                      ? 'Gesperrt'
+                                                      : '${text.tr('sell')} (${item.sellValue})',
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+
+                                  if (!grid) {
+                                    return ListView.builder(
+                                      itemCount: filteredInventory.length,
+                                      itemBuilder: (context, index) =>
+                                          card(filteredInventory[index]),
+                                    );
+                                  }
+
+                                  return GridView.builder(
+                                    gridDelegate:
+                                        const SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: 2,
+                                          childAspectRatio: 2.5,
+                                        ),
+                                    itemCount: filteredInventory.length,
+                                    itemBuilder: (context, index) =>
+                                        card(filteredInventory[index]),
+                                  );
+                                },
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -3800,7 +4551,10 @@ class _BottomMenu extends StatelessWidget {
     );
   }
 
-  Future<void> _showWorldPanel(BuildContext context, GameController controller) async {
+  Future<void> _showWorldPanel(
+    BuildContext context,
+    GameController controller,
+  ) async {
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: context.sheetBg,
@@ -3808,7 +4562,12 @@ class _BottomMenu extends StatelessWidget {
       builder: (context) {
         return SafeArea(
           child: SizedBox(
-            height: _adaptiveSheetHeight(context, factor: 0.72, min: 420, max: 940),
+            height: _adaptiveSheetHeight(
+              context,
+              factor: 0.72,
+              min: 420,
+              max: 940,
+            ),
             child: StatefulBuilder(
               builder: (context, setModalState) {
                 return Padding(
@@ -3818,17 +4577,23 @@ class _BottomMenu extends StatelessWidget {
                     children: [
                       const Text(
                         'Weltkarte',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 8),
-                      Text('Aktuell: Kapitel ${controller.chapter} - Stage ${controller.stage}'),
+                      Text(
+                        'Aktuell: Kapitel ${controller.chapter} - Stage ${controller.stage}',
+                      ),
                       Text('Bosse besiegt: ${controller.bossDefeats}'),
                       Text('Tode: ${controller.deaths}'),
                       const SizedBox(height: 6),
                       Align(
                         alignment: Alignment.centerLeft,
                         child: FilledButton.tonal(
-                          onPressed: () => _showAchievementsPanel(context, controller),
+                          onPressed: () =>
+                              _showAchievementsPanel(context, controller),
                           child: Text(
                             'Errungenschaften '
                             '(${controller.claimableAchievementCount} bereit)',
@@ -3846,7 +4611,10 @@ class _BottomMenu extends StatelessWidget {
                         ),
                         child: Text(
                           controller.chapterSetHuntHint,
-                          style: TextStyle(fontSize: 12, color: context.textPrimary),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.textPrimary,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -3858,32 +4626,46 @@ class _BottomMenu extends StatelessWidget {
                             final wide = constraints.maxWidth >= 900;
 
                             Widget milestoneCard(int milestoneChapter) {
-                              final reached = controller.chapter >= milestoneChapter;
+                              final reached =
+                                  controller.chapter >= milestoneChapter;
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: reached ? const Color(0xFF2D352D) : context.cardBg,
+                                  color: reached
+                                      ? const Color(0xFF2D352D)
+                                      : context.cardBg,
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
-                                    color: reached ? const Color(0xFF5E7A5E) : context.borderHeavy,
+                                    color: reached
+                                        ? const Color(0xFF5E7A5E)
+                                        : context.borderHeavy,
                                   ),
                                 ),
                                 child: Row(
                                   children: [
                                     Icon(
-                                      reached ? Icons.check_circle : Icons.radio_button_unchecked,
+                                      reached
+                                          ? Icons.check_circle
+                                          : Icons.radio_button_unchecked,
                                       size: 16,
-                                      color: reached ? const Color(0xFF9AC39A) : const Color(0xFF8D8D8D),
+                                      color: reached
+                                          ? const Color(0xFF9AC39A)
+                                          : const Color(0xFF8D8D8D),
                                     ),
                                     const SizedBox(width: 8),
-                                    Text('Kapitel $milestoneChapter Boss besiegen'),
+                                    Text(
+                                      'Kapitel $milestoneChapter Boss besiegen',
+                                    ),
                                   ],
                                 ),
                               );
                             }
 
-                            Widget setCard(SetCollectionView entry, {double? width}) {
+                            Widget setCard(
+                              SetCollectionView entry, {
+                              double? width,
+                            }) {
                               final missing = entry.missingSlots
                                   .map((slot) => controller.slotLabel(slot))
                                   .join(', ');
@@ -3896,14 +4678,18 @@ class _BottomMenu extends StatelessWidget {
                                       ? const Color(0xFF2D352D)
                                       : context.cardBg,
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: context.borderHeavy),
+                                  border: Border.all(
+                                    color: context.borderHeavy,
+                                  ),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       '${controller.setLabel(entry.setId)} ${entry.ownedCount}/${entry.totalCount}',
-                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                     const SizedBox(height: 3),
                                     Text(
@@ -3915,27 +4701,44 @@ class _BottomMenu extends StatelessWidget {
                                     const SizedBox(height: 4),
                                     Text(
                                       'Belohnung: +${entry.rewardGold} Gold, +${entry.rewardShards} Scherben',
-                                      style: TextStyle(fontSize: 12, color: context.textPrimary),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: context.textPrimary,
+                                      ),
                                     ),
                                     const SizedBox(height: 6),
                                     if (entry.rewardClaimed)
                                       const Text(
                                         'Belohnung eingesammelt',
-                                        style: TextStyle(fontSize: 12, color: Color(0xFF9AC39A)),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF9AC39A),
+                                        ),
                                       )
                                     else if (entry.rewardClaimable)
                                       Align(
                                         alignment: Alignment.centerLeft,
                                         child: FilledButton.tonal(
                                           onPressed: () {
-                                            final ok = controller.claimSetCompletionReward(entry.setId);
+                                            final ok = controller
+                                                .claimSetCompletionReward(
+                                                  entry.setId,
+                                                );
                                             if (ok) {
                                               setModalState(() {});
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(content: Text('Set-Belohnung eingesammelt.')),
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'Set-Belohnung eingesammelt.',
+                                                  ),
+                                                ),
                                               );
                                             } else {
-                                              ScaffoldMessenger.of(context).showSnackBar(
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
                                                 const SnackBar(
                                                   content: Text(
                                                     'Set-Belohnung kann noch nicht eingesammelt werden.',
@@ -3944,7 +4747,9 @@ class _BottomMenu extends StatelessWidget {
                                               );
                                             }
                                           },
-                                          child: const Text('Belohnung einsammeln'),
+                                          child: const Text(
+                                            'Belohnung einsammeln',
+                                          ),
                                         ),
                                       ),
                                   ],
@@ -3955,7 +4760,10 @@ class _BottomMenu extends StatelessWidget {
                             return ListView(
                               children: [
                                 if (!wide)
-                                  ...List.generate(8, (index) => milestoneCard(index + 1))
+                                  ...List.generate(
+                                    8,
+                                    (index) => milestoneCard(index + 1),
+                                  )
                                 else
                                   Wrap(
                                     spacing: 8,
@@ -3969,16 +4777,27 @@ class _BottomMenu extends StatelessWidget {
                                     ),
                                   ),
                                 const SizedBox(height: 8),
-                                const Text('Set-Sammlung', style: TextStyle(fontWeight: FontWeight.bold)),
+                                const Text(
+                                  'Set-Sammlung',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                                 const SizedBox(height: 6),
                                 if (!wide)
-                                  ...controller.setCollection.map((entry) => setCard(entry))
+                                  ...controller.setCollection.map(
+                                    (entry) => setCard(entry),
+                                  )
                                 else
                                   Wrap(
                                     spacing: 8,
                                     runSpacing: 0,
                                     children: controller.setCollection
-                                        .map((entry) => setCard(entry, width: (constraints.maxWidth - 8) / 2))
+                                        .map(
+                                          (entry) => setCard(
+                                            entry,
+                                            width:
+                                                (constraints.maxWidth - 8) / 2,
+                                          ),
+                                        )
                                         .toList(growable: false),
                                   ),
                               ],
@@ -3997,7 +4816,10 @@ class _BottomMenu extends StatelessWidget {
     );
   }
 
-  Future<void> _showAchievementsPanel(BuildContext context, GameController controller) async {
+  Future<void> _showAchievementsPanel(
+    BuildContext context,
+    GameController controller,
+  ) async {
     AchievementFilterMode filterMode = AchievementFilterMode.all;
 
     await showModalBottomSheet<void>(
@@ -4007,44 +4829,67 @@ class _BottomMenu extends StatelessWidget {
       builder: (context) {
         return SafeArea(
           child: SizedBox(
-            height: _adaptiveSheetHeight(context, factor: 0.78, min: 460, max: 960),
+            height: _adaptiveSheetHeight(
+              context,
+              factor: 0.78,
+              min: 460,
+              max: 960,
+            ),
             child: StatefulBuilder(
               builder: (context, setModalState) {
                 final entries = controller.achievements;
-                final claimable = entries.where((entry) => entry.canClaim).length;
-                final unclaimed = entries.where((entry) => !entry.claimed).length;
+                final claimable = entries
+                    .where((entry) => entry.canClaim)
+                    .length;
+                final unclaimed = entries
+                    .where((entry) => !entry.claimed)
+                    .length;
                 final total = entries.length;
                 final claimed = entries.where((entry) => entry.claimed).length;
                 final shownEntries = switch (filterMode) {
                   AchievementFilterMode.all => entries,
-                  AchievementFilterMode.claimable => entries
-                      .where((entry) => entry.canClaim)
-                      .toList(growable: false),
-                  AchievementFilterMode.unclaimed => entries
-                      .where((entry) => !entry.claimed)
-                      .toList(growable: false),
-                  AchievementFilterMode.claimed => entries
-                      .where((entry) => entry.claimed)
-                      .toList(growable: false),
+                  AchievementFilterMode.claimable =>
+                    entries
+                        .where((entry) => entry.canClaim)
+                        .toList(growable: false),
+                  AchievementFilterMode.unclaimed =>
+                    entries
+                        .where((entry) => !entry.claimed)
+                        .toList(growable: false),
+                  AchievementFilterMode.claimed =>
+                    entries
+                        .where((entry) => entry.claimed)
+                        .toList(growable: false),
                 };
 
                 Widget achievementCard(AchievementView entry) {
                   final def = entry.definition;
-                  final progressRatio = (entry.progress / def.target).clamp(0.0, 1.0);
+                  final progressRatio = (entry.progress / def.target).clamp(
+                    0.0,
+                    1.0,
+                  );
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: entry.claimed ? const Color(0xFF2D352D) : context.cardBg,
+                      color: entry.claimed
+                          ? const Color(0xFF2D352D)
+                          : context.cardBg,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: context.borderHeavy),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(def.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                          def.title,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 2),
-                        Text(def.description, style: const TextStyle(fontSize: 12)),
+                        Text(
+                          def.description,
+                          style: const TextStyle(fontSize: 12),
+                        ),
                         const SizedBox(height: 6),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(6),
@@ -4053,7 +4898,9 @@ class _BottomMenu extends StatelessWidget {
                             value: progressRatio,
                             backgroundColor: const Color(0xFF202020),
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              entry.canClaim ? const Color(0xFF9AC39A) : const Color(0xFF7E8D9B),
+                              entry.canClaim
+                                  ? const Color(0xFF9AC39A)
+                                  : const Color(0xFF7E8D9B),
                             ),
                           ),
                         ),
@@ -4061,19 +4908,27 @@ class _BottomMenu extends StatelessWidget {
                         Text(
                           'Fortschritt ${entry.progress}/${def.target} | '
                           '+${def.rewardGold} Gold, +${def.rewardShards} Scherben',
-                          style: TextStyle(fontSize: 12, color: context.textPrimary),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.textPrimary,
+                          ),
                         ),
                         const SizedBox(height: 6),
                         if (entry.claimed)
                           const Text(
                             'Bereits eingesammelt',
-                            style: TextStyle(fontSize: 12, color: Color(0xFF9AC39A)),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF9AC39A),
+                            ),
                           )
                         else
                           FilledButton.tonal(
                             onPressed: entry.canClaim
                                 ? () {
-                                    final ok = controller.claimAchievement(def.id);
+                                    final ok = controller.claimAchievement(
+                                      def.id,
+                                    );
                                     if (ok) {
                                       setModalState(() {});
                                     }
@@ -4093,10 +4948,15 @@ class _BottomMenu extends StatelessWidget {
                     children: [
                       const Text(
                         'Errungenschaften',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 6),
-                      Text('Freigeschaltet: $claimed/$total | Offen: $unclaimed | Einloesbar: $claimable'),
+                      Text(
+                        'Freigeschaltet: $claimed/$total | Offen: $unclaimed | Einloesbar: $claimable',
+                      ),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
@@ -4105,11 +4965,18 @@ class _BottomMenu extends StatelessWidget {
                           FilledButton.tonal(
                             onPressed: controller.claimableAchievementCount > 0
                                 ? () {
-                                    final count = controller.claimAllAchievements();
+                                    final count = controller
+                                        .claimAllAchievements();
                                     if (count > 0) {
                                       setModalState(() {});
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('$count Belohnungen eingesammelt.')),
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            '$count Belohnungen eingesammelt.',
+                                          ),
+                                        ),
                                       );
                                     }
                                   }
@@ -4127,7 +4994,8 @@ class _BottomMenu extends StatelessWidget {
                           ),
                           ChoiceChip(
                             label: Text('Einloesbar ($claimable)'),
-                            selected: filterMode == AchievementFilterMode.claimable,
+                            selected:
+                                filterMode == AchievementFilterMode.claimable,
                             onSelected: (_) {
                               setModalState(() {
                                 filterMode = AchievementFilterMode.claimable;
@@ -4136,7 +5004,8 @@ class _BottomMenu extends StatelessWidget {
                           ),
                           ChoiceChip(
                             label: Text('Offen ($unclaimed)'),
-                            selected: filterMode == AchievementFilterMode.unclaimed,
+                            selected:
+                                filterMode == AchievementFilterMode.unclaimed,
                             onSelected: (_) {
                               setModalState(() {
                                 filterMode = AchievementFilterMode.unclaimed;
@@ -4145,7 +5014,8 @@ class _BottomMenu extends StatelessWidget {
                           ),
                           ChoiceChip(
                             label: Text('Erledigt ($claimed)'),
-                            selected: filterMode == AchievementFilterMode.claimed,
+                            selected:
+                                filterMode == AchievementFilterMode.claimed,
                             onSelected: (_) {
                               setModalState(() {
                                 filterMode = AchievementFilterMode.claimed;
@@ -4168,14 +5038,16 @@ class _BottomMenu extends StatelessWidget {
                             }
 
                             return GridView.builder(
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                childAspectRatio: 1.9,
-                                crossAxisSpacing: 8,
-                                mainAxisSpacing: 8,
-                              ),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    childAspectRatio: 1.9,
+                                    crossAxisSpacing: 8,
+                                    mainAxisSpacing: 8,
+                                  ),
                               itemCount: shownEntries.length,
-                              itemBuilder: (context, index) => achievementCard(shownEntries[index]),
+                              itemBuilder: (context, index) =>
+                                  achievementCard(shownEntries[index]),
                             );
                           },
                         ),
@@ -4191,7 +5063,10 @@ class _BottomMenu extends StatelessWidget {
     );
   }
 
-  Future<void> _showShopPanel(BuildContext context, GameController controller) async {
+  Future<void> _showShopPanel(
+    BuildContext context,
+    GameController controller,
+  ) async {
     ShopPanelTab selectedTab = ShopPanelTab.all;
 
     await showModalBottomSheet<void>(
@@ -4201,7 +5076,12 @@ class _BottomMenu extends StatelessWidget {
       builder: (context) {
         return SafeArea(
           child: SizedBox(
-            height: _adaptiveSheetHeight(context, factor: 0.58, min: 320, max: 760),
+            height: _adaptiveSheetHeight(
+              context,
+              factor: 0.58,
+              min: 320,
+              max: 760,
+            ),
             child: StatefulBuilder(
               builder: (context, setModalState) {
                 String formatDuration(Duration value) {
@@ -4230,19 +5110,27 @@ class _BottomMenu extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 controller.shopOfferTitle(offer),
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                             if (offer.isDaily)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF5B3D2C),
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                                 child: Text(
                                   'DAILY -${offer.discountPercent}%',
-                                  style: const TextStyle(fontSize: 10, color: Color(0xFFFFD6A6)),
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Color(0xFFFFD6A6),
+                                  ),
                                 ),
                               ),
                           ],
@@ -4253,7 +5141,9 @@ class _BottomMenu extends StatelessWidget {
                           style: const TextStyle(fontSize: 12),
                         ),
                         const SizedBox(height: 4),
-                        Text('Bestand ${offer.stock} | Kosten ${offer.cost} Gold'),
+                        Text(
+                          'Bestand ${offer.stock} | Kosten ${offer.cost} Gold',
+                        ),
                         const SizedBox(height: 6),
                         FilledButton.tonal(
                           onPressed: canBuy
@@ -4261,7 +5151,9 @@ class _BottomMenu extends StatelessWidget {
                                   final ok = controller.buyShopOffer(offer.id);
                                   if (!ok) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Kauf fehlgeschlagen.')),
+                                      const SnackBar(
+                                        content: Text('Kauf fehlgeschlagen.'),
+                                      ),
                                     );
                                   }
                                   setModalState(() {});
@@ -4280,35 +5172,50 @@ class _BottomMenu extends StatelessWidget {
                       animation: controller,
                       builder: (context, _) {
                         final wide = constraints.maxWidth >= 900;
-                        final timer = formatDuration(controller.shopRefreshRemaining);
-                        final offers = controller.allShopOffers.where((offer) {
-                          return switch (selectedTab) {
-                            ShopPanelTab.all => true,
-                            ShopPanelTab.daily => offer.isDaily,
-                            ShopPanelTab.upgrades =>
-                              offer.kind == ShopOfferKind.speedUpgrade ||
-                              offer.kind == ShopOfferKind.hammerUpgrade ||
-                              offer.kind == ShopOfferKind.recoveryUpgrade,
-                            ShopPanelTab.resources =>
-                              offer.kind == ShopOfferKind.hammerPack ||
-                              offer.kind == ShopOfferKind.shardCache,
-                            ShopPanelTab.combat =>
-                              offer.kind == ShopOfferKind.healingFlask ||
-                              offer.kind == ShopOfferKind.berserkFlask,
-                          };
-                        }).toList(growable: false);
+                        final timer = formatDuration(
+                          controller.shopRefreshRemaining,
+                        );
+                        final offers = controller.allShopOffers
+                            .where((offer) {
+                              return switch (selectedTab) {
+                                ShopPanelTab.all => true,
+                                ShopPanelTab.daily => offer.isDaily,
+                                ShopPanelTab.upgrades =>
+                                  offer.kind == ShopOfferKind.speedUpgrade ||
+                                      offer.kind ==
+                                          ShopOfferKind.hammerUpgrade ||
+                                      offer.kind ==
+                                          ShopOfferKind.recoveryUpgrade,
+                                ShopPanelTab.resources =>
+                                  offer.kind == ShopOfferKind.hammerPack ||
+                                      offer.kind == ShopOfferKind.shardCache,
+                                ShopPanelTab.combat =>
+                                  offer.kind == ShopOfferKind.healingFlask ||
+                                      offer.kind == ShopOfferKind.berserkFlask,
+                              };
+                            })
+                            .toList(growable: false);
 
                         return ListView(
                           padding: const EdgeInsets.all(12),
                           children: [
                             const Text(
                               'Marktplatz',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 4),
-                            Text('Gold: ${controller.gold} | Scherben: ${controller.forgeShards}'),
-                            Text('Flasks: Heil ${controller.healingFlasks} | Berserk ${controller.berserkFlasks}'),
-                            Text('Tagesangebote: ${controller.dailyShopOffers.where((entry) => entry.stock > 0).length} aktiv'),
+                            Text(
+                              'Gold: ${controller.gold} | Scherben: ${controller.forgeShards}',
+                            ),
+                            Text(
+                              'Flasks: Heil ${controller.healingFlasks} | Berserk ${controller.berserkFlasks}',
+                            ),
+                            Text(
+                              'Tagesangebote: ${controller.dailyShopOffers.where((entry) => entry.stock > 0).length} aktiv',
+                            ),
                             Text('Shop-Refresh in $timer'),
                             const SizedBox(height: 8),
                             Wrap(
@@ -4319,13 +5226,21 @@ class _BottomMenu extends StatelessWidget {
                                   onPressed: () {
                                     final ok = controller.refreshShopManually();
                                     if (!ok) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Zu wenig Gold für Reroll.')),
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Zu wenig Gold für Reroll.',
+                                          ),
+                                        ),
                                       );
                                     }
                                     setModalState(() {});
                                   },
-                                  child: Text('Shop neu rollen (${controller.shopRefreshCost} Gold)'),
+                                  child: Text(
+                                    'Shop neu rollen (${controller.shopRefreshCost} Gold)',
+                                  ),
                                 ),
                               ],
                             ),
@@ -4337,32 +5252,47 @@ class _BottomMenu extends StatelessWidget {
                                 ChoiceChip(
                                   label: const Text('Alle'),
                                   selected: selectedTab == ShopPanelTab.all,
-                                  onSelected: (_) => setModalState(() => selectedTab = ShopPanelTab.all),
+                                  onSelected: (_) => setModalState(
+                                    () => selectedTab = ShopPanelTab.all,
+                                  ),
                                 ),
                                 ChoiceChip(
                                   label: const Text('Daily'),
                                   selected: selectedTab == ShopPanelTab.daily,
-                                  onSelected: (_) => setModalState(() => selectedTab = ShopPanelTab.daily),
+                                  onSelected: (_) => setModalState(
+                                    () => selectedTab = ShopPanelTab.daily,
+                                  ),
                                 ),
                                 ChoiceChip(
                                   label: const Text('Upgrades'),
-                                  selected: selectedTab == ShopPanelTab.upgrades,
-                                  onSelected: (_) => setModalState(() => selectedTab = ShopPanelTab.upgrades),
+                                  selected:
+                                      selectedTab == ShopPanelTab.upgrades,
+                                  onSelected: (_) => setModalState(
+                                    () => selectedTab = ShopPanelTab.upgrades,
+                                  ),
                                 ),
                                 ChoiceChip(
                                   label: const Text('Ressourcen'),
-                                  selected: selectedTab == ShopPanelTab.resources,
-                                  onSelected: (_) => setModalState(() => selectedTab = ShopPanelTab.resources),
+                                  selected:
+                                      selectedTab == ShopPanelTab.resources,
+                                  onSelected: (_) => setModalState(
+                                    () => selectedTab = ShopPanelTab.resources,
+                                  ),
                                 ),
                                 ChoiceChip(
                                   label: const Text('Kampf'),
                                   selected: selectedTab == ShopPanelTab.combat,
-                                  onSelected: (_) => setModalState(() => selectedTab = ShopPanelTab.combat),
+                                  onSelected: (_) => setModalState(
+                                    () => selectedTab = ShopPanelTab.combat,
+                                  ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 10),
-                            const Text('Angebote', style: TextStyle(fontWeight: FontWeight.bold)),
+                            const Text(
+                              'Angebote',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                             const SizedBox(height: 8),
                             if (offers.isEmpty)
                               Text(
@@ -4398,7 +5328,10 @@ class _BottomMenu extends StatelessWidget {
     );
   }
 
-  Future<void> _showDungeonPanel(BuildContext context, GameController controller) async {
+  Future<void> _showDungeonPanel(
+    BuildContext context,
+    GameController controller,
+  ) async {
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: context.sheetBg,
@@ -4406,7 +5339,12 @@ class _BottomMenu extends StatelessWidget {
       builder: (context) {
         return SafeArea(
           child: SizedBox(
-            height: _adaptiveSheetHeight(context, factor: 0.82, min: 400, max: 900),
+            height: _adaptiveSheetHeight(
+              context,
+              factor: 0.82,
+              min: 400,
+              max: 900,
+            ),
             child: StatefulBuilder(
               builder: (context, setModalState) {
                 final dc = controller.dungeonController;
@@ -4421,14 +5359,23 @@ class _BottomMenu extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.stars, color: Color(0xFFFFD700), size: 48),
+                        const Icon(
+                          Icons.stars,
+                          color: Color(0xFFFFD700),
+                          size: 48,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           text.tr('dungeonComplete'),
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(height: 16),
-                        Text('+${reward.gold} Gold  |  +${reward.hammers} Haemmer  |  +${reward.shards} Scherben'),
+                        Text(
+                          '+${reward.gold} Gold  |  +${reward.hammers} Haemmer  |  +${reward.shards} Scherben',
+                        ),
                         const SizedBox(height: 8),
                         Text('${reward.items.length} Item(s) gefunden'),
                         const SizedBox(height: 20),
@@ -4454,7 +5401,10 @@ class _BottomMenu extends StatelessWidget {
                     children: [
                       Text(
                         '${text.tr('dungeonTitle')} — ${_difficultyLabel(text, run.difficulty)}',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Row(
@@ -4470,8 +5420,8 @@ class _BottomMenu extends StatelessWidget {
                                 color: isDone
                                     ? const Color(0xFF4CAF50)
                                     : isCurrent
-                                        ? const Color(0xFFFF9800)
-                                        : context.cardBorder,
+                                    ? const Color(0xFFFF9800)
+                                    : context.cardBorder,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
@@ -4496,7 +5446,9 @@ class _BottomMenu extends StatelessWidget {
                           children: [
                             Text(
                               '${text.tr("dungeonBoss")}: ${currentStage.bossName}',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text('HP: ${bossHp.round()}'),
@@ -4512,7 +5464,9 @@ class _BottomMenu extends StatelessWidget {
                                 controller.advanceDungeonStage();
                                 refresh();
                               },
-                              child: Text('Boss besiegen (${text.tr("dungeonStage")} ${run.currentStage})'),
+                              child: Text(
+                                'Boss besiegen (${text.tr("dungeonStage")} ${run.currentStage})',
+                              ),
                             ),
                           ),
                         ],
@@ -4534,7 +5488,10 @@ class _BottomMenu extends StatelessWidget {
                   children: [
                     Text(
                       text.tr('dungeonTitle'),
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -4550,7 +5507,11 @@ class _BottomMenu extends StatelessWidget {
                           final ok = controller.startDungeon(difficulty);
                           if (!ok) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(text.tr('dungeonNotEnoughEnergy'))),
+                              SnackBar(
+                                content: Text(
+                                  text.tr('dungeonNotEnoughEnergy'),
+                                ),
+                              ),
                             );
                           }
                           refresh();
@@ -4581,7 +5542,10 @@ class _BottomMenu extends StatelessWidget {
     };
   }
 
-  Future<void> _showExpeditionPanel(BuildContext context, GameController controller) async {
+  Future<void> _showExpeditionPanel(
+    BuildContext context,
+    GameController controller,
+  ) async {
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: context.sheetBg,
@@ -4599,15 +5563,25 @@ class _BottomMenu extends StatelessWidget {
                   children: [
                     Text(
                       text.tr('expeditionTitle'),
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Sende Helden auf Expeditionen für Belohnungen.',
-                      style: TextStyle(color: context.textSecondary, fontSize: 12),
+                      style: TextStyle(
+                        color: context.textSecondary,
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    for (int i = 0; i < GameController.expeditionSlotCount; i++) ...[
+                    for (
+                      int i = 0;
+                      i < GameController.expeditionSlotCount;
+                      i++
+                    ) ...[
                       _ExpeditionSlotCard(
                         slotIndex: i,
                         controller: controller,
@@ -4625,7 +5599,10 @@ class _BottomMenu extends StatelessWidget {
     );
   }
 
-  Future<void> _showAscensionPanel(BuildContext context, GameController controller) async {
+  Future<void> _showAscensionPanel(
+    BuildContext context,
+    GameController controller,
+  ) async {
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: context.sheetBg,
@@ -4659,7 +5636,9 @@ class _BottomMenu extends StatelessWidget {
                                   ),
                                   Text(
                                     '${text.tr("ascensionPoints")}: ${controller.ascensionPoints}',
-                                    style: TextStyle(color: context.textSecondary),
+                                    style: TextStyle(
+                                      color: context.textSecondary,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -4706,7 +5685,10 @@ class _BottomMenu extends StatelessWidget {
     );
   }
 
-  Future<void> _showRecipePanel(BuildContext context, GameController controller) async {
+  Future<void> _showRecipePanel(
+    BuildContext context,
+    GameController controller,
+  ) async {
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: context.sheetBg,
@@ -4725,12 +5707,18 @@ class _BottomMenu extends StatelessWidget {
                   children: [
                     Text(
                       text.tr('recipesTitle'),
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${knownRecipes.length}/${GameController.craftingRecipes.length} Rezepte gefunden',
-                      style: TextStyle(color: context.textSecondary, fontSize: 12),
+                      style: TextStyle(
+                        color: context.textSecondary,
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     if (knownRecipes.isEmpty)
@@ -4739,7 +5727,11 @@ class _BottomMenu extends StatelessWidget {
                         child: Center(
                           child: Column(
                             children: [
-                              Icon(Icons.menu_book, color: context.textTertiary, size: 40),
+                              Icon(
+                                Icons.menu_book,
+                                color: context.textTertiary,
+                                size: 40,
+                              ),
                               const SizedBox(height: 8),
                               Text(
                                 text.tr('recipesNoRecipes'),
@@ -4788,7 +5780,8 @@ class _AscensionPathView extends StatelessWidget {
         .toList();
     nodes.sort((a, b) => a.tier.compareTo(b.tier));
 
-    if (controller.ascensionPoints == 0 && controller.unlockedAscensionNodes.isEmpty) {
+    if (controller.ascensionPoints == 0 &&
+        controller.unlockedAscensionNodes.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -4810,10 +5803,7 @@ class _AscensionPathView extends StatelessWidget {
         final desc = controller.localeCode == 'de' ? node.descDe : node.descEn;
 
         return Container(
-          margin: EdgeInsets.only(
-            left: (node.tier - 1) * 16.0,
-            bottom: 8,
-          ),
+          margin: EdgeInsets.only(left: (node.tier - 1) * 16.0, bottom: 8),
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: isUnlocked
@@ -4824,8 +5814,8 @@ class _AscensionPathView extends StatelessWidget {
               color: isUnlocked
                   ? const Color(0xFF4CAF50)
                   : canUnlock
-                      ? const Color(0xFFFF9800).withValues(alpha: 0.7)
-                      : context.cardBorder,
+                  ? const Color(0xFFFF9800).withValues(alpha: 0.7)
+                  : context.cardBorder,
             ),
           ),
           child: Column(
@@ -4837,13 +5827,13 @@ class _AscensionPathView extends StatelessWidget {
                     isUnlocked
                         ? Icons.check_circle
                         : canUnlock
-                            ? Icons.lock_open
-                            : Icons.lock,
+                        ? Icons.lock_open
+                        : Icons.lock,
                     color: isUnlocked
                         ? const Color(0xFF4CAF50)
                         : canUnlock
-                            ? const Color(0xFFFF9800)
-                            : context.textTertiary,
+                        ? const Color(0xFFFF9800)
+                        : context.textTertiary,
                     size: 16,
                   ),
                   const SizedBox(width: 6),
@@ -4852,7 +5842,9 @@ class _AscensionPathView extends StatelessWidget {
                       name,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: isUnlocked ? const Color(0xFF4CAF50) : context.textPrimary,
+                        color: isUnlocked
+                            ? const Color(0xFF4CAF50)
+                            : context.textPrimary,
                       ),
                     ),
                   ),
@@ -4866,7 +5858,10 @@ class _AscensionPathView extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 3),
-              Text(desc, style: TextStyle(fontSize: 12, color: context.textSecondary)),
+              Text(
+                desc,
+                style: TextStyle(fontSize: 12, color: context.textSecondary),
+              ),
               if (node.requiredNodeId != null && !isUnlocked)
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
@@ -4902,7 +5897,10 @@ class _AscensionPathView extends StatelessWidget {
   }
 }
 
-Future<void> _showSocialPanel(BuildContext context, GameController controller) async {
+Future<void> _showSocialPanel(
+  BuildContext context,
+  GameController controller,
+) async {
   final text = controller.text;
   await showModalBottomSheet<void>(
     context: context,
@@ -4918,7 +5916,10 @@ Future<void> _showSocialPanel(BuildContext context, GameController controller) a
             children: [
               Text(
                 text.tr('friendsTitle'),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 16),
               _SocialTile(
@@ -4942,7 +5943,12 @@ Future<void> _showSocialPanel(BuildContext context, GameController controller) a
                 label: text.tr('leaderboardTitle'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  Navigator.push<void>(context, MaterialPageRoute(builder: (_) => const LeaderboardScreen()));
+                  Navigator.push<void>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const LeaderboardScreen(),
+                    ),
+                  );
                 },
               ),
               _SocialTile(
@@ -4950,7 +5956,10 @@ Future<void> _showSocialPanel(BuildContext context, GameController controller) a
                 label: text.tr('friendsTitle'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  Navigator.push<void>(context, MaterialPageRoute(builder: (_) => const FriendsScreen()));
+                  Navigator.push<void>(
+                    context,
+                    MaterialPageRoute(builder: (_) => const FriendsScreen()),
+                  );
                 },
               ),
               _SocialTile(
@@ -4958,7 +5967,10 @@ Future<void> _showSocialPanel(BuildContext context, GameController controller) a
                 label: text.tr('pvpTitle'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  Navigator.push<void>(context, MaterialPageRoute(builder: (_) => const PvpScreen()));
+                  Navigator.push<void>(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PvpScreen()),
+                  );
                 },
               ),
               _SocialTile(
@@ -4966,7 +5978,10 @@ Future<void> _showSocialPanel(BuildContext context, GameController controller) a
                 label: text.tr('coopTitle'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  Navigator.push<void>(context, MaterialPageRoute(builder: (_) => const CoopScreen()));
+                  Navigator.push<void>(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CoopScreen()),
+                  );
                 },
               ),
             ],
@@ -5010,7 +6025,10 @@ class _MenuButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (iconPath != null)
-                _SvgIcon(path: iconPath!, size: _rs(context, dense ? 17 : 20, min: 14, max: 26))
+                _SvgIcon(
+                  path: iconPath!,
+                  size: _rs(context, dense ? 17 : 20, min: 14, max: 26),
+                )
               else
                 Icon(
                   icon,
@@ -5019,7 +6037,9 @@ class _MenuButton extends StatelessWidget {
                 ),
               SizedBox(height: _rs(context, 4, min: 2)),
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: _rs(context, 4, min: 2)),
+                padding: EdgeInsets.symmetric(
+                  horizontal: _rs(context, 4, min: 2),
+                ),
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
@@ -5042,7 +6062,11 @@ class _MenuButton extends StatelessWidget {
 }
 
 class _SocialTile extends StatelessWidget {
-  const _SocialTile({required this.icon, required this.label, required this.onTap});
+  const _SocialTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -5101,7 +6125,10 @@ class _UpdateDialogState extends State<_UpdateDialog> {
           ],
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+            Text(
+              _error!,
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+            ),
           ],
         ],
       ),
@@ -5123,7 +6150,10 @@ class _UpdateDialogState extends State<_UpdateDialog> {
                     Navigator.of(context).pop();
                     final uri = Uri.parse(widget.updateInfo.releaseUrl);
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
                     }
                   },
                   child: Text(widget.controller.text.tr('download')),
@@ -5183,20 +6213,23 @@ class _TutorialOverlayState extends State<_TutorialOverlay> {
     _TutorialStep(
       icon: Icons.waving_hand_rounded,
       title: 'Willkommen bei Idle Forge!',
-      body: 'Du bist ein Schmied auf dem Weg zur Legende.\n\n'
+      body:
+          'Du bist ein Schmied auf dem Weg zur Legende.\n\n'
           'Besiege Monster, sammle Gold und schmiede mächtige Ausrüstung!',
     ),
     _TutorialStep(
       icon: Icons.sports_martial_arts_rounded,
       title: 'Kampf',
-      body: 'Dein Held kämpft automatisch gegen Monster.\n\n'
+      body:
+          'Dein Held kämpft automatisch gegen Monster.\n\n'
           'Oben siehst du das aktuelle Kapitel und die Stage. '
           'Besiege genug Gegner, um die nächste Stage zu erreichen.',
     ),
     _TutorialStep(
       icon: Icons.flash_on_rounded,
       title: 'Fähigkeiten',
-      body: 'Klappe den Fähigkeiten-Bereich im Kampfbildschirm auf.\n\n'
+      body:
+          'Klappe den Fähigkeiten-Bereich im Kampfbildschirm auf.\n\n'
           'Tippe auf eine Fähigkeit, um sie auszulösen. '
           'Halte LANG gedrueckt, um den Auto-Modus zu aktivieren — '
           'dann wird sie automatisch eingesetzt!',
@@ -5204,28 +6237,32 @@ class _TutorialOverlayState extends State<_TutorialOverlay> {
     _TutorialStep(
       icon: Icons.hardware_rounded,
       title: 'Schmiede',
-      body: 'Im unteren Menue findest du die Schmiede.\n\n'
+      body:
+          'Im unteren Menue findest du die Schmiede.\n\n'
           'Gib Hämmer aus, um zufällige Ausrüstung zu schmieden. '
           'Bessere Items erhöhen deine Stärke!',
     ),
     _TutorialStep(
       icon: Icons.local_drink_rounded,
       title: 'Tränke',
-      body: 'Unter "Tränke" kannst du Heil- und Berserker-Tränke kaufen.\n\n'
+      body:
+          'Unter "Tränke" kannst du Heil- und Berserker-Tränke kaufen.\n\n'
           'Heiltrank stellt HP wieder her, '
           'Berserker-Trank erhoeht kurzzeitig deinen Schaden.',
     ),
     _TutorialStep(
       icon: Icons.backpack_rounded,
       title: 'Inventar & Ausrüstung',
-      body: 'Im Inventar siehst du all deine Items.\n\n'
+      body:
+          'Im Inventar siehst du all deine Items.\n\n'
           'Rüste die stärksten aus, verkaufe den Rest für Gold '
           'oder sperre wertvolle Stuecke vor dem Verkauf.',
     ),
     _TutorialStep(
       icon: Icons.public_rounded,
       title: 'Welt, Quests & Clan',
-      body: 'Welt: Meilensteine und Item-Set-Sammlung.\n'
+      body:
+          'Welt: Meilensteine und Item-Set-Sammlung.\n'
           'Quests: Erledige Aufgaben für Belohnungen.\n'
           'Clan: Investiere Scherben in dauerhafte Boni.\n\n'
           'Im Shop findest du taeglich wechselnde Angebote!',
@@ -5233,7 +6270,8 @@ class _TutorialOverlayState extends State<_TutorialOverlay> {
     _TutorialStep(
       icon: Icons.person_rounded,
       title: 'Profil & Einstellungen',
-      body: 'Tippe oben links auf dein Profil, um deinen Namen zu aendern '
+      body:
+          'Tippe oben links auf dein Profil, um deinen Namen zu aendern '
           'und Einstellungen wie Dark Mode oder FPS anzupassen.\n\n'
           'Viel Spass beim Schmieden!',
     ),
@@ -5292,8 +6330,8 @@ class _TutorialOverlayState extends State<_TutorialOverlay> {
                         color: i == _step
                             ? const Color(0xFFD4A44C)
                             : i < _step
-                                ? const Color(0xFF8BAF85)
-                                : context.borderHeavy,
+                            ? const Color(0xFF8BAF85)
+                            : context.borderHeavy,
                       ),
                     );
                   }),
@@ -5356,14 +6394,20 @@ class _TutorialOverlayState extends State<_TutorialOverlay> {
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFFD4A44C),
                         foregroundColor: const Color(0xFF1A1A1A),
-                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 28,
+                          vertical: 12,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: Text(
                         isLast ? 'Los geht\'s!' : 'Weiter',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                   ],
@@ -5383,7 +6427,11 @@ class _TutorialOverlayState extends State<_TutorialOverlay> {
 }
 
 class _TutorialStep {
-  const _TutorialStep({required this.icon, required this.title, required this.body});
+  const _TutorialStep({
+    required this.icon,
+    required this.title,
+    required this.body,
+  });
 
   final IconData icon;
   final String title;
@@ -5399,7 +6447,12 @@ class _SvgIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scaledSize = _rs(context, size, min: size * 0.78, max: size * 1.24);
-    return SvgPicture.asset(path, width: scaledSize, height: scaledSize, fit: BoxFit.contain);
+    return SvgPicture.asset(
+      path,
+      width: scaledSize,
+      height: scaledSize,
+      fit: BoxFit.contain,
+    );
   }
 }
 
@@ -5447,7 +6500,10 @@ class _Enemy extends StatelessWidget {
               : const [Color(0x88555555), Color(0x00272727)],
         ),
       ),
-      child: _SvgIcon(path: 'assets/icons/enemy.svg', size: resolvedSize * (isBoss ? 0.68 : 0.69)),
+      child: _SvgIcon(
+        path: 'assets/icons/enemy.svg',
+        size: resolvedSize * (isBoss ? 0.68 : 0.69),
+      ),
     );
   }
 }
@@ -5472,20 +6528,20 @@ class _DifficultyCard extends StatelessWidget {
 
     final (label, color, desc) = switch (difficulty) {
       DungeonDifficulty.normal => (
-          text.tr('dungeonDiffNormal'),
-          const Color(0xFF4CAF50),
-          '5 Stages | Reward: Uncommon+',
-        ),
+        text.tr('dungeonDiffNormal'),
+        const Color(0xFF4CAF50),
+        '5 Stages | Reward: Uncommon+',
+      ),
       DungeonDifficulty.hard => (
-          text.tr('dungeonDiffHard'),
-          const Color(0xFFFF9800),
-          '5 Stages | Reward: Rare+ | 1.6x Belohnung',
-        ),
+        text.tr('dungeonDiffHard'),
+        const Color(0xFFFF9800),
+        '5 Stages | Reward: Rare+ | 1.6x Belohnung',
+      ),
       DungeonDifficulty.nightmare => (
-          text.tr('dungeonDiffNightmare'),
-          const Color(0xFFE91E63),
-          '5 Stages | Reward: Epic+ | 2.5x Belohnung',
-        ),
+        text.tr('dungeonDiffNightmare'),
+        const Color(0xFFE91E63),
+        '5 Stages | Reward: Epic+ | 2.5x Belohnung',
+      ),
     };
 
     return Container(
@@ -5493,7 +6549,9 @@ class _DifficultyCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.cardBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: canStart ? color.withValues(alpha: 0.5) : context.cardBorder),
+        border: Border.all(
+          color: canStart ? color.withValues(alpha: 0.5) : context.cardBorder,
+        ),
       ),
       child: Row(
         children: [
@@ -5510,7 +6568,10 @@ class _DifficultyCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  label,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
                 Text(desc, style: const TextStyle(fontSize: 11)),
                 Text(
                   '${text.tr("dungeonEnergy")}: $cost',
@@ -5579,7 +6640,9 @@ class _ExpeditionSlotCardState extends State<_ExpeditionSlotCard> {
               children: [
                 Icon(
                   isComplete ? Icons.check_circle : Icons.explore,
-                  color: isComplete ? const Color(0xFF4CAF50) : context.iconColor,
+                  color: isComplete
+                      ? const Color(0xFF4CAF50)
+                      : context.iconColor,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
@@ -5642,7 +6705,10 @@ class _ExpeditionSlotCardState extends State<_ExpeditionSlotCard> {
           const SizedBox(height: 8),
           DropdownButton<String>(
             value: _selectedExpeditionId,
-            hint: Text(text.tr('expeditionEmpty'), style: const TextStyle(fontSize: 12)),
+            hint: Text(
+              text.tr('expeditionEmpty'),
+              style: const TextStyle(fontSize: 12),
+            ),
             isExpanded: true,
             items: GameController.expeditionDefinitions.map((def) {
               return DropdownMenuItem<String>(
@@ -5659,7 +6725,10 @@ class _ExpeditionSlotCardState extends State<_ExpeditionSlotCard> {
           FilledButton.tonal(
             onPressed: _selectedExpeditionId != null
                 ? () {
-                    widget.controller.startExpedition(widget.slotIndex, _selectedExpeditionId!);
+                    widget.controller.startExpedition(
+                      widget.slotIndex,
+                      _selectedExpeditionId!,
+                    );
                     setState(() => _selectedExpeditionId = null);
                     widget.onRefresh();
                   }
@@ -5697,7 +6766,9 @@ class _RecipeCard extends StatelessWidget {
         color: context.cardBg,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: canCraft ? const Color(0xFF4CAF50).withValues(alpha: 0.6) : context.cardBorder,
+          color: canCraft
+              ? const Color(0xFF4CAF50).withValues(alpha: 0.6)
+              : context.cardBorder,
         ),
       ),
       child: Column(
@@ -5706,24 +6777,35 @@ class _RecipeCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(
+                  name,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: _tierColor(recipe.resultTier).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: _tierColor(recipe.resultTier).withValues(alpha: 0.5)),
+                  border: Border.all(
+                    color: _tierColor(recipe.resultTier).withValues(alpha: 0.5),
+                  ),
                 ),
                 child: Text(
                   controller.tierLabel(recipe.resultTier),
-                  style: TextStyle(fontSize: 11, color: _tierColor(recipe.resultTier)),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: _tierColor(recipe.resultTier),
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          Text(desc, style: TextStyle(color: context.textSecondary, fontSize: 12)),
+          Text(
+            desc,
+            style: TextStyle(color: context.textSecondary, fontSize: 12),
+          ),
           const SizedBox(height: 8),
           Text(
             '${text.tr("recipesIngredients")}:',
@@ -5760,9 +6842,7 @@ class _RecipeCard extends StatelessWidget {
                     final result = controller.craftByRecipe(recipe.id);
                     if (result != null) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${result.name} hergestellt!'),
-                        ),
+                        SnackBar(content: Text('${result.name} hergestellt!')),
                       );
                     }
                     onRefresh();

@@ -46,7 +46,12 @@ enum AchievementMetric {
 }
 
 class PetState {
-  PetState({required this.type, this.level = 1, this.xp = 0, this.isActive = false});
+  PetState({
+    required this.type,
+    this.level = 1,
+    this.xp = 0,
+    this.isActive = false,
+  });
 
   final PetType type;
   final int level;
@@ -63,12 +68,7 @@ class PetState {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'type': type.name,
-      'level': level,
-      'xp': xp,
-      'isActive': isActive,
-    };
+    return {'type': type.name, 'level': level, 'xp': xp, 'isActive': isActive};
   }
 
   factory PetState.fromJson(Map<String, dynamic> json) {
@@ -94,18 +94,18 @@ class EquipDiff {
 }
 
 class Rune {
-  const Rune({required this.type, required this.tier, required this.bonusValue});
+  const Rune({
+    required this.type,
+    required this.tier,
+    required this.bonusValue,
+  });
 
   final RuneType type;
   final int tier;
   final double bonusValue;
 
   Map<String, dynamic> toJson() {
-    return {
-      'type': type.name,
-      'tier': tier,
-      'bonusValue': bonusValue,
-    };
+    return {'type': type.name, 'tier': tier, 'bonusValue': bonusValue};
   }
 
   factory Rune.fromJson(Map<String, dynamic> json) {
@@ -235,7 +235,9 @@ class ShopOffer {
     return ShopOffer(
       id: json['id'] as String,
       kind: ShopOfferKind.values.firstWhere(
-        (entry) => entry.name == (json['kind'] as String? ?? ShopOfferKind.hammerPack.name),
+        (entry) =>
+            entry.name ==
+            (json['kind'] as String? ?? ShopOfferKind.hammerPack.name),
         orElse: () => ShopOfferKind.hammerPack,
       ),
       cost: json['cost'] as int? ?? 0,
@@ -343,7 +345,9 @@ class GameItem {
       'sellValue': sellValue,
       'iconPath': iconPath,
       'isLocked': isLocked,
-      'enchantments': enchantments.map((r) => r.toJson()).toList(growable: false),
+      'enchantments': enchantments
+          .map((r) => r.toJson())
+          .toList(growable: false),
     };
   }
 
@@ -355,7 +359,8 @@ class GameItem {
       slot: ItemSlot.values.firstWhere((slot) => slot.name == json['slot']),
       tier: ItemTier.values.firstWhere((tier) => tier.name == json['tier']),
       setId: ItemSet.values.firstWhere(
-        (setId) => setId.name == (json['setId'] as String? ?? ItemSet.ember.name),
+        (setId) =>
+            setId.name == (json['setId'] as String? ?? ItemSet.ember.name),
       ),
       power: json['power'] as int,
       sellValue: json['sellValue'] as int,
@@ -561,12 +566,15 @@ class ActiveExpedition {
     'claimed': claimed,
   };
 
-  factory ActiveExpedition.fromJson(Map<String, dynamic> json) => ActiveExpedition(
-    slotIndex: json['slotIndex'] as int? ?? 0,
-    expeditionId: json['expeditionId'] as String? ?? '',
-    completesAt: DateTime.fromMillisecondsSinceEpoch(json['completesAtMillis'] as int? ?? 0),
-    claimed: json['claimed'] as bool? ?? false,
-  );
+  factory ActiveExpedition.fromJson(Map<String, dynamic> json) =>
+      ActiveExpedition(
+        slotIndex: json['slotIndex'] as int? ?? 0,
+        expeditionId: json['expeditionId'] as String? ?? '',
+        completesAt: DateTime.fromMillisecondsSinceEpoch(
+          json['completesAtMillis'] as int? ?? 0,
+        ),
+        claimed: json['claimed'] as bool? ?? false,
+      );
 }
 
 class RecipeIngredient {
@@ -586,17 +594,18 @@ class RecipeIngredient {
     'count': count,
   };
 
-  factory RecipeIngredient.fromJson(Map<String, dynamic> json) => RecipeIngredient(
-    slot: ItemSlot.values.firstWhere(
-      (s) => s.name == (json['slot'] as String? ?? 'weapon'),
-      orElse: () => ItemSlot.weapon,
-    ),
-    minTier: ItemTier.values.firstWhere(
-      (t) => t.name == (json['minTier'] as String? ?? 'common'),
-      orElse: () => ItemTier.common,
-    ),
-    count: json['count'] as int? ?? 1,
-  );
+  factory RecipeIngredient.fromJson(Map<String, dynamic> json) =>
+      RecipeIngredient(
+        slot: ItemSlot.values.firstWhere(
+          (s) => s.name == (json['slot'] as String? ?? 'weapon'),
+          orElse: () => ItemSlot.weapon,
+        ),
+        minTier: ItemTier.values.firstWhere(
+          (t) => t.name == (json['minTier'] as String? ?? 'common'),
+          orElse: () => ItemTier.common,
+        ),
+        count: json['count'] as int? ?? 1,
+      );
 }
 
 class CraftingRecipe {

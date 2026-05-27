@@ -93,8 +93,7 @@ class _PvpScreenState extends State<PvpScreen> {
   }
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
-  Color get _bg =>
-      _isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
+  Color get _bg => _isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
   Color get _cardBg =>
       _isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFFFFFF);
   Color get _accent => const Color(0xFFD4A84B);
@@ -137,8 +136,9 @@ class _PvpScreenState extends State<PvpScreen> {
                             controller: _challengeController,
                             decoration: InputDecoration(
                               hintText: 'Enter username to challenge...',
-                              prefixIcon:
-                                  const Icon(Icons.sports_kabaddi_rounded),
+                              prefixIcon: const Icon(
+                                Icons.sports_kabaddi_rounded,
+                              ),
                               filled: true,
                               fillColor: _isDark
                                   ? const Color(0xFF252525)
@@ -148,7 +148,9 @@ class _PvpScreenState extends State<PvpScreen> {
                                 borderSide: BorderSide.none,
                               ),
                               contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 14),
+                                vertical: 12,
+                                horizontal: 14,
+                              ),
                             ),
                             textInputAction: TextInputAction.send,
                             onSubmitted: (_) => _challenge(),
@@ -161,7 +163,9 @@ class _PvpScreenState extends State<PvpScreen> {
                             backgroundColor: const Color(0xFFB84040),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 14),
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -185,7 +189,9 @@ class _PvpScreenState extends State<PvpScreen> {
                         child: Text(
                           _challengeError!,
                           style: const TextStyle(
-                              color: Color(0xFFE07070), fontSize: 12),
+                            color: Color(0xFFE07070),
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                   ],
@@ -198,34 +204,31 @@ class _PvpScreenState extends State<PvpScreen> {
                 child: _loading
                     ? const Center(child: CircularProgressIndicator())
                     : _offline
-                        ? _buildOffline()
-                        : _battles.isEmpty
-                            ? Center(
-                                child: Text(
-                                  'No battles yet.\nChallenge someone!',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: _textSecondary),
-                                ),
-                              )
-                            : RefreshIndicator(
-                                onRefresh: _loadBattles,
-                                child: ListView.builder(
-                                  padding: const EdgeInsets.all(12),
-                                  itemCount: _battles.length,
-                                  itemBuilder: (context, index) =>
-                                      _BattleCard(
-                                    battle: _battles[index],
-                                    myId:
-                                        ApiService.instance.currentPlayerId ??
-                                            '',
-                                    isDark: _isDark,
-                                    cardBg: _cardBg,
-                                    textPrimary: _textPrimary,
-                                    textSecondary: _textSecondary,
-                                    accent: _accent,
-                                  ),
-                                ),
-                              ),
+                    ? _buildOffline()
+                    : _battles.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No battles yet.\nChallenge someone!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: _textSecondary),
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _loadBattles,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(12),
+                          itemCount: _battles.length,
+                          itemBuilder: (context, index) => _BattleCard(
+                            battle: _battles[index],
+                            myId: ApiService.instance.currentPlayerId ?? '',
+                            isDark: _isDark,
+                            cardBg: _cardBg,
+                            textPrimary: _textPrimary,
+                            textSecondary: _textSecondary,
+                            accent: _accent,
+                          ),
+                        ),
+                      ),
               ),
             ],
           ),
@@ -248,8 +251,7 @@ class _PvpScreenState extends State<PvpScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.signal_wifi_off_rounded,
-              size: 56, color: _textSecondary),
+          Icon(Icons.signal_wifi_off_rounded, size: 56, color: _textSecondary),
           const SizedBox(height: 16),
           Text(
             'PVP not available offline',
@@ -287,8 +289,7 @@ class _BattleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final challenger =
-        battle['challenger'] as Map<String, dynamic>? ?? {};
+    final challenger = battle['challenger'] as Map<String, dynamic>? ?? {};
     final defender = battle['defender'] as Map<String, dynamic>? ?? {};
     final winnerId = battle['winner_id'] as String?;
     final iWon = winnerId == myId;
@@ -307,9 +308,7 @@ class _BattleCard extends StatelessWidget {
         color: cardBg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: iWon
-              ? winColor.withAlpha(120)
-              : loseColor.withAlpha(120),
+          color: iWon ? winColor.withAlpha(120) : loseColor.withAlpha(120),
         ),
       ),
       child: Row(
@@ -332,10 +331,7 @@ class _BattleCard extends StatelessWidget {
                     fontSize: 15,
                   ),
                 ),
-                Text(
-                  'vs $opponentName',
-                  style: TextStyle(color: textPrimary),
-                ),
+                Text('vs $opponentName', style: TextStyle(color: textPrimary)),
                 Text(
                   '${isChallenged ? "You" : opponentName} challenged · '
                   'Str: ${battle['challenger_strength']} vs ${battle['defender_strength']}',
@@ -382,9 +378,7 @@ class _BattleResultOverlay extends StatelessWidget {
             color: const Color(0xFF1F1F1F),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: won
-                  ? const Color(0xFF7AC97A)
-                  : const Color(0xFFE07070),
+              color: won ? const Color(0xFF7AC97A) : const Color(0xFFE07070),
               width: 2,
             ),
           ),
@@ -392,12 +386,9 @@ class _BattleResultOverlay extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                won
-                    ? Icons.emoji_events_rounded
-                    : Icons.sports_kabaddi_rounded,
+                won ? Icons.emoji_events_rounded : Icons.sports_kabaddi_rounded,
                 size: 64,
-                color:
-                    won ? const Color(0xFFFFD700) : const Color(0xFFE07070),
+                color: won ? const Color(0xFFFFD700) : const Color(0xFFE07070),
               ),
               const SizedBox(height: 12),
               Text(
@@ -405,8 +396,9 @@ class _BattleResultOverlay extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color:
-                      won ? const Color(0xFFFFD700) : const Color(0xFFE07070),
+                  color: won
+                      ? const Color(0xFFFFD700)
+                      : const Color(0xFFE07070),
                 ),
               ),
               const SizedBox(height: 8),
@@ -419,7 +411,9 @@ class _BattleResultOverlay extends StatelessWidget {
               if (won)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF3A3020),
                     borderRadius: BorderRadius.circular(8),

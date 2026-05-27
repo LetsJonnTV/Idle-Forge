@@ -36,10 +36,12 @@ class UpdateChecker {
       for (final asset in assets) {
         final name = (asset['name'] as String? ?? '').toLowerCase();
         final url = asset['browser_download_url'] as String? ?? '';
-        if (defaultTargetPlatform == TargetPlatform.android && name.endsWith('.apk')) {
+        if (defaultTargetPlatform == TargetPlatform.android &&
+            name.endsWith('.apk')) {
           downloadUrl = url;
           break;
-        } else if (defaultTargetPlatform == TargetPlatform.windows && name.endsWith('.zip')) {
+        } else if (defaultTargetPlatform == TargetPlatform.windows &&
+            name.endsWith('.zip')) {
           downloadUrl = url;
           break;
         }
@@ -71,7 +73,10 @@ class UpdateChecker {
 
   List<int> _parse(String v) {
     final parts = v.split('.');
-    return List.generate(3, (i) => i < parts.length ? (int.tryParse(parts[i]) ?? 0) : 0);
+    return List.generate(
+      3,
+      (i) => i < parts.length ? (int.tryParse(parts[i]) ?? 0) : 0,
+    );
   }
 }
 

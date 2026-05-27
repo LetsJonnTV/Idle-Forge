@@ -67,7 +67,9 @@ class DungeonController {
 
   bool canStartDungeon(DungeonDifficulty difficulty) {
     final cost = energyCostForDifficulty(difficulty);
-    return activeDungeonRun == null && dungeonEnergy >= cost && pendingDungeonReward == null;
+    return activeDungeonRun == null &&
+        dungeonEnergy >= cost &&
+        pendingDungeonReward == null;
   }
 
   int energyCostForDifficulty(DungeonDifficulty difficulty) {
@@ -139,7 +141,8 @@ class DungeonController {
 
   Map<String, dynamic> toJson() => {
     'dungeonEnergy': dungeonEnergy,
-    'dungeonEnergyLastRefreshAt': dungeonEnergyLastRefreshAt?.millisecondsSinceEpoch,
+    'dungeonEnergyLastRefreshAt':
+        dungeonEnergyLastRefreshAt?.millisecondsSinceEpoch,
     'activeDungeonRun': activeDungeonRun?.toJson(),
   };
 
