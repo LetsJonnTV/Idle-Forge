@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'game/game_controller.dart';
 import 'game/models.dart';
+import 'l10n/app_text.dart';
 import 'services/update_checker.dart';
 import 'services/update_installer.dart';
 
@@ -157,6 +158,15 @@ class _IdleForgeAppState extends State<IdleForgeApp> {
       });
     }
 
+    // Login streak dialog (only once per new day)
+    if (controller.loginStreakUpdatedThisSession) {
+      controller.loginStreakUpdatedThisSession = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showLoginStreakDialog(context, controller);
+      });
+    }
+
     // Version check
     final updateChecker = UpdateChecker();
     final updateInfo = await updateChecker.checkForUpdate();
@@ -173,6 +183,13 @@ class _IdleForgeAppState extends State<IdleForgeApp> {
         );
       });
     }
+  }
+
+  void _showLoginStreakDialog(BuildContext context, GameController ctrl) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => _LoginStreakDialog(controller: ctrl),
+    );
   }
 
   @override
@@ -1870,6 +1887,12 @@ class _BottomMenu extends StatelessWidget {
               dense: dense,
               onTap: () => _showInventory(context, controller),
             ),
+            _MenuButton(
+              icon: Icons.pets,
+              label: text.tr('pet'),
+              dense: dense,
+              onTap: () => _showPetPanel(context, controller),
+            ),
           ];
 
           if (!compact) {
@@ -3231,6 +3254,21 @@ class _BottomMenu extends StatelessWidget {
 
                           Widget card(GameItem item) {
                             final equipped = controller.isEquipped(item);
+                            final activeSetCounts = controller.equippedSetCounts;
+                            final setCount = activeSetCounts[item.setId] ?? 0;
+                            final setIsActive = setCount >= 2;
+                            final setColor = switch (item.setId) {
+                              ItemSet.ember => const Color(0xFFE8956C),
+                              ItemSet.tide => const Color(0xFF6CB4E8),
+                              ItemSet.storm => const Color(0xFFB0B0D8),
+                            };
+
+                            // Equip diff for non-equipped items
+                            EquipDiff? diff;
+                            if (!equipped) {
+                              diff = controller.calculateEquipDiff(item);
+                            }
+
                             return Container(
                               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               padding: const EdgeInsets.all(10),
@@ -3255,9 +3293,24 @@ class _BottomMenu extends StatelessWidget {
                                           ),
                                         ),
                                       ),
+                                      // Set indicator dot
+                                      Container(
+                                        width: 10,
+                                        height: 10,
+                                        margin: const EdgeInsets.only(right: 4),
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: setIsActive
+                                              ? setColor
+                                              : setColor.withOpacity(0.35),
+                                        ),
+                                      ),
                                       if (equipped)
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: context.divider,
                                             borderRadius: BorderRadius.circular(20),
@@ -3271,9 +3324,77 @@ class _BottomMenu extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
-                                    '${controller.tierLabel(item.tier)} | ${controller.setLabel(item.setId)} | +${item.power} | ${controller.slotLabel(item.slot)}',
+                                    '${controller.tierLabel(item.tier)} | ${controller.setLabel(item.setId)} $setCount/${ItemSlot.values.length} | +${item.power} | ${controller.slotLabel(item.slot)}',
                                     style: TextStyle(color: context.textPrimary, fontSize: 12),
                                   ),
+                                  // Enchantment info
+                                  if (item.enchantments.isNotEmpty) ...[
+                                    const SizedBox(height: 3),
+                                    Row(
+                                      children: item.enchantments
+                                          .map(
+                                            (r) => Container(
+                                              margin: const EdgeInsets.only(right: 6),
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 6,
+                                                vertical: 2,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF3A2D5C),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: Text(
+                                                '${_runeEmoji(r.type)} T${r.tier} +${(r.bonusValue * 100).round()}%',
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  color: Color(0xFFCDBFEF),
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                          .toList(),
+                                    ),
+                                  ],
+                                  // Equip diff preview
+                                  if (diff != null && diff.delta != 0) ...[
+                                    const SizedBox(height: 3),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          diff.delta > 0
+                                              ? Icons.arrow_upward_rounded
+                                              : Icons.arrow_downward_rounded,
+                                          size: 13,
+                                          color: diff.delta > 0
+                                              ? const Color(0xFF8FD39E)
+                                              : const Color(0xFFE39A9A),
+                                        ),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          '${diff.delta > 0 ? '+' : ''}${diff.delta} ⚔️',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: diff.delta > 0
+                                                ? const Color(0xFF8FD39E)
+                                                : const Color(0xFFE39A9A),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        if ((diff.newHp - diff.currentHp).abs() > 1) ...[
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            '${(diff.newHp - diff.currentHp) > 0 ? '+' : ''}${(diff.newHp - diff.currentHp).round()} ❤️',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: (diff.newHp - diff.currentHp) > 0
+                                                  ? const Color(0xFF8FD39E)
+                                                  : const Color(0xFFE39A9A),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ],
                                   const SizedBox(height: 8),
                                   Row(
                                     children: [
@@ -3309,7 +3430,9 @@ class _BottomMenu extends StatelessWidget {
                                           if (!sold) {
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               const SnackBar(
-                                                content: Text('Item ist gesperrt und kann nicht verkauft werden.'),
+                                                content: Text(
+                                                  'Item ist gesperrt und kann nicht verkauft werden.',
+                                                ),
                                               ),
                                             );
                                             return;
@@ -3322,6 +3445,26 @@ class _BottomMenu extends StatelessWidget {
                                               : '${text.tr('sell')} (${item.sellValue})',
                                         ),
                                       ),
+                                      // Enchant button
+                                      if (controller.runeInventory.isNotEmpty ||
+                                          item.enchantments.isNotEmpty)
+                                        TextButton(
+                                          onPressed: () async {
+                                            await _showEnchantDialog(
+                                              context,
+                                              controller,
+                                              item,
+                                            );
+                                            refresh();
+                                          },
+                                          child: Text(
+                                            text.tr('enchantment'),
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Color(0xFFCDBFEF),
+                                            ),
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ],
@@ -3352,6 +3495,32 @@ class _BottomMenu extends StatelessWidget {
                       ),
                     );
                   },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showPetPanel(BuildContext context, GameController controller) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.sheetBg,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: SizedBox(
+            height: _adaptiveSheetHeight(ctx, factor: 0.58, min: 360, max: 760),
+            child: StatefulBuilder(
+              builder: (ctx, setState) {
+                return AnimatedBuilder(
+                  animation: controller,
+                  builder: (ctx, _) => _PetPanel(
+                    controller: controller,
+                    onRefresh: () => setState(() {}),
+                  ),
                 );
               },
             ),
@@ -3958,6 +4127,17 @@ class _BottomMenu extends StatelessWidget {
       },
     );
   }
+
+  Future<void> _showEnchantDialog(
+    BuildContext context,
+    GameController controller,
+    GameItem item,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => _EnchantDialog(controller: controller, item: item),
+    );
+  }
 }
 
 class _MenuButton extends StatelessWidget {
@@ -4414,6 +4594,338 @@ class _Enemy extends StatelessWidget {
         ),
       ),
       child: _SvgIcon(path: 'assets/icons/enemy.svg', size: resolvedSize * (isBoss ? 0.68 : 0.69)),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Helper: rune type emoji
+// ──────────────────────────────────────────────────────────────────
+String _runeEmoji(RuneType type) => switch (type) {
+      RuneType.fire => '🔥',
+      RuneType.ice => '❄️',
+      RuneType.life => '💚',
+      RuneType.gold => '💰',
+      RuneType.speed => '⚡',
+    };
+
+// ──────────────────────────────────────────────────────────────────
+// Login Streak Dialog
+// ──────────────────────────────────────────────────────────────────
+class _LoginStreakDialog extends StatelessWidget {
+  const _LoginStreakDialog({required this.controller});
+  final GameController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final streak = controller.loginStreak;
+    final text = controller.text;
+    final reward = controller.getStreakReward(streak);
+    return AlertDialog(
+      backgroundColor: context.sheetBg,
+      title: Text(
+        text.tr('loginStreakTitle'),
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '${text.tr('loginStreakCurrent')}: $streak',
+            style: const TextStyle(fontSize: 16),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 56,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(7, (i) {
+                final day = i + 1;
+                final reached = streak >= day;
+                final isToday = streak == day;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: reached ? const Color(0xFFE2D18D) : context.cardBg,
+                          border: Border.all(
+                            color: isToday ? const Color(0xFFE2D18D) : context.borderHeavy,
+                            width: isToday ? 2 : 1,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '$day',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: reached ? const Color(0xFF1A1A2E) : context.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(_streakDayRewardLabel(day), style: const TextStyle(fontSize: 8)),
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ),
+          if (reward != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2A2D4E),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '🎁 ${text.tr('loginStreakReward')}: +${reward.gold} ${text.tr('gold')}, +${reward.hammers} 🔨',
+                style: const TextStyle(color: Color(0xFFE2D18D), fontSize: 13),
+              ),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(text.tr('close')),
+        ),
+      ],
+    );
+  }
+
+  String _streakDayRewardLabel(int day) => switch (day) {
+        1 => '50g',
+        2 => '1🔨',
+        3 => '100g',
+        4 => '2🔨',
+        5 => '200g',
+        6 => '3🔨',
+        7 => '💎',
+        _ => '',
+      };
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Pet Panel
+// ──────────────────────────────────────────────────────────────────
+class _PetPanel extends StatelessWidget {
+  const _PetPanel({required this.controller, required this.onRefresh});
+  final GameController controller;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = controller.text;
+    final pet = controller.pet;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            text.tr('petTitle'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          if (pet == null) ...[
+            Text(text.tr('petNone'), style: TextStyle(color: context.textPrimary)),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: PetType.values.map((type) {
+                return ElevatedButton(
+                  onPressed: controller.gold >= 200
+                      ? () {
+                          controller.adoptPet(type);
+                          onRefresh();
+                        }
+                      : null,
+                  child: Text(
+                    '${_petEmoji(type)} ${text.tr('petAdopt')} (200 ${text.tr('gold')})',
+                  ),
+                );
+              }).toList(),
+            ),
+          ] else ...[
+            Row(
+              children: [
+                Text(_petEmoji(pet.type), style: const TextStyle(fontSize: 36)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${text.tr('petType')}: ${pet.type.name}',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      Text('${text.tr('petLevel')}: ${pet.level}'),
+                      const SizedBox(height: 4),
+                      LinearProgressIndicator(
+                        value: (pet.xp % 10) / 10.0,
+                        backgroundColor: context.cardBg,
+                        color: const Color(0xFFE2D18D),
+                      ),
+                      Text(
+                        '${text.tr('petXp')}: ${pet.xp % 10}/10',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _petBonusRow(context, pet.type, text),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: controller.gold >= controller.petFeedCost
+                  ? () {
+                      controller.feedPet(null);
+                      onRefresh();
+                    }
+                  : null,
+              icon: const Text('🍖'),
+              label: Text(
+                '${text.tr('petFeed')} (${controller.petFeedCost} ${text.tr('gold')})',
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _petBonusRow(BuildContext context, PetType type, AppText text) {
+    final desc = switch (type) {
+      PetType.wolf => '⚔️ +5% ${text.tr('petBonusAttack')}',
+      PetType.phoenix => '🔨 +3% ${text.tr('petBonusForge')}',
+      PetType.golem => '🛡️ -5% ${text.tr('petBonusDefense')}',
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2A2D4E),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(desc, style: const TextStyle(color: Color(0xFFCDBFEF), fontSize: 13)),
+    );
+  }
+
+  String _petEmoji(PetType type) => switch (type) {
+        PetType.wolf => '🐺',
+        PetType.phoenix => '🦅',
+        PetType.golem => '🪨',
+      };
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Enchantment Dialog
+// ──────────────────────────────────────────────────────────────────
+class _EnchantDialog extends StatefulWidget {
+  const _EnchantDialog({required this.controller, required this.item});
+  final GameController controller;
+  final GameItem item;
+
+  @override
+  State<_EnchantDialog> createState() => _EnchantDialogState();
+}
+
+class _EnchantDialogState extends State<_EnchantDialog> {
+  Rune? _selectedRune;
+
+  @override
+  Widget build(BuildContext context) {
+    final ctrl = widget.controller;
+    final text = ctrl.text;
+    final item = widget.item;
+    final runes = ctrl.runeInventory;
+
+    return AlertDialog(
+      backgroundColor: context.sheetBg,
+      title: Text(text.tr('enchantment'), style: const TextStyle(fontWeight: FontWeight.bold)),
+      content: SizedBox(
+        width: 320,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${item.name} — ${text.tr('enchantSlots')}: ${item.enchantments.length}/2',
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            if (item.enchantments.isNotEmpty) ...[
+              Text(text.tr('enchantCurrent'), style: const TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              ...item.enchantments.map(
+                (r) => ListTile(
+                  dense: true,
+                  leading: Text(_runeEmoji(r.type)),
+                  title: Text('${r.type.name} T${r.tier} +${(r.bonusValue * 100).round()}%'),
+                  trailing: TextButton(
+                    onPressed: () {
+                      ctrl.disenchantItem(item.id, item.enchantments.indexOf(r));
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(text.tr('disenchant')),
+                  ),
+                ),
+              ),
+              const Divider(),
+            ],
+            if (runes.isEmpty)
+              Text(text.tr('runeInventoryEmpty'))
+            else ...[
+              Text(text.tr('runeInventory'), style: const TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              SizedBox(
+                height: 180,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: runes.length,
+                  itemBuilder: (ctx, i) {
+                    final r = runes[i];
+                    final selected = _selectedRune == r;
+                    return ListTile(
+                      dense: true,
+                      leading: Text(_runeEmoji(r.type)),
+                      title: Text('${r.type.name} T${r.tier} +${(r.bonusValue * 100).round()}%'),
+                      selected: selected,
+                      selectedColor: const Color(0xFFE2D18D),
+                      onTap: () => setState(() => _selectedRune = selected ? null : r),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(text.tr('close')),
+        ),
+        if (_selectedRune != null && item.enchantments.length < 2)
+          ElevatedButton(
+            onPressed: () {
+              ctrl.enchantItem(item.id, _selectedRune!);
+              Navigator.of(context).pop();
+            },
+            child: Text(text.tr('enchant')),
+          ),
+      ],
     );
   }
 }
