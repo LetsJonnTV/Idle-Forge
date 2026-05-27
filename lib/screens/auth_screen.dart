@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_text.dart';
 import '../services/api_service.dart';
 
 /// Login / Register screen shown on first launch or after logout.
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key, required this.onLoggedIn, required this.onSkip});
+  const AuthScreen({
+    super.key,
+    required this.onLoggedIn,
+    required this.onSkip,
+    required this.text,
+  });
 
   final VoidCallback onLoggedIn;
   final VoidCallback onSkip;
+  final AppText text;
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -70,18 +77,20 @@ class _AuthScreenState extends State<AuthScreen>
       if (success) {
         widget.onLoggedIn();
       } else {
-        setState(() => _errorMessage = 'Unexpected error. Please try again.');
+        setState(() => _errorMessage = widget.text.tr('errorUnexpected'));
       }
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
         _errorMessage = e.isOffline
-            ? 'No internet connection.'
-            : (e.message.isNotEmpty ? e.message : 'Login failed.');
+            ? widget.text.tr('errorOffline')
+            : (e.message.isNotEmpty
+                  ? e.message
+                  : widget.text.tr('loginFailed'));
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _errorMessage = 'Unexpected error. Please try again.');
+      setState(() => _errorMessage = widget.text.tr('errorUnexpected'));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -122,7 +131,7 @@ class _AuthScreenState extends State<AuthScreen>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Online Account',
+                        widget.text.tr('loginOnlineAccount'),
                         style: TextStyle(
                           fontSize: 13,
                           color: _isDark
@@ -155,9 +164,9 @@ class _AuthScreenState extends State<AuthScreen>
                           unselectedLabelColor: _isDark
                               ? const Color(0xFF888888)
                               : const Color(0xFF666666),
-                          tabs: const [
-                            Tab(text: 'Login'),
-                            Tab(text: 'Register'),
+                          tabs: [
+                            Tab(text: widget.text.tr('loginButton')),
+                            Tab(text: widget.text.tr('registerButton')),
                           ],
                         ),
                         const Divider(height: 1),
@@ -172,7 +181,7 @@ class _AuthScreenState extends State<AuthScreen>
                                 TextFormField(
                                   controller: _usernameController,
                                   decoration: InputDecoration(
-                                    labelText: 'Username',
+                                    labelText: widget.text.tr('loginUsername'),
                                     prefixIcon: const Icon(
                                       Icons.person_outline,
                                     ),
@@ -189,7 +198,7 @@ class _AuthScreenState extends State<AuthScreen>
                                   autocorrect: false,
                                   validator: (v) {
                                     if (v == null || v.trim().length < 3) {
-                                      return 'Min. 3 characters';
+                                      return widget.text.tr('validationMin3');
                                     }
                                     return null;
                                   },
@@ -201,7 +210,7 @@ class _AuthScreenState extends State<AuthScreen>
                                   controller: _passwordController,
                                   obscureText: _obscurePassword,
                                   decoration: InputDecoration(
-                                    labelText: 'Password',
+                                    labelText: widget.text.tr('loginPassword'),
                                     prefixIcon: const Icon(Icons.lock_outline),
                                     suffixIcon: IconButton(
                                       icon: Icon(
@@ -227,7 +236,7 @@ class _AuthScreenState extends State<AuthScreen>
                                   onFieldSubmitted: (_) => _submit(),
                                   validator: (v) {
                                     if (v == null || v.length < 6) {
-                                      return 'Min. 6 characters';
+                                      return widget.text.tr('validationMin6');
                                     }
                                     return null;
                                   },
@@ -273,8 +282,10 @@ class _AuthScreenState extends State<AuthScreen>
                                         )
                                       : Text(
                                           _tabController.index == 0
-                                              ? 'Login'
-                                              : 'Create Account',
+                                              ? widget.text.tr('loginButton')
+                                              : widget.text.tr(
+                                                  'registerButton',
+                                                ),
                                           style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -294,7 +305,7 @@ class _AuthScreenState extends State<AuthScreen>
                   TextButton.icon(
                     onPressed: widget.onSkip,
                     icon: const Icon(Icons.play_arrow_rounded),
-                    label: const Text('Play without account'),
+                    label: Text(widget.text.tr('loginSkip')),
                     style: TextButton.styleFrom(
                       foregroundColor: _isDark
                           ? const Color(0xFF888888)
@@ -303,7 +314,7 @@ class _AuthScreenState extends State<AuthScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Online features (leaderboard, friends, PVP, coop)\nrequire an account.',
+                    widget.text.tr('loginOnlineNote'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 12,

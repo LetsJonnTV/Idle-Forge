@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../l10n/app_text.dart';
 import '../services/api_service.dart';
 
 /// Coop session screen — create or join a boss fight with a friend.
 class CoopScreen extends StatefulWidget {
-  const CoopScreen({super.key});
+  const CoopScreen({super.key, required this.text});
+
+  final AppText text;
 
   @override
   State<CoopScreen> createState() => _CoopScreenState();
@@ -89,12 +92,14 @@ class _CoopScreenState extends State<CoopScreen> {
       if (!mounted) return;
       setState(() {
         _errorMessage = e.isOffline
-            ? 'No internet connection.'
-            : (e.message.isNotEmpty ? e.message : 'Failed to create session.');
+            ? widget.text.tr('errorOffline')
+            : (e.message.isNotEmpty
+                  ? e.message
+                  : widget.text.tr('coopFailedCreate'));
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _errorMessage = 'Unexpected error.');
+      setState(() => _errorMessage = widget.text.tr('errorUnexpected'));
     } finally {
       if (mounted) setState(() => _creating = false);
     }
@@ -119,12 +124,14 @@ class _CoopScreenState extends State<CoopScreen> {
       if (!mounted) return;
       setState(() {
         _errorMessage = e.isOffline
-            ? 'No internet connection.'
-            : (e.message.isNotEmpty ? e.message : 'Failed to join session.');
+            ? widget.text.tr('errorOffline')
+            : (e.message.isNotEmpty
+                  ? e.message
+                  : widget.text.tr('coopFailedJoin'));
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _errorMessage = 'Unexpected error.');
+      setState(() => _errorMessage = widget.text.tr('errorUnexpected'));
     } finally {
       if (mounted) setState(() => _joining = false);
     }
@@ -229,7 +236,7 @@ class _CoopScreenState extends State<CoopScreen> {
         backgroundColor: _bg,
         elevation: 0,
         title: Text(
-          'Co-op',
+          widget.text.tr('coopTitle'),
           style: TextStyle(color: _textPrimary, fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -252,7 +259,7 @@ class _CoopScreenState extends State<CoopScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'Create Session',
+                          widget.text.tr('coopCreate'),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -261,7 +268,7 @@ class _CoopScreenState extends State<CoopScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Start a co-op boss fight and invite a friend.',
+                          widget.text.tr('coopCreateDesc'),
                           style: TextStyle(fontSize: 13, color: _textSecondary),
                         ),
                         const SizedBox(height: 12),
@@ -277,7 +284,7 @@ class _CoopScreenState extends State<CoopScreen> {
                                   ),
                                 )
                               : const Icon(Icons.add_circle_outline),
-                          label: const Text('Create'),
+                          label: Text(widget.text.tr('coopCreate')),
                           style: FilledButton.styleFrom(
                             backgroundColor: _accent,
                             foregroundColor: Colors.white,
@@ -294,7 +301,7 @@ class _CoopScreenState extends State<CoopScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'Join Session',
+                          widget.text.tr('coopJoin'),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -305,7 +312,7 @@ class _CoopScreenState extends State<CoopScreen> {
                         TextField(
                           controller: _sessionCodeController,
                           decoration: InputDecoration(
-                            hintText: 'Paste session ID...',
+                            hintText: widget.text.tr('coopJoinHint'),
                             prefixIcon: const Icon(Icons.link_rounded),
                             filled: true,
                             fillColor: _isDark
@@ -332,7 +339,7 @@ class _CoopScreenState extends State<CoopScreen> {
                                   ),
                                 )
                               : const Icon(Icons.login_rounded),
-                          label: const Text('Join'),
+                          label: Text(widget.text.tr('coopJoin')),
                           style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xFF4A7A6A),
                             foregroundColor: Colors.white,
@@ -357,7 +364,7 @@ class _CoopScreenState extends State<CoopScreen> {
                   // Active sessions
                   if (!_loading && _sessions.isNotEmpty) ...[
                     Text(
-                      'Your Active Sessions',
+                      widget.text.tr('coopActiveSessions'),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: _textPrimary,
@@ -411,13 +418,13 @@ class _CoopScreenState extends State<CoopScreen> {
           Icon(Icons.signal_wifi_off_rounded, size: 56, color: _textSecondary),
           const SizedBox(height: 16),
           Text(
-            'Co-op not available offline',
+            widget.text.tr('coopOffline'),
             style: TextStyle(color: _textSecondary, fontSize: 16),
           ),
           const SizedBox(height: 24),
           FilledButton.tonal(
             onPressed: _loadSessions,
-            child: const Text('Retry'),
+            child: Text(widget.text.tr('retry')),
           ),
         ],
       ),
@@ -440,13 +447,13 @@ class _CoopScreenState extends State<CoopScreen> {
         backgroundColor: _bg,
         elevation: 0,
         title: Text(
-          'Co-op Battle',
+          widget.text.tr('coopBattle'),
           style: TextStyle(color: _textPrimary, fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
           icon: Icon(Icons.close, color: _textSecondary),
           onPressed: _leaveSession,
-          tooltip: 'Leave session',
+          tooltip: widget.text.tr('coopLeave'),
         ),
       ),
       body: Padding(
@@ -459,9 +466,7 @@ class _CoopScreenState extends State<CoopScreen> {
               onTap: () {
                 Clipboard.setData(ClipboardData(text: sessionId));
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Session ID copied to clipboard'),
-                  ),
+                  SnackBar(content: Text(widget.text.tr('coopIdCopied'))),
                 );
               },
               child: Container(
@@ -478,7 +483,7 @@ class _CoopScreenState extends State<CoopScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Session: $sessionId',
+                        '${widget.text.tr('coopSession')}: $sessionId',
                         style: TextStyle(fontSize: 11, color: _textSecondary),
                         overflow: TextOverflow.ellipsis,
                       ),

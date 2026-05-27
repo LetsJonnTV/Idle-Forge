@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_text.dart';
 import '../services/api_service.dart';
 
 /// Friends list and friend requests screen.
 class FriendsScreen extends StatefulWidget {
-  const FriendsScreen({super.key});
+  const FriendsScreen({super.key, required this.text});
+
+  final AppText text;
 
   @override
   State<FriendsScreen> createState() => _FriendsScreenState();
@@ -76,7 +79,7 @@ class _FriendsScreenState extends State<FriendsScreen>
       await ApiService.instance.sendFriendRequest(username);
       if (!mounted) return;
       setState(() {
-        _sendSuccess = 'Request sent to $username!';
+        _sendSuccess = '${widget.text.tr('friendsRequestSent')} $username!';
         _searchController.clear();
       });
       await _load();
@@ -84,12 +87,14 @@ class _FriendsScreenState extends State<FriendsScreen>
       if (!mounted) return;
       setState(() {
         _sendError = e.isOffline
-            ? 'No internet connection.'
-            : (e.message.isNotEmpty ? e.message : 'Failed to send request.');
+            ? widget.text.tr('errorOffline')
+            : (e.message.isNotEmpty
+                  ? e.message
+                  : widget.text.tr('friendsFailedSend'));
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _sendError = 'Unexpected error.');
+      setState(() => _sendError = widget.text.tr('errorUnexpected'));
     } finally {
       if (mounted) setState(() => _sendingRequest = false);
     }
@@ -133,14 +138,14 @@ class _FriendsScreenState extends State<FriendsScreen>
         backgroundColor: _bg,
         elevation: 0,
         title: Text(
-          'Friends',
+          widget.text.tr('friendsTitle'),
           style: TextStyle(color: _textPrimary, fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
             icon: Icon(Icons.refresh, color: _textSecondary),
             onPressed: _load,
-            tooltip: 'Refresh',
+            tooltip: widget.text.tr('refresh'),
           ),
         ],
         bottom: TabBar(
@@ -149,8 +154,12 @@ class _FriendsScreenState extends State<FriendsScreen>
           labelColor: _accent,
           unselectedLabelColor: _textSecondary,
           tabs: [
-            Tab(text: 'Friends (${_accepted.length})'),
-            Tab(text: 'Requests (${_pending.length})'),
+            Tab(
+              text: '${widget.text.tr('friendsTitle')} (${_accepted.length})',
+            ),
+            Tab(
+              text: '${widget.text.tr('friendsRequests')} (${_pending.length})',
+            ),
           ],
         ),
       ),
@@ -167,7 +176,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
-                          hintText: 'Add by username...',
+                          hintText: widget.text.tr('friendsAddHint'),
                           prefixIcon: const Icon(Icons.person_add_outlined),
                           filled: true,
                           fillColor: _isDark
@@ -208,7 +217,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                                 color: Colors.white,
                               ),
                             )
-                          : const Text('Add'),
+                          : Text(widget.text.tr('friendsAdd')),
                     ),
                   ],
                 ),
@@ -263,11 +272,14 @@ class _FriendsScreenState extends State<FriendsScreen>
           Icon(Icons.signal_wifi_off_rounded, size: 56, color: _textSecondary),
           const SizedBox(height: 16),
           Text(
-            'Friends not available offline',
+            widget.text.tr('friendsOffline'),
             style: TextStyle(color: _textSecondary, fontSize: 16),
           ),
           const SizedBox(height: 24),
-          FilledButton.tonal(onPressed: _load, child: const Text('Retry')),
+          FilledButton.tonal(
+            onPressed: _load,
+            child: Text(widget.text.tr('retry')),
+          ),
         ],
       ),
     );
@@ -277,7 +289,7 @@ class _FriendsScreenState extends State<FriendsScreen>
     if (_accepted.isEmpty) {
       return Center(
         child: Text(
-          'No friends yet.\nSearch by username to add someone!',
+          widget.text.tr('friendsEmpty'),
           textAlign: TextAlign.center,
           style: TextStyle(color: _textSecondary),
         ),
@@ -302,6 +314,7 @@ class _FriendsScreenState extends State<FriendsScreen>
             textPrimary: _textPrimary,
             textSecondary: _textSecondary,
             accent: _accent,
+            text: widget.text,
           );
         },
       ),
@@ -312,7 +325,7 @@ class _FriendsScreenState extends State<FriendsScreen>
     if (_pending.isEmpty) {
       return Center(
         child: Text(
-          'No pending requests.',
+          widget.text.tr('friendsNoRequests'),
           style: TextStyle(color: _textSecondary),
         ),
       );
@@ -338,6 +351,7 @@ class _FriendsScreenState extends State<FriendsScreen>
             accent: _accent,
             onAccept: isIncoming ? () => _respond(f['id'], 'accept') : null,
             onReject: isIncoming ? () => _respond(f['id'], 'reject') : null,
+            text: widget.text,
           );
         },
       ),
@@ -353,6 +367,7 @@ class _FriendCard extends StatelessWidget {
     required this.textPrimary,
     required this.textSecondary,
     required this.accent,
+    required this.text,
   });
 
   final Map<String, dynamic> friend;
@@ -361,10 +376,11 @@ class _FriendCard extends StatelessWidget {
   final Color textPrimary;
   final Color textSecondary;
   final Color accent;
+  final AppText text;
 
   @override
   Widget build(BuildContext context) {
-    final username = friend['username'] as String? ?? 'Unknown';
+    final username = friend['username'] as String? ?? 'Unbekannt';
     final strength = friend['total_strength'] as int? ?? 0;
     final prestige = friend['prestige_level'] as int? ?? 0;
 
@@ -400,7 +416,7 @@ class _FriendCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Strength: $strength · Prestige: $prestige',
+                  '${text.tr('totalStrength')}: $strength · Prestige: $prestige',
                   style: TextStyle(fontSize: 12, color: textSecondary),
                 ),
               ],
@@ -423,6 +439,7 @@ class _RequestCard extends StatelessWidget {
     required this.accent,
     required this.onAccept,
     required this.onReject,
+    required this.text,
   });
 
   final Map<String, dynamic> friendship;
@@ -434,6 +451,7 @@ class _RequestCard extends StatelessWidget {
   final Color accent;
   final VoidCallback? onAccept;
   final VoidCallback? onReject;
+  final AppText text;
 
   @override
   Widget build(BuildContext context) {
@@ -441,7 +459,7 @@ class _RequestCard extends StatelessWidget {
     final requester = friendship['requester'] as Map<String, dynamic>? ?? {};
     final addressee = friendship['addressee'] as Map<String, dynamic>? ?? {};
     final otherUser = requester['id'] == myId ? addressee : requester;
-    final username = otherUser['username'] as String? ?? 'Unknown';
+    final username = otherUser['username'] as String? ?? 'Unbekannt';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -482,7 +500,9 @@ class _RequestCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  isIncoming ? 'Sent you a request' : 'Request sent',
+                  isIncoming
+                      ? text.tr('friendsIncoming')
+                      : text.tr('friendsOutgoing'),
                   style: TextStyle(fontSize: 12, color: textSecondary),
                 ),
               ],
@@ -495,12 +515,12 @@ class _RequestCard extends StatelessWidget {
                 color: Color(0xFF7AC97A),
               ),
               onPressed: onAccept,
-              tooltip: 'Accept',
+              tooltip: text.tr('friendsAccept'),
             ),
             IconButton(
               icon: const Icon(Icons.cancel_outlined, color: Color(0xFFE07070)),
               onPressed: onReject,
-              tooltip: 'Reject',
+              tooltip: text.tr('friendsReject'),
             ),
           ],
         ],

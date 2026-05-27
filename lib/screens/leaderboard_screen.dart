@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_text.dart';
 import '../services/api_service.dart';
 
 /// Global / Weekly leaderboard screen.
 class LeaderboardScreen extends StatefulWidget {
-  const LeaderboardScreen({super.key});
+  const LeaderboardScreen({super.key, required this.text});
+
+  final AppText text;
 
   @override
   State<LeaderboardScreen> createState() => _LeaderboardScreenState();
@@ -84,7 +87,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         backgroundColor: _bg,
         elevation: 0,
         title: Text(
-          'Leaderboard',
+          widget.text.tr('leaderboardTitle'),
           style: TextStyle(color: _textPrimary, fontWeight: FontWeight.bold),
         ),
         bottom: TabBar(
@@ -92,9 +95,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           indicatorColor: _accent,
           labelColor: _accent,
           unselectedLabelColor: _textSecondary,
-          tabs: const [
-            Tab(text: 'Global'),
-            Tab(text: 'Weekly'),
+          tabs: [
+            Tab(text: widget.text.tr('leaderboardGlobal')),
+            Tab(text: widget.text.tr('leaderboardWeekly')),
           ],
         ),
       ),
@@ -126,13 +129,16 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
               const SizedBox(height: 16),
               Text(
                 _offline
-                    ? 'Leaderboard not available offline'
-                    : 'No players yet',
+                    ? widget.text.tr('leaderboardOffline')
+                    : widget.text.tr('leaderboardEmpty'),
                 style: TextStyle(color: _textSecondary, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              FilledButton.tonal(onPressed: _load, child: const Text('Retry')),
+              FilledButton.tonal(
+                onPressed: _load,
+                child: Text(widget.text.tr('retry')),
+              ),
             ],
           ),
         ),
@@ -153,6 +159,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           accent: _accent,
           textPrimary: _textPrimary,
           textSecondary: _textSecondary,
+          text: widget.text,
         );
       },
     );
@@ -168,6 +175,7 @@ class _LeaderboardCard extends StatelessWidget {
     required this.accent,
     required this.textPrimary,
     required this.textSecondary,
+    required this.text,
   });
 
   final LeaderboardEntry entry;
@@ -177,6 +185,7 @@ class _LeaderboardCard extends StatelessWidget {
   final Color accent;
   final Color textPrimary;
   final Color textSecondary;
+  final AppText text;
 
   @override
   Widget build(BuildContext context) {
@@ -241,7 +250,7 @@ class _LeaderboardCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          'You',
+                          text.tr('you'),
                           style: TextStyle(
                             fontSize: 10,
                             color: accent,
@@ -254,7 +263,7 @@ class _LeaderboardCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Chapter ${entry.chapter} · Prestige ${entry.prestigeLevel}',
+                  '${text.tr('chapter')} ${entry.chapter} · Prestige ${entry.prestigeLevel}',
                   style: TextStyle(fontSize: 12, color: textSecondary),
                 ),
               ],

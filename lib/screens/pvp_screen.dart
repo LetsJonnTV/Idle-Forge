@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_text.dart';
 import '../services/api_service.dart';
 
 /// PVP screen — challenge players, view battle history.
 class PvpScreen extends StatefulWidget {
-  const PvpScreen({super.key});
+  const PvpScreen({super.key, required this.text});
+
+  final AppText text;
 
   @override
   State<PvpScreen> createState() => _PvpScreenState();
@@ -81,12 +84,14 @@ class _PvpScreenState extends State<PvpScreen> {
       if (!mounted) return;
       setState(() {
         _challengeError = e.isOffline
-            ? 'No internet connection.'
-            : (e.message.isNotEmpty ? e.message : 'Challenge failed.');
+            ? widget.text.tr('errorOffline')
+            : (e.message.isNotEmpty
+                  ? e.message
+                  : widget.text.tr('pvpChallengeFailed'));
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _challengeError = 'Unexpected error.');
+      setState(() => _challengeError = widget.text.tr('errorUnexpected'));
     } finally {
       if (mounted) setState(() => _challenging = false);
     }
@@ -110,7 +115,7 @@ class _PvpScreenState extends State<PvpScreen> {
         backgroundColor: _bg,
         elevation: 0,
         title: Text(
-          'PVP Battles',
+          widget.text.tr('pvpTitle'),
           style: TextStyle(color: _textPrimary, fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -135,7 +140,7 @@ class _PvpScreenState extends State<PvpScreen> {
                           child: TextField(
                             controller: _challengeController,
                             decoration: InputDecoration(
-                              hintText: 'Enter username to challenge...',
+                              hintText: widget.text.tr('pvpChallengeHint'),
                               prefixIcon: const Icon(
                                 Icons.sports_kabaddi_rounded,
                               ),
@@ -179,7 +184,7 @@ class _PvpScreenState extends State<PvpScreen> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text('Challenge'),
+                              : Text(widget.text.tr('pvpChallenge')),
                         ),
                       ],
                     ),
@@ -208,7 +213,7 @@ class _PvpScreenState extends State<PvpScreen> {
                     : _battles.isEmpty
                     ? Center(
                         child: Text(
-                          'No battles yet.\nChallenge someone!',
+                          widget.text.tr('pvpEmpty'),
                           textAlign: TextAlign.center,
                           style: TextStyle(color: _textSecondary),
                         ),
@@ -226,6 +231,7 @@ class _PvpScreenState extends State<PvpScreen> {
                             textPrimary: _textPrimary,
                             textSecondary: _textSecondary,
                             accent: _accent,
+                            text: widget.text,
                           ),
                         ),
                       ),
@@ -240,6 +246,7 @@ class _PvpScreenState extends State<PvpScreen> {
               myId: ApiService.instance.currentPlayerId ?? '',
               accent: _accent,
               onDismiss: () => setState(() => _lastResult = null),
+              text: widget.text,
             ),
         ],
       ),
@@ -254,13 +261,13 @@ class _PvpScreenState extends State<PvpScreen> {
           Icon(Icons.signal_wifi_off_rounded, size: 56, color: _textSecondary),
           const SizedBox(height: 16),
           Text(
-            'PVP not available offline',
+            widget.text.tr('pvpOfflineTxt'),
             style: TextStyle(color: _textSecondary, fontSize: 16),
           ),
           const SizedBox(height: 24),
           FilledButton.tonal(
             onPressed: _loadBattles,
-            child: const Text('Retry'),
+            child: Text(widget.text.tr('retry')),
           ),
         ],
       ),
@@ -277,6 +284,7 @@ class _BattleCard extends StatelessWidget {
     required this.textPrimary,
     required this.textSecondary,
     required this.accent,
+    required this.text,
   });
 
   final Map<String, dynamic> battle;
@@ -286,6 +294,7 @@ class _BattleCard extends StatelessWidget {
   final Color textPrimary;
   final Color textSecondary;
   final Color accent;
+  final AppText text;
 
   @override
   Widget build(BuildContext context) {
@@ -324,7 +333,7 @@ class _BattleCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  iWon ? 'Victory' : 'Defeat',
+                  iWon ? text.tr('pvpWon') : text.tr('pvpLost'),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: iWon ? winColor : loseColor,
@@ -333,7 +342,7 @@ class _BattleCard extends StatelessWidget {
                 ),
                 Text('vs $opponentName', style: TextStyle(color: textPrimary)),
                 Text(
-                  '${isChallenged ? "You" : opponentName} challenged · '
+                  '${isChallenged ? text.tr('you') : opponentName} hat herausgefordert · '
                   'Str: ${battle['challenger_strength']} vs ${battle['defender_strength']}',
                   style: TextStyle(fontSize: 12, color: textSecondary),
                 ),
@@ -352,12 +361,14 @@ class _BattleResultOverlay extends StatelessWidget {
     required this.myId,
     required this.accent,
     required this.onDismiss,
+    required this.text,
   });
 
   final Map<String, dynamic> result;
   final String myId;
   final Color accent;
   final VoidCallback onDismiss;
+  final AppText text;
 
   @override
   Widget build(BuildContext context) {
@@ -392,7 +403,9 @@ class _BattleResultOverlay extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                won ? '⚔️ VICTORY!' : '💀 DEFEAT',
+                won
+                    ? '⚔️ ${text.tr('pvpWon').toUpperCase()}!'
+                    : '💀 ${text.tr('pvpLost').toUpperCase()}',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -403,7 +416,7 @@ class _BattleResultOverlay extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Your strength: $cStr\nOpponent strength: $dStr',
+                '${text.tr('pvpYourStr')}: $cStr\n${text.tr('pvpOpponentStr')}: $dStr',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white70, fontSize: 13),
               ),
@@ -434,7 +447,7 @@ class _BattleResultOverlay extends StatelessWidget {
                   backgroundColor: accent,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('Continue'),
+                child: Text(text.tr('pvpContinue')),
               ),
             ],
           ),

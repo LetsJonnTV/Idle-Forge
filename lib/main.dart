@@ -15,6 +15,7 @@ import 'screens/coop_screen.dart';
 import 'screens/friends_screen.dart';
 import 'screens/leaderboard_screen.dart';
 import 'screens/pvp_screen.dart';
+import 'services/api_service.dart';
 import 'services/update_checker.dart';
 import 'services/update_installer.dart';
 
@@ -110,6 +111,11 @@ extension _AppColors on BuildContext {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // TODO: Supabase initialisieren wenn SUPABASE_URL und SUPABASE_ANON_KEY als --dart-define übergeben werden
+  // await Supabase.initialize(
+  //   url: String.fromEnvironment('SUPABASE_URL', defaultValue: ''),
+  //   anonKey: String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: ''),
+  // );
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   }
@@ -2525,6 +2531,12 @@ class _BottomMenu extends StatelessWidget {
               onTap: () => _showDungeonPanel(context, controller),
             ),
             _MenuButton(
+              icon: Icons.pets_outlined,
+              label: text.tr('menuPet'),
+              dense: dense,
+              onTap: () => _showPetPanel(context, controller),
+            ),
+            _MenuButton(
               icon: Icons.explore_outlined,
               label: text.tr('menuExpedition'),
               dense: dense,
@@ -2544,7 +2556,7 @@ class _BottomMenu extends StatelessWidget {
             ),
             _MenuButton(
               icon: Icons.people_outline,
-              label: text.tr('friendsTitle'),
+              label: text.tr('socialTitle'),
               dense: dense,
               onTap: () => _showSocialPanel(context, controller),
             ),
@@ -5902,6 +5914,32 @@ Future<void> _showSocialPanel(
   GameController controller,
 ) async {
   final text = controller.text;
+
+  // Helper: require login before pushing a screen
+  void requireAuth(BuildContext ctx, Widget screen) {
+    Navigator.pop(ctx);
+    if (!ApiService.instance.isLoggedIn) {
+      Navigator.push<void>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AuthScreen(
+            onLoggedIn: () {
+              Navigator.pop(context);
+              Navigator.push<void>(
+                context,
+                MaterialPageRoute(builder: (_) => screen),
+              );
+            },
+            onSkip: () => Navigator.pop(context),
+            text: text,
+          ),
+        ),
+      );
+    } else {
+      Navigator.push<void>(context, MaterialPageRoute(builder: (_) => screen));
+    }
+  }
+
   await showModalBottomSheet<void>(
     context: context,
     backgroundColor: context.sheetBg,
@@ -5915,7 +5953,7 @@ Future<void> _showSocialPanel(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                text.tr('friendsTitle'),
+                text.tr('socialTitle'),
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -5924,7 +5962,10 @@ Future<void> _showSocialPanel(
               const SizedBox(height: 16),
               _SocialTile(
                 icon: Icons.person_outline,
-                label: text.tr('loginButton'),
+                label: ApiService.instance.isLoggedIn
+                    ? (ApiService.instance.currentUsername ??
+                          text.tr('loginButton'))
+                    : text.tr('loginButton'),
                 onTap: () {
                   Navigator.pop(ctx);
                   Navigator.push<void>(
@@ -5933,6 +5974,7 @@ Future<void> _showSocialPanel(
                       builder: (_) => AuthScreen(
                         onLoggedIn: () => Navigator.pop(context),
                         onSkip: () => Navigator.pop(context),
+                        text: text,
                       ),
                     ),
                   );
@@ -5941,50 +5983,69 @@ Future<void> _showSocialPanel(
               _SocialTile(
                 icon: Icons.leaderboard_outlined,
                 label: text.tr('leaderboardTitle'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Navigator.push<void>(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const LeaderboardScreen(),
-                    ),
-                  );
-                },
+                onTap: () => requireAuth(ctx, LeaderboardScreen(text: text)),
               ),
               _SocialTile(
                 icon: Icons.people_outline,
                 label: text.tr('friendsTitle'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Navigator.push<void>(
-                    context,
-                    MaterialPageRoute(builder: (_) => const FriendsScreen()),
-                  );
-                },
+                onTap: () => requireAuth(ctx, FriendsScreen(text: text)),
               ),
               _SocialTile(
                 icon: Icons.sports_kabaddi_outlined,
                 label: text.tr('pvpTitle'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Navigator.push<void>(
-                    context,
-                    MaterialPageRoute(builder: (_) => const PvpScreen()),
-                  );
-                },
+                onTap: () => requireAuth(ctx, PvpScreen(text: text)),
               ),
               _SocialTile(
                 icon: Icons.group_work_outlined,
                 label: text.tr('coopTitle'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Navigator.push<void>(
-                    context,
-                    MaterialPageRoute(builder: (_) => const CoopScreen()),
-                  );
-                },
+                onTap: () => requireAuth(ctx, CoopScreen(text: text)),
               ),
             ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Future<void> _showPetPanel(
+  BuildContext context,
+  GameController controller,
+) async {
+  final text = controller.text;
+
+  await showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: context.sheetBg,
+    isScrollControlled: true,
+    builder: (ctx) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
+              return SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      text.tr('petTitle'),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _PetPanel(
+                      controller: controller,
+                      onRefresh: () => setModalState(() {}),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              );
+            },
           ),
         ),
       );
