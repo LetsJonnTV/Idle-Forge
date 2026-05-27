@@ -1883,6 +1883,12 @@ class _BottomMenu extends StatelessWidget {
               dense: dense,
               onTap: () => _showExpeditionPanel(context, controller),
             ),
+            _MenuButton(
+              icon: Icons.menu_book_outlined,
+              label: text.tr('menuRecipes'),
+              dense: dense,
+              onTap: () => _showRecipePanel(context, controller),
+            ),
           ];
 
           if (!compact) {
@@ -4198,6 +4204,68 @@ class _BottomMenu extends StatelessWidget {
       },
     );
   }
+
+  Future<void> _showRecipePanel(BuildContext context, GameController controller) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.sheetBg,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: SizedBox(
+            height: _adaptiveSheetHeight(ctx, factor: 0.88, min: 480, max: 900),
+            child: StatefulBuilder(
+              builder: (context, setModalState) {
+                final text = controller.text;
+                final knownRecipes = controller.knownRecipes;
+
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Text(
+                      text.tr('recipesTitle'),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${knownRecipes.length}/${GameController.craftingRecipes.length} Rezepte gefunden',
+                      style: TextStyle(color: context.textSecondary, fontSize: 12),
+                    ),
+                    const SizedBox(height: 12),
+                    if (knownRecipes.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(Icons.menu_book, color: context.textTertiary, size: 40),
+                              const SizedBox(height: 8),
+                              Text(
+                                text.tr('recipesNoRecipes'),
+                                style: TextStyle(color: context.textSecondary),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    for (final recipe in knownRecipes) ...[
+                      _RecipeCard(
+                        recipe: recipe,
+                        controller: controller,
+                        onRefresh: () => setModalState(() {}),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _MenuButton extends StatelessWidget {
@@ -4875,5 +4943,119 @@ class _ExpeditionSlotCardState extends State<_ExpeditionSlotCard> {
         ],
       ),
     );
+  }
+}
+
+class _RecipeCard extends StatelessWidget {
+  const _RecipeCard({
+    required this.recipe,
+    required this.controller,
+    required this.onRefresh,
+  });
+
+  final CraftingRecipe recipe;
+  final GameController controller;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = controller.text;
+    final canCraft = controller.canCraftRecipe(recipe.id);
+    final missing = controller.getMissingIngredients(recipe.id);
+    final name = controller.localeCode == 'de' ? recipe.nameDe : recipe.nameEn;
+    final desc = controller.localeCode == 'de' ? recipe.descDe : recipe.descEn;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: canCraft ? const Color(0xFF4CAF50).withValues(alpha: 0.6) : context.cardBorder,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: _tierColor(recipe.resultTier).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: _tierColor(recipe.resultTier).withValues(alpha: 0.5)),
+                ),
+                child: Text(
+                  controller.tierLabel(recipe.resultTier),
+                  style: TextStyle(fontSize: 11, color: _tierColor(recipe.resultTier)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(desc, style: TextStyle(color: context.textSecondary, fontSize: 12)),
+          const SizedBox(height: 8),
+          Text(
+            '${text.tr("recipesIngredients")}:',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 4),
+          for (final ingredient in recipe.ingredients)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(
+                '  • ${ingredient.count}x ${controller.slotLabel(ingredient.slot)} '
+                '(${controller.tierLabel(ingredient.minTier)}+)',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
+          const SizedBox(height: 6),
+          Text(
+            '${text.tr("recipesGoldCost")}: ${recipe.goldCost}  |  '
+            '${text.tr("recipesHammerCost")}: ${recipe.hammerCost}',
+            style: TextStyle(color: context.textSecondary, fontSize: 12),
+          ),
+          if (missing.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                text.tr('recipesMissing'),
+                style: const TextStyle(color: Colors.orange, fontSize: 12),
+              ),
+            ),
+          const SizedBox(height: 8),
+          FilledButton.tonal(
+            onPressed: canCraft
+                ? () {
+                    final result = controller.craftByRecipe(recipe.id);
+                    if (result != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${result.name} hergestellt!'),
+                        ),
+                      );
+                    }
+                    onRefresh();
+                  }
+                : null,
+            child: Text(text.tr('recipesCraft')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _tierColor(ItemTier tier) {
+    return switch (tier) {
+      ItemTier.common => const Color(0xFFAAAAAA),
+      ItemTier.uncommon => const Color(0xFF4CAF50),
+      ItemTier.rare => const Color(0xFF2196F3),
+      ItemTier.epic => const Color(0xFF9C27B0),
+      ItemTier.legendary => const Color(0xFFFF9800),
+    };
   }
 }

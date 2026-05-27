@@ -212,6 +212,7 @@ class GameController extends ChangeNotifier {
   final Set<String> discoveredSetSlots = {};
   final Set<ItemSet> claimedSetRewards = {};
   final Set<String> claimedAchievements = {};
+  final Set<String> discoveredRecipes = {};
 
   EnemyState enemy = const EnemyState(
     name: 'Schleim',
@@ -241,6 +242,88 @@ class GameController extends ChangeNotifier {
   static const _saveKey = 'idle_forge.save.v1';
 
   static const int expeditionSlotCount = 3;
+
+  static const List<CraftingRecipe> craftingRecipes = [
+    CraftingRecipe(
+      id: 'recipe_runic_blade',
+      nameDe: 'Runische Klinge',
+      nameEn: 'Runic Blade',
+      descDe: 'Eine mit Runen verstärkte Klinge.',
+      descEn: 'A blade empowered with runes.',
+      ingredients: [
+        RecipeIngredient(slot: ItemSlot.weapon, minTier: ItemTier.rare, count: 2),
+        RecipeIngredient(slot: ItemSlot.ring, minTier: ItemTier.uncommon, count: 1),
+      ],
+      resultSlot: ItemSlot.weapon,
+      resultTier: ItemTier.epic,
+      goldCost: 200,
+      hammerCost: 15,
+      dropChance: 0.002,
+    ),
+    CraftingRecipe(
+      id: 'recipe_titan_armor',
+      nameDe: 'Titan-Rüstung',
+      nameEn: 'Titan Armor',
+      descDe: 'Schwerer Schutzpanzer aus Titan-Erz.',
+      descEn: 'Heavy armor forged from titan ore.',
+      ingredients: [
+        RecipeIngredient(slot: ItemSlot.armor, minTier: ItemTier.rare, count: 2),
+        RecipeIngredient(slot: ItemSlot.helm, minTier: ItemTier.uncommon, count: 1),
+      ],
+      resultSlot: ItemSlot.armor,
+      resultTier: ItemTier.epic,
+      goldCost: 180,
+      hammerCost: 12,
+      dropChance: 0.002,
+    ),
+    CraftingRecipe(
+      id: 'recipe_shadow_dagger',
+      nameDe: 'Schattenklinge',
+      nameEn: 'Shadow Dagger',
+      descDe: 'Eine Klinge aus purem Schatten.',
+      descEn: 'A dagger made of pure shadow.',
+      ingredients: [
+        RecipeIngredient(slot: ItemSlot.weapon, minTier: ItemTier.uncommon, count: 3),
+      ],
+      resultSlot: ItemSlot.weapon,
+      resultTier: ItemTier.rare,
+      goldCost: 100,
+      hammerCost: 8,
+      dropChance: 0.005,
+    ),
+    CraftingRecipe(
+      id: 'recipe_storm_set_piece',
+      nameDe: 'Sturm-Fragment',
+      nameEn: 'Storm Fragment',
+      descDe: 'Ein Fragment der mächtigen Sturm-Rüstung.',
+      descEn: 'A fragment of the mighty Storm armor.',
+      ingredients: [
+        RecipeIngredient(slot: ItemSlot.armor, minTier: ItemTier.uncommon, count: 2),
+        RecipeIngredient(slot: ItemSlot.boots, minTier: ItemTier.uncommon, count: 1),
+      ],
+      resultSlot: ItemSlot.armor,
+      resultTier: ItemTier.rare,
+      goldCost: 150,
+      hammerCost: 10,
+      dropChance: 0.003,
+    ),
+    CraftingRecipe(
+      id: 'recipe_legendary_ring',
+      nameDe: 'Ring der Ewigkeit',
+      nameEn: 'Ring of Eternity',
+      descDe: 'Ein Ring mit ewiger Macht.',
+      descEn: 'A ring of eternal power.',
+      ingredients: [
+        RecipeIngredient(slot: ItemSlot.ring, minTier: ItemTier.rare, count: 2),
+        RecipeIngredient(slot: ItemSlot.weapon, minTier: ItemTier.epic, count: 1),
+      ],
+      resultSlot: ItemSlot.ring,
+      resultTier: ItemTier.legendary,
+      goldCost: 500,
+      hammerCost: 30,
+      dropChance: 0.0008,
+    ),
+  ];
 
   static const List<ExpeditionDefinition> expeditionDefinitions = [
     ExpeditionDefinition(
@@ -1601,6 +1684,7 @@ class GameController extends ChangeNotifier {
     hammers += hammerDrop;
     totalKills += 1;
     killsInStage += 1;
+    _tryDropRecipe();
 
     if (isBossStage) {
       forgeShards += _scaledShardReward(1);
@@ -3168,6 +3252,10 @@ class GameController extends ChangeNotifier {
         );
       }
     }
+
+    discoveredRecipes
+      ..clear()
+      ..addAll((map['discoveredRecipes'] as List<dynamic>? ?? []).cast<String>());
   }
 
   void _applyOfflineReward(DateTime lastActive) {
@@ -3262,6 +3350,95 @@ class GameController extends ChangeNotifier {
 
   List<ActiveExpedition?> get currentExpeditions => List.unmodifiable(expeditionSlots);
 
+  List<CraftingRecipe> get knownRecipes {
+    return craftingRecipes
+        .where((r) => discoveredRecipes.contains(r.id))
+        .toList(growable: false);
+  }
+
+  bool canCraftRecipe(String recipeId) {
+    final recipe = _findRecipe(recipeId);
+    if (recipe == null || !discoveredRecipes.contains(recipeId)) return false;
+    if (gold < recipe.goldCost || hammers < recipe.hammerCost) return false;
+    return _checkIngredients(recipe).isEmpty;
+  }
+
+  List<RecipeIngredient> getMissingIngredients(String recipeId) {
+    final recipe = _findRecipe(recipeId);
+    if (recipe == null) return [];
+    return _checkIngredients(recipe);
+  }
+
+  List<RecipeIngredient> _checkIngredients(CraftingRecipe recipe) {
+    final missing = <RecipeIngredient>[];
+    for (final ingredient in recipe.ingredients) {
+      final available = inventory.where(
+        (item) =>
+            item.slot == ingredient.slot &&
+            item.tier.index >= ingredient.minTier.index &&
+            !isEquipped(item) &&
+            !item.isLocked,
+      ).length;
+      if (available < ingredient.count) {
+        missing.add(ingredient);
+      }
+    }
+    return missing;
+  }
+
+  GameItem? craftByRecipe(String recipeId) {
+    final recipe = _findRecipe(recipeId);
+    if (recipe == null || !canCraftRecipe(recipeId)) return null;
+
+    for (final ingredient in recipe.ingredients) {
+      var toConsume = ingredient.count;
+      final candidates = inventory.where(
+        (item) =>
+            item.slot == ingredient.slot &&
+            item.tier.index >= ingredient.minTier.index &&
+            !isEquipped(item) &&
+            !item.isLocked,
+      ).toList();
+
+      candidates.sort((a, b) => a.power.compareTo(b.power));
+      for (final item in candidates) {
+        if (toConsume <= 0) break;
+        inventory.removeWhere((i) => i.id == item.id);
+        equippedBySlot.removeWhere((_, v) => v == item.id);
+        toConsume -= 1;
+      }
+    }
+
+    gold -= recipe.goldCost;
+    hammers -= recipe.hammerCost;
+
+    final result = _craftItemWithTier(recipe.resultTier);
+    inventory.add(result);
+    craftedItems += 1;
+    _gainClanXp(10 + recipe.resultTier.index * 3);
+    _save();
+    notifyListeners();
+    return result;
+  }
+
+  CraftingRecipe? _findRecipe(String recipeId) {
+    try {
+      return craftingRecipes.firstWhere((r) => r.id == recipeId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _tryDropRecipe() {
+    for (final recipe in craftingRecipes) {
+      if (discoveredRecipes.contains(recipe.id)) continue;
+      if (_random.nextDouble() < recipe.dropChance * (1 + chapter * 0.1)) {
+        discoveredRecipes.add(recipe.id);
+        lastCombatEvent = 'Neues Rezept gefunden: ${localeCode == 'de' ? recipe.nameDe : recipe.nameEn}!';
+      }
+    }
+  }
+
   Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();
     final map = {
@@ -3336,6 +3513,7 @@ class GameController extends ChangeNotifier {
       'expeditionSlots': expeditionSlots
           .map((e) => e?.toJson())
           .toList(growable: false),
+      'discoveredRecipes': discoveredRecipes.toList(growable: false),
     };
 
     await prefs.setString(_saveKey, jsonEncode(map));

@@ -78,6 +78,16 @@ class AppText {
       'expeditionInProgress': 'Unterwegs',
       'expeditionEmpty': 'Leer — Expedition starten',
       'expeditionHours': 'h',
+      'menuRecipes': 'Rezepte',
+      'recipesTitle': 'Rezeptbuch',
+      'recipesCraft': 'Herstellen',
+      'recipesUnknown': 'Unbekanntes Rezept',
+      'recipesIngredients': 'Zutaten',
+      'recipesResult': 'Ergebnis',
+      'recipesNoRecipes': 'Noch keine Rezepte gefunden. Kämpfe weiter!',
+      'recipesMissing': 'Zutaten fehlen',
+      'recipesGoldCost': 'Gold-Kosten',
+      'recipesHammerCost': 'Hammer-Kosten',
     },
     'en': {
       'appTitle': 'Idle Forge',
@@ -151,6 +161,16 @@ class AppText {
       'expeditionInProgress': 'In Progress',
       'expeditionEmpty': 'Empty — Start expedition',
       'expeditionHours': 'h',
+      'menuRecipes': 'Recipes',
+      'recipesTitle': 'Recipe Book',
+      'recipesCraft': 'Craft',
+      'recipesUnknown': 'Unknown Recipe',
+      'recipesIngredients': 'Ingredients',
+      'recipesResult': 'Result',
+      'recipesNoRecipes': 'No recipes found yet. Keep fighting!',
+      'recipesMissing': 'Missing ingredients',
+      'recipesGoldCost': 'Gold Cost',
+      'recipesHammerCost': 'Hammer Cost',
     }
   };
 

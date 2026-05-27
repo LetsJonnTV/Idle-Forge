@@ -442,3 +442,61 @@ class ActiveExpedition {
     claimed: json['claimed'] as bool? ?? false,
   );
 }
+
+class RecipeIngredient {
+  const RecipeIngredient({
+    required this.slot,
+    required this.minTier,
+    required this.count,
+  });
+
+  final ItemSlot slot;
+  final ItemTier minTier;
+  final int count;
+
+  Map<String, dynamic> toJson() => {
+    'slot': slot.name,
+    'minTier': minTier.name,
+    'count': count,
+  };
+
+  factory RecipeIngredient.fromJson(Map<String, dynamic> json) => RecipeIngredient(
+    slot: ItemSlot.values.firstWhere(
+      (s) => s.name == (json['slot'] as String? ?? 'weapon'),
+      orElse: () => ItemSlot.weapon,
+    ),
+    minTier: ItemTier.values.firstWhere(
+      (t) => t.name == (json['minTier'] as String? ?? 'common'),
+      orElse: () => ItemTier.common,
+    ),
+    count: json['count'] as int? ?? 1,
+  );
+}
+
+class CraftingRecipe {
+  const CraftingRecipe({
+    required this.id,
+    required this.nameDe,
+    required this.nameEn,
+    required this.descDe,
+    required this.descEn,
+    required this.ingredients,
+    required this.resultSlot,
+    required this.resultTier,
+    required this.goldCost,
+    required this.hammerCost,
+    required this.dropChance,
+  });
+
+  final String id;
+  final String nameDe;
+  final String nameEn;
+  final String descDe;
+  final String descEn;
+  final List<RecipeIngredient> ingredients;
+  final ItemSlot resultSlot;
+  final ItemTier resultTier;
+  final int goldCost;
+  final int hammerCost;
+  final double dropChance;
+}
