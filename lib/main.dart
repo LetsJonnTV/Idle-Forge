@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'game/game_controller.dart';
 import 'game/models.dart';
+import 'l10n/app_text.dart';
 import 'services/update_checker.dart';
 import 'services/update_installer.dart';
 
@@ -1869,6 +1870,12 @@ class _BottomMenu extends StatelessWidget {
               label: text.tr('inventory'),
               dense: dense,
               onTap: () => _showInventory(context, controller),
+            ),
+            _MenuButton(
+              icon: Icons.castle_outlined,
+              label: text.tr('menuDungeon'),
+              dense: dense,
+              onTap: () => _showDungeonPanel(context, controller),
             ),
           ];
 
@@ -3958,6 +3965,189 @@ class _BottomMenu extends StatelessWidget {
       },
     );
   }
+
+  Future<void> _showDungeonPanel(BuildContext context, GameController controller) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.sheetBg,
+      isScrollControlled: true,
+      builder: (context) {
+        return SafeArea(
+          child: SizedBox(
+            height: _adaptiveSheetHeight(context, factor: 0.82, min: 400, max: 900),
+            child: StatefulBuilder(
+              builder: (context, setModalState) {
+                final dc = controller.dungeonController;
+                final text = controller.text;
+
+                void refresh() => setModalState(() {});
+
+                if (dc.pendingDungeonReward != null) {
+                  final reward = dc.pendingDungeonReward!;
+                  return Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.stars, color: Color(0xFFFFD700), size: 48),
+                        const SizedBox(height: 12),
+                        Text(
+                          text.tr('dungeonComplete'),
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 16),
+                        Text('+${reward.gold} Gold  |  +${reward.hammers} Haemmer  |  +${reward.shards} Scherben'),
+                        const SizedBox(height: 8),
+                        Text('${reward.items.length} Item(s) gefunden'),
+                        const SizedBox(height: 20),
+                        FilledButton.tonal(
+                          onPressed: () {
+                            controller.claimDungeonReward();
+                            Navigator.of(context).pop();
+                          },
+                          child: Text(text.tr('dungeonClaimReward')),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final run = dc.activeDungeonRun;
+                if (run != null && run.isActive) {
+                  final currentStage = dc.currentStage!;
+                  final bossHp = dc.getBossHp(run.difficulty, run.currentStage);
+
+                  return ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      Text(
+                        '${text.tr('dungeonTitle')} — ${_difficultyLabel(text, run.difficulty)}',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: List.generate(5, (i) {
+                          final stageNum = i + 1;
+                          final isDone = stageNum < run.currentStage;
+                          final isCurrent = stageNum == run.currentStage;
+                          return Expanded(
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 2),
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: isDone
+                                    ? const Color(0xFF4CAF50)
+                                    : isCurrent
+                                        ? const Color(0xFFFF9800)
+                                        : context.cardBorder,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${text.tr('dungeonStage')} ${run.currentStage}/5 — ${currentStage.bossName}',
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: context.cardBg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: context.cardBorder),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${text.tr("dungeonBoss")}: ${currentStage.bossName}',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            Text('HP: ${bossHp.round()}'),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FilledButton.tonal(
+                              onPressed: () {
+                                controller.advanceDungeonStage();
+                                refresh();
+                              },
+                              child: Text('Boss besiegen (${text.tr("dungeonStage")} ${run.currentStage})'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton(
+                        onPressed: () {
+                          controller.defeatDungeonStage();
+                          refresh();
+                        },
+                        child: Text(text.tr('dungeonAbandon')),
+                      ),
+                    ],
+                  );
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Text(
+                      text.tr('dungeonTitle'),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${text.tr("dungeonEnergy")}: ${dc.dungeonEnergy}/${dc.dungeonMaxEnergy}',
+                      style: TextStyle(color: context.textSecondary),
+                    ),
+                    const SizedBox(height: 16),
+                    for (final difficulty in DungeonDifficulty.values) ...[
+                      _DifficultyCard(
+                        difficulty: difficulty,
+                        controller: controller,
+                        onStart: () {
+                          final ok = controller.startDungeon(difficulty);
+                          if (!ok) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(text.tr('dungeonNotEnoughEnergy'))),
+                            );
+                          }
+                          refresh();
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Stage 1-5 jeweils mit eigenem Boss. Stage 5: Guaranteed Legendary-Drop!',
+                      style: TextStyle(fontSize: 11, color: Color(0xFFB0B0B0)),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _difficultyLabel(AppText text, DungeonDifficulty d) {
+    return switch (d) {
+      DungeonDifficulty.normal => text.tr('dungeonDiffNormal'),
+      DungeonDifficulty.hard => text.tr('dungeonDiffHard'),
+      DungeonDifficulty.nightmare => text.tr('dungeonDiffNightmare'),
+    };
+  }
 }
 
 class _MenuButton extends StatelessWidget {
@@ -4414,6 +4604,86 @@ class _Enemy extends StatelessWidget {
         ),
       ),
       child: _SvgIcon(path: 'assets/icons/enemy.svg', size: resolvedSize * (isBoss ? 0.68 : 0.69)),
+    );
+  }
+}
+
+class _DifficultyCard extends StatelessWidget {
+  const _DifficultyCard({
+    required this.difficulty,
+    required this.controller,
+    required this.onStart,
+  });
+
+  final DungeonDifficulty difficulty;
+  final GameController controller;
+  final VoidCallback onStart;
+
+  @override
+  Widget build(BuildContext context) {
+    final dc = controller.dungeonController;
+    final cost = dc.energyCostForDifficulty(difficulty);
+    final canStart = dc.canStartDungeon(difficulty);
+    final text = controller.text;
+
+    final (label, color, desc) = switch (difficulty) {
+      DungeonDifficulty.normal => (
+          text.tr('dungeonDiffNormal'),
+          const Color(0xFF4CAF50),
+          '5 Stages | Reward: Uncommon+',
+        ),
+      DungeonDifficulty.hard => (
+          text.tr('dungeonDiffHard'),
+          const Color(0xFFFF9800),
+          '5 Stages | Reward: Rare+ | 1.6x Belohnung',
+        ),
+      DungeonDifficulty.nightmare => (
+          text.tr('dungeonDiffNightmare'),
+          const Color(0xFFE91E63),
+          '5 Stages | Reward: Epic+ | 2.5x Belohnung',
+        ),
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: canStart ? color.withValues(alpha: 0.5) : context.cardBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 50,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(desc, style: const TextStyle(fontSize: 11)),
+                Text(
+                  '${text.tr("dungeonEnergy")}: $cost',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: canStart ? context.textSecondary : Colors.red,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          FilledButton.tonal(
+            onPressed: canStart ? onStart : null,
+            child: Text(text.tr('dungeonStart')),
+          ),
+        ],
+      ),
     );
   }
 }

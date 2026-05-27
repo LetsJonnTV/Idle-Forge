@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_text.dart';
+import 'dungeon_controller.dart';
 import 'models.dart';
 
 class OfflineReward {
@@ -122,11 +123,13 @@ class GameController extends ChangeNotifier {
     _skills = _definitions
         .map((definition) => SkillState(definition: definition, cooldownRemaining: 0))
         .toList(growable: false);
+    _dungeonController = DungeonController(random: _random);
   }
 
   final String localeCode;
   final Random _random = Random();
   late List<SkillState> _skills;
+  late final DungeonController _dungeonController;
 
   Timer? _timer;
   DateTime? _lastTickAt;
@@ -504,6 +507,10 @@ class GameController extends ChangeNotifier {
   bool get isLoaded => _isLoaded;
   double get animationBob => reducedEffects ? 0 : sin(_animationTime * 3) * 5;
   List<SkillState> get skills => _skills;
+  DungeonController get dungeonController => _dungeonController;
+  int get dungeonEnergy => _dungeonController.dungeonEnergy;
+  int get dungeonMaxEnergy => _dungeonController.dungeonMaxEnergy;
+  DungeonRun? get activeDungeonRun => _dungeonController.activeDungeonRun;
 
   int get stageTargetKills => isBossStage ? 1 : tuning.killsPerStage;
   bool get isBossStage => stage == 15;
@@ -1271,6 +1278,7 @@ class GameController extends ChangeNotifier {
       return;
     }
 
+    _dungeonController.tickEnergyRegeneration();
     _animationTime += dt;
 
     _skills = _skills
@@ -1683,6 +1691,130 @@ class GameController extends ChangeNotifier {
     );
     notifyListeners();
     return true;
+  }
+
+  GameItem _craftItemWithTier(ItemTier tier) {
+    final slot = ItemSlot.values[_random.nextInt(ItemSlot.values.length)];
+    final stageScore = chapter * 2 + stage;
+    final tierStrength = {
+      ItemTier.common: 5,
+      ItemTier.uncommon: 8,
+      ItemTier.rare: 12,
+      ItemTier.epic: 17,
+      ItemTier.legendary: 24,
+    }[tier]!;
+    final power = (tierStrength + stageScore * 1.7 + _random.nextInt(5)).round();
+    final sellValue = (power * 1.6).round() + (tier.index * 15);
+    final setId = _rollSetForChapter();
+
+    String craftedName;
+    String craftedIconPath;
+    int craftedPower = power;
+
+    final slotCatalog = _slotCatalogs[slot];
+    if (slotCatalog != null && slotCatalog.isNotEmpty) {
+      final blueprint = slotCatalog[_random.nextInt(slotCatalog.length)];
+      craftedName = blueprint.name;
+      craftedIconPath = blueprint.iconPath;
+      craftedPower += blueprint.basePower;
+    } else {
+      craftedName = '${_slotName(slot)} ${_tierShortName(tier)} ${_setShortName(setId)}';
+      craftedIconPath = 'assets/icons/forge.svg';
+    }
+
+    return GameItem(
+      id: '${DateTime.now().microsecondsSinceEpoch}_d${_random.nextInt(999)}',
+      name: craftedName,
+      slot: slot,
+      tier: tier,
+      setId: setId,
+      power: craftedPower,
+      sellValue: sellValue,
+      iconPath: craftedIconPath,
+    );
+  }
+
+  bool startDungeon(DungeonDifficulty difficulty) {
+    final ok = _dungeonController.startDungeon(difficulty);
+    if (ok) {
+      notifyListeners();
+      _save();
+    }
+    return ok;
+  }
+
+  bool advanceDungeonStage() {
+    final run = _dungeonController.activeDungeonRun;
+    if (run == null || !run.isActive) return false;
+
+    if (run.currentStage >= 5) {
+      _dungeonController.activeDungeonRun!.isComplete = true;
+      _dungeonController.activeDungeonRun!.isActive = false;
+      _dungeonController.pendingDungeonReward = _dungeonController.buildReward(
+        difficulty: run.difficulty,
+        chapter: chapter,
+        completedStages: 5,
+        itemFactory: (tier) => _craftItemWithTier(tier),
+      );
+      _save();
+      notifyListeners();
+      return true;
+    }
+
+    run.currentStage += 1;
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool defeatDungeonStage() {
+    final run = _dungeonController.activeDungeonRun;
+    if (run == null || !run.isActive) return false;
+    final completedStages = run.currentStage;
+
+    _dungeonController.activeDungeonRun!.isComplete = true;
+    _dungeonController.activeDungeonRun!.isActive = false;
+
+    if (completedStages >= 1) {
+      _dungeonController.pendingDungeonReward = _dungeonController.buildReward(
+        difficulty: run.difficulty,
+        chapter: chapter,
+        completedStages: completedStages,
+        itemFactory: (tier) => _craftItemWithTier(tier),
+      );
+    } else {
+      _dungeonController.activeDungeonRun = null;
+    }
+
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  DungeonReward? claimDungeonReward() {
+    final reward = _dungeonController.pendingDungeonReward;
+    if (reward == null) return null;
+
+    gold += reward.gold;
+    hammers += reward.hammers;
+    forgeShards += reward.shards;
+    for (final item in reward.items) {
+      inventory.add(item);
+    }
+
+    _dungeonController.pendingDungeonReward = null;
+    _dungeonController.activeDungeonRun = null;
+    _gainClanXp(15);
+    _save();
+    notifyListeners();
+    return reward;
+  }
+
+  void abandonDungeon() {
+    _dungeonController.activeDungeonRun = null;
+    _dungeonController.pendingDungeonReward = null;
+    _save();
+    notifyListeners();
   }
 
   GameItem? craftItem() {
@@ -2938,6 +3070,11 @@ class GameController extends ChangeNotifier {
 
     playerHp = playerHp.clamp(1.0, maxPlayerHp).toDouble();
 
+    final dungeonStateJson = map['dungeonState'] as Map<String, dynamic>?;
+    if (dungeonStateJson != null) {
+      _dungeonController.loadFromJson(dungeonStateJson);
+    }
+
     final lastActiveMillis = map['lastActiveMillis'] as int?;
     if (lastActiveMillis != null) {
       _applyOfflineReward(DateTime.fromMillisecondsSinceEpoch(lastActiveMillis));
@@ -3040,6 +3177,7 @@ class GameController extends ChangeNotifier {
           preset.map((slot, id) => MapEntry(slot.name, id)),
         ),
       ),
+      'dungeonState': _dungeonController.toJson(),
       'lastActiveMillis': DateTime.now().millisecondsSinceEpoch,
     };
 

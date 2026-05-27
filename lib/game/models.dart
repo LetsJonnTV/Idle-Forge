@@ -311,3 +311,71 @@ class EnemyState {
     );
   }
 }
+
+enum DungeonDifficulty { normal, hard, nightmare }
+
+class DungeonStage {
+  const DungeonStage({
+    required this.stageNumber,
+    required this.bossName,
+    required this.bossHp,
+    required this.guaranteedRewardTier,
+  });
+  final int stageNumber;
+  final String bossName;
+  final double bossHp;
+  final ItemTier guaranteedRewardTier;
+}
+
+class DungeonRun {
+  DungeonRun({
+    required this.difficulty,
+    required this.currentStage,
+    required this.isActive,
+    this.startedAt,
+    this.isComplete = false,
+    this.legendaryDropped = false,
+  });
+  DungeonDifficulty difficulty;
+  int currentStage;
+  bool isActive;
+  DateTime? startedAt;
+  bool isComplete;
+  bool legendaryDropped;
+
+  Map<String, dynamic> toJson() => {
+    'difficulty': difficulty.name,
+    'currentStage': currentStage,
+    'isActive': isActive,
+    'startedAt': startedAt?.millisecondsSinceEpoch,
+    'isComplete': isComplete,
+    'legendaryDropped': legendaryDropped,
+  };
+
+  factory DungeonRun.fromJson(Map<String, dynamic> json) => DungeonRun(
+    difficulty: DungeonDifficulty.values.firstWhere(
+      (d) => d.name == (json['difficulty'] as String? ?? 'normal'),
+      orElse: () => DungeonDifficulty.normal,
+    ),
+    currentStage: json['currentStage'] as int? ?? 1,
+    isActive: json['isActive'] as bool? ?? false,
+    startedAt: json['startedAt'] != null
+        ? DateTime.fromMillisecondsSinceEpoch(json['startedAt'] as int)
+        : null,
+    isComplete: json['isComplete'] as bool? ?? false,
+    legendaryDropped: json['legendaryDropped'] as bool? ?? false,
+  );
+}
+
+class DungeonReward {
+  const DungeonReward({
+    required this.gold,
+    required this.hammers,
+    required this.shards,
+    required this.items,
+  });
+  final int gold;
+  final int hammers;
+  final int shards;
+  final List<GameItem> items;
+}

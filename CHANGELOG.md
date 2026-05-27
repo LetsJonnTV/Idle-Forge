@@ -2,6 +2,24 @@
 
 All notable changes to Idle Forge are documented here.
 
+## [Unreleased]
+
+### Added
+- **Dungeon-System Phase 1**: Vollständige Dungeon-Infrastruktur implementiert
+  - `DungeonDifficulty` Enum (Normal / Hard / Nightmare) in `models.dart`
+  - `DungeonStage` Model (5 Stages mit Boss-Namen, HP, garantiertem Reward-Tier)
+  - `DungeonRun` Model mit JSON-Serialisierung/Deserialisierung
+  - `DungeonReward` Model (Gold, Hämmer, Scherben, Items)
+  - `DungeonController` mit Energie-Regeneration (1 Energie alle 30 Min.), Start/Advance/Build-Reward-Logik
+  - `GameController`: Getter `dungeonController`, `dungeonEnergy`, `dungeonMaxEnergy`, `activeDungeonRun`
+  - `GameController`: Methoden `startDungeon`, `advanceDungeonStage`, `defeatDungeonStage`, `claimDungeonReward`, `abandonDungeon`, `_craftItemWithTier`
+  - Persistenz: Dungeon-State wird in `_save()`/`_load()` gespeichert und geladen
+  - Energie-Tick in `_tick()` integriert
+  - Dungeon-Button im Bottom-Menu (`Icons.castle_outlined`)
+  - `_showDungeonPanel` Modal: Difficulty-Auswahl, aktiver Run mit Stage-Fortschrittsbalken, Boss-Info, Reward-Claim
+  - `_DifficultyCard` Widget mit Farb-Akzent, Energie-Kosten-Anzeige und Start-Button
+  - 13 neue Lokalisierungs-Keys in `app_text.dart` (DE + EN)
+
 ## [1.0.3] - 2026-05-27
 
 ### Added
