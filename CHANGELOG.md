@@ -2,6 +2,25 @@
 
 All notable changes to Idle Forge are documented here.
 
+## [1.0.2] - 2026-05-27
+
+### Added
+- Tutorial-System: 8-schrittiges Onboarding beim ersten Spielstart
+  (Willkommen, Kampf, Fähigkeiten, Schmiede, Tränke, Inventar, Welt/Quests/Clan, Profil)
+- Auto-Skill Sichtbarkeit: aktive Auto-Skills als grüner Subtitle im Kampf-Panel,
+  Hinweistext „Lang drücken für Auto-Aktivierung"
+- Settings-Panel (Zahnrad-Icon) mit App-Version und Bug-Report-Link nun theme-aware
+
+### Changed
+- Komplettes Dark/Light-Mode-System: `_AppColors`-Extension mit 14 semantischen Farb-Gettern,
+  ~120 hardcodierte Farben ersetzt — alle Panels, Sheets und Cards reagieren auf ThemeMode
+- Alle deutschen Texte verwenden nun korrekte Umlaute (ä/ö/ü) statt ae/oe/ue (36 Ersetzungen)
+
+### Fixed
+- Spielername wird beim Schließen des Profil-Sheets (Swipe-Down) automatisch gespeichert
+- TextEditingController-Crash behoben: Controller wird nicht mehr manuell disposed,
+  verhindert kaskadierende Exceptions bei Sheet-Close-Animation
+
 ## [1.0.1] - 2026-05-26
 
 ### Added

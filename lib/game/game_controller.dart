@@ -129,6 +129,7 @@ class GameController extends ChangeNotifier {
   late List<SkillState> _skills;
 
   Timer? _timer;
+  DateTime? _lastTickAt;
   DateTime? _lastSaveAt;
   bool _isLoaded = false;
 
@@ -186,6 +187,12 @@ class GameController extends ChangeNotifier {
 
   double playerHp = 140;
 
+  bool darkModeEnabled = true;
+  int targetFps = 60;
+  bool showCombatLog = true;
+  bool reducedEffects = false;
+  bool tutorialCompleted = false;
+
   bool autoSellEnabled = false;
   ItemTier autoSellKeepFromTier = ItemTier.rare;
   bool autoLockEnabled = false;
@@ -194,7 +201,7 @@ class GameController extends ChangeNotifier {
   bool _lastCraftAutoSold = false;
   String _lastCraftAutoSoldText = '';
 
-  final String playerName = 'Rookie';
+  String playerName = 'Rookie';
 
   final List<GameItem> inventory = [];
   final Map<ItemSlot, String> equippedBySlot = {};
@@ -219,6 +226,7 @@ class GameController extends ChangeNotifier {
   double _bossSpecialAccumulator = 0;
   double _poisonTickAccumulator = 0;
   int _poisonTicksRemaining = 0;
+  double _combatRecoveryBlockRemaining = 0;
   bool _bossPhaseTwo = false;
   bool _bossPhaseThree = false;
   double _animationTime = 0;
@@ -494,7 +502,7 @@ class GameController extends ChangeNotifier {
 
   AppText get text => AppText(localeCode);
   bool get isLoaded => _isLoaded;
-  double get animationBob => sin(_animationTime * 3) * 5;
+  double get animationBob => reducedEffects ? 0 : sin(_animationTime * 3) * 5;
   List<SkillState> get skills => _skills;
 
   int get stageTargetKills => isBossStage ? 1 : tuning.killsPerStage;
@@ -923,7 +931,7 @@ class GameController extends ChangeNotifier {
     addSeries(
       idPrefix: 'ach_strength',
       titlePrefix: 'Machtkern',
-      descPrefix: 'Erreiche Gesamtstaerke:',
+      descPrefix: 'Erreiche Gesamtstärke:',
       metric: AchievementMetric.totalStrength,
       thresholds: const [80, 120, 170, 230, 300, 380, 470],
       baseGold: 210,
@@ -1027,7 +1035,7 @@ class GameController extends ChangeNotifier {
     addSeries(
       idPrefix: 'ach_strength_mythic',
       titlePrefix: 'Reliktmacht',
-      descPrefix: 'Erreiche Gesamtstaerke:',
+      descPrefix: 'Erreiche Gesamtstärke:',
       metric: AchievementMetric.totalStrength,
       thresholds: buildProgressiveThresholds(
         lastThreshold: 470,
@@ -1076,7 +1084,7 @@ class GameController extends ChangeNotifier {
       return '${setLabel(chapterSet)} ist komplett gesammelt.';
     }
     final nextSlot = progress.missingSlots.first;
-    return 'Zieljagd ${setLabel(chapterSet)}: Als naechstes ${slotLabel(nextSlot)} farmen.';
+    return 'Zieljagd ${setLabel(chapterSet)}: Als nächstes ${slotLabel(nextSlot)} farmen.';
   }
 
   int setCompletionGoldReward(ItemSet setId) {
@@ -1229,8 +1237,7 @@ class GameController extends ChangeNotifier {
     _spawnEnemy();
     playerHp = playerHp.clamp(1.0, maxPlayerHp).toDouble();
     _isLoaded = true;
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(milliseconds: 200), (_) => _tick(0.2));
+    _startTickLoop();
     notifyListeners();
   }
 
@@ -1238,6 +1245,25 @@ class GameController extends ChangeNotifier {
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  void _startTickLoop() {
+    _timer?.cancel();
+    _lastTickAt = DateTime.now();
+
+    final fps = targetFps.clamp(30, 120);
+    final intervalMs = (1000 / fps).round().clamp(8, 34);
+
+    _timer = Timer.periodic(Duration(milliseconds: intervalMs), (_) {
+      final now = DateTime.now();
+      final dt = _lastTickAt == null
+          ? 1 / fps
+          : (now.difference(_lastTickAt!).inMicroseconds / 1000000)
+                .clamp(0.008, 0.05)
+                .toDouble();
+      _lastTickAt = now;
+      _tick(dt);
+    });
   }
 
   void _tick(double dt) {
@@ -1257,6 +1283,7 @@ class GameController extends ChangeNotifier {
 
     flaskCooldownRemaining = max(0, flaskCooldownRemaining - dt);
     berserkRemaining = max(0, berserkRemaining - dt);
+    _combatRecoveryBlockRemaining = max(0, _combatRecoveryBlockRemaining - dt);
 
     for (final index in autoSkillSlots.toList(growable: false)) {
       if (index < 0 || index >= _skills.length) {
@@ -1279,9 +1306,6 @@ class GameController extends ChangeNotifier {
           combatDamageMultiplier;
       _damageEnemy(baseHit.roundToDouble());
     }
-
-    final regenPerSecond = maxPlayerHp * 0.015 * shopRecoveryBonus * combatRegenMultiplier;
-    playerHp = min(maxPlayerHp, playerHp + regenPerSecond * dt);
 
     _updateBossPhases();
 
@@ -1306,6 +1330,11 @@ class GameController extends ChangeNotifier {
     enemy = enemy.copyWith(approach: nextApproach);
 
     final inMeleeRange = enemy.approach <= 0.22;
+    final regenFactorInCombat = (inMeleeRange || _combatRecoveryBlockRemaining > 0) ? 0.0 : 1.0;
+    final regenPerSecond =
+      maxPlayerHp * 0.015 * shopRecoveryBonus * combatRegenMultiplier * regenFactorInCombat;
+    playerHp = min(maxPlayerHp, playerHp + regenPerSecond * dt);
+
     if (inMeleeRange) {
       _enemyAttackAccumulator += dt;
       final attackEvery = enemy.isBoss
@@ -1383,8 +1412,8 @@ class GameController extends ChangeNotifier {
 
   void _enemyAttack() {
     double damage = enemy.isBoss
-        ? (8 + chapter * 2.2 + stage * 1.2)
-        : (4 + chapter * 1.1 + stage * 0.65);
+      ? (8 + chapter * 2.2 + stage * 1.2 + (maxPlayerHp * 0.022))
+      : (4 + chapter * 1.1 + stage * 0.65 + (maxPlayerHp * 0.012));
 
     if (!enemy.isBoss) {
       damage *= switch (enemy.archetype) {
@@ -1398,7 +1427,7 @@ class GameController extends ChangeNotifier {
         EnemyArchetype.brute => 'Brute trifft schwer.',
         EnemyArchetype.assassin => 'Assassine sticht schnell.',
         EnemyArchetype.poisoner => 'Du wurdest vergiftet.',
-        EnemyArchetype.guardian => 'Guardian drueckt dich zurueck.',
+        EnemyArchetype.guardian => 'Guardian drückt dich zurück.',
       };
 
       if (enemy.archetype == EnemyArchetype.poisoner) {
@@ -1432,8 +1461,10 @@ class GameController extends ChangeNotifier {
     }
 
     damage *= incomingDamageMultiplier;
+    damage = max(damage, maxPlayerHp * (enemy.isBoss ? 0.01 : 0.005));
 
     playerHp = max(0.0, playerHp - damage);
+    _combatRecoveryBlockRemaining = 1.8;
     if (playerHp <= 0) {
       _onPlayerDefeated();
     }
@@ -1450,6 +1481,7 @@ class GameController extends ChangeNotifier {
     _bossPhaseThree = false;
     _poisonTickAccumulator = 0;
     _poisonTicksRemaining = 0;
+    _combatRecoveryBlockRemaining = 0;
     lastCombatEvent = 'Du wurdest besiegt. -10% Gold';
     _spawnEnemy();
   }
@@ -1465,7 +1497,8 @@ class GameController extends ChangeNotifier {
     }
 
     final hpAfter = max(0.0, enemy.hp - damage).toDouble();
-    enemy = enemy.copyWith(hp: hpAfter, approach: min(1.0, enemy.approach + 0.12).toDouble());
+    // Do not push enemies back on every hit to avoid jittering movement near melee range.
+    enemy = enemy.copyWith(hp: hpAfter);
     if (hpAfter <= 0) {
       _onEnemyDefeated();
     }
@@ -2217,19 +2250,19 @@ class GameController extends ChangeNotifier {
   String shopOfferDescription(ShopOffer offer) {
     return switch (offer.kind) {
       ShopOfferKind.speedUpgrade =>
-        'Dauerhaft +1 Shop-Level fuer Angriffstempo.',
+        'Dauerhaft +1 Shop-Level für Angriffstempo.',
       ShopOfferKind.hammerUpgrade =>
-        'Dauerhaft +1 Shop-Level fuer Hammerdrop-Chance.',
+        'Dauerhaft +1 Shop-Level für Hammerdrop-Chance.',
       ShopOfferKind.recoveryUpgrade =>
-        'Dauerhaft +1 Shop-Level fuer HP-Regeneration.',
+        'Dauerhaft +1 Shop-Level für HP-Regeneration.',
       ShopOfferKind.hammerPack =>
         '+${offer.amount} Hammer sofort.',
       ShopOfferKind.shardCache =>
         '+${offer.amount} Scherben sofort.',
       ShopOfferKind.healingFlask =>
-        '+${offer.amount} Heiltrank fuer den Kampf.',
+        '+${offer.amount} Heiltrank für den Kampf.',
       ShopOfferKind.berserkFlask =>
-        '+${offer.amount} Berserkertrank fuer den Kampf.',
+        '+${offer.amount} Berserkertrank für den Kampf.',
     };
   }
 
@@ -2441,6 +2474,70 @@ class GameController extends ChangeNotifier {
     _save();
     notifyListeners();
     return true;
+  }
+
+  bool setDarkModeEnabled(bool enabled) {
+    if (darkModeEnabled == enabled) {
+      return false;
+    }
+    darkModeEnabled = enabled;
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool setTargetFps(int fps) {
+    final normalized = fps.clamp(30, 120);
+    if (targetFps == normalized) {
+      return false;
+    }
+    targetFps = normalized;
+    _startTickLoop();
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool setShowCombatLog(bool enabled) {
+    if (showCombatLog == enabled) {
+      return false;
+    }
+    showCombatLog = enabled;
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool setReducedEffects(bool enabled) {
+    if (reducedEffects == enabled) {
+      return false;
+    }
+    reducedEffects = enabled;
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool setPlayerName(String nextName) {
+    final trimmed = nextName.trim();
+    if (trimmed.isEmpty || trimmed.length < 2) {
+      return false;
+    }
+    final normalized = trimmed.length > 20 ? trimmed.substring(0, 20) : trimmed;
+    if (normalized == playerName) {
+      return false;
+    }
+    playerName = normalized;
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  void completeTutorial() {
+    if (tutorialCompleted) return;
+    tutorialCompleted = true;
+    _save();
+    notifyListeners();
   }
 
   bool buyFlask(FlaskType type) {
@@ -2683,6 +2780,15 @@ class GameController extends ChangeNotifier {
 
     final map = jsonDecode(raw) as Map<String, dynamic>;
 
+    playerName = (map['playerName'] as String?)?.trim().isNotEmpty == true
+      ? (map['playerName'] as String).trim()
+      : playerName;
+    darkModeEnabled = map['darkModeEnabled'] as bool? ?? darkModeEnabled;
+    showCombatLog = map['showCombatLog'] as bool? ?? showCombatLog;
+    reducedEffects = map['reducedEffects'] as bool? ?? reducedEffects;
+    tutorialCompleted = map['tutorialCompleted'] as bool? ?? tutorialCompleted;
+    targetFps = ((map['targetFps'] as num?)?.toInt() ?? targetFps).clamp(30, 120);
+
     gold = map['gold'] as int? ?? gold;
     hammers = map['hammers'] as int? ?? hammers;
     forgeLevel = map['forgeLevel'] as int? ?? forgeLevel;
@@ -2868,6 +2974,12 @@ class GameController extends ChangeNotifier {
   Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();
     final map = {
+      'playerName': playerName,
+      'darkModeEnabled': darkModeEnabled,
+      'targetFps': targetFps,
+      'showCombatLog': showCombatLog,
+      'reducedEffects': reducedEffects,
+      'tutorialCompleted': tutorialCompleted,
       'gold': gold,
       'hammers': hammers,
       'forgeLevel': forgeLevel,

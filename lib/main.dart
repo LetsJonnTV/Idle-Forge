@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,14 +21,80 @@ enum AchievementFilterMode { all, claimable, unclaimed, claimed }
 
 enum ShopPanelTab { all, daily, upgrades, resources, combat }
 
+double _uiScale(
+  BuildContext context, {
+  double min = 0.78,
+  double max = 1.28,
+}) {
+  final size = MediaQuery.sizeOf(context);
+  final byWidth = size.width / 390;
+  final byHeight = size.height / 844;
+  return math.min(byWidth, byHeight).clamp(min, max).toDouble();
+}
+
+double _rs(
+  BuildContext context,
+  double base, {
+  double min = 0,
+  double? max,
+}) {
+  final scaled = base * _uiScale(context);
+  if (max != null) {
+    return scaled.clamp(min, max).toDouble();
+  }
+  return math.max(min, scaled);
+}
+
+double _textScaleForSize(Size size) {
+  final byWidth = size.width / 390;
+  final byHeight = size.height / 844;
+  return math.min(byWidth, byHeight).clamp(0.9, 1.1).toDouble();
+}
+
 double _adaptiveSheetHeight(
   BuildContext context, {
   required double factor,
   double min = 320,
   double max = 820,
 }) {
-  final h = MediaQuery.sizeOf(context).height * factor;
+  final size = MediaQuery.sizeOf(context);
+  final insets = MediaQuery.paddingOf(context).vertical;
+  final usableHeight = size.height - insets;
+  final boostedFactor = size.width < 430 ? factor + 0.08 : factor;
+  final h = usableHeight * boostedFactor;
   return h.clamp(min, max).toDouble();
+}
+
+extension _AppColors on BuildContext {
+  bool get _isDark => Theme.of(this).brightness == Brightness.dark;
+
+  Color get bodyBg => _isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
+
+  Color get sheetBg => _isDark ? const Color(0xFF1F1F1F) : const Color(0xFFFFFFFF);
+
+  Color get cardBg => _isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFFFFFF);
+
+  Color get cardBgAlt => _isDark ? const Color(0xFF242424) : const Color(0xFFF8F8F8);
+
+  Color get inputBg => _isDark ? const Color(0xFF252525) : const Color(0xFFF0F0F0);
+
+  Color get cardBorder => _isDark ? const Color(0xFF3B3B3B) : const Color(0xFFD0D0D0);
+
+  Color get borderHeavy => _isDark ? const Color(0xFF474747) : const Color(0xFFBBBBBB);
+
+  Color get divider => _isDark ? const Color(0xFF3A3A3A) : const Color(0xFFDDDDDD);
+
+  Color get textPrimary => _isDark ? const Color(0xFFE2E2E2) : const Color(0xFF1A1A1A);
+
+  Color get textSecondary => _isDark ? const Color(0xFFB5B5B5) : const Color(0xFF555555);
+
+  Color get textTertiary => _isDark ? const Color(0xFFA9A9A9) : const Color(0xFF777777);
+
+  Color get textBright => _isDark ? Colors.white : const Color(0xFF111111);
+
+  Color get iconColor => _isDark ? const Color(0xFFD0D0D0) : const Color(0xFF444444);
+
+  Color get overlayBg => _isDark ? const Color(0xB0202020) : const Color(0xB0F0F0F0);
 }
 
 Future<void> main() async {
@@ -134,55 +202,110 @@ class _IdleForgeAppState extends State<IdleForgeApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: controller.text.tr('appTitle'),
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        fontFamily: 'monospace',
-        scaffoldBackgroundColor: const Color(0xFF171717),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFD4D4D4),
-          secondary: Color(0xFFB8B8B8),
-          surface: Color(0xFF232323),
-        ),
-        snackBarTheme: const SnackBarThemeData(
-          backgroundColor: Color(0xFF2B2B2B),
-          contentTextStyle: TextStyle(color: Colors.white),
-        ),
-      ),
-      home: AnimatedBuilder(
-        animation: controller,
-        builder: (context, _) {
-          if (!controller.isLoaded) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: controller.text.tr('appTitle'),
+          themeMode: controller.darkModeEnabled ? ThemeMode.dark : ThemeMode.light,
+          theme: ThemeData(
+            brightness: Brightness.light,
+            fontFamily: 'monospace',
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+            scaffoldBackgroundColor: const Color(0xFFF4F4F4),
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF3A3A3A),
+              secondary: Color(0xFF666666),
+              surface: Color(0xFFFFFFFF),
+            ),
+          ),
+          darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            fontFamily: 'monospace',
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+            scaffoldBackgroundColor: const Color(0xFF171717),
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFFD4D4D4),
+              secondary: Color(0xFFB8B8B8),
+              surface: Color(0xFF232323),
+            ),
+            snackBarTheme: const SnackBarThemeData(
+              backgroundColor: Color(0xFF2B2B2B),
+              contentTextStyle: TextStyle(color: Colors.white),
+            ),
+          ),
+          builder: (context, child) {
+            final media = MediaQuery.of(context);
+            final textScale = _textScaleForSize(media.size);
+            return MediaQuery(
+              data: media.copyWith(textScaler: TextScaler.linear(textScale)),
+              child: child ?? const SizedBox.shrink(),
             );
-          }
-          return IdleForgeHome(controller: controller);
-        },
-      ),
+          },
+          home: controller.isLoaded
+              ? IdleForgeHome(controller: controller)
+              : const Scaffold(body: Center(child: CircularProgressIndicator())),
+        );
+      },
     );
   }
 }
 
-class IdleForgeHome extends StatelessWidget {
+class IdleForgeHome extends StatefulWidget {
   const IdleForgeHome({super.key, required this.controller});
 
   final GameController controller;
 
   @override
+  State<IdleForgeHome> createState() => _IdleForgeHomeState();
+}
+
+class _IdleForgeHomeState extends State<IdleForgeHome> {
+  GameController get controller => widget.controller;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!controller.tutorialCompleted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !controller.tutorialCompleted) {
+          _showTutorial();
+        }
+      });
+    }
+  }
+
+  void _showTutorial() {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black87,
+      builder: (ctx) => _TutorialOverlay(
+        controller: controller,
+        onComplete: () {
+          controller.completeTutorial();
+          Navigator.of(ctx).pop();
+        },
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final dense = size.width < 390 || size.height < 760;
+
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Container(
-        color: const Color(0xFF191919),
+        color: context.bodyBg,
         child: SafeArea(
           child: Column(
             children: [
-              _TopBar(controller: controller),
-              Expanded(child: _CombatArea(controller: controller)),
-              _ForgePanel(controller: controller),
-              _BottomMenu(controller: controller),
+              _TopBar(controller: controller, dense: dense),
+              Expanded(child: _CombatArea(controller: controller, dense: dense)),
+              _BottomMenu(controller: controller, dense: dense),
             ],
           ),
         ),
@@ -192,100 +315,123 @@ class IdleForgeHome extends StatelessWidget {
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.controller});
+  const _TopBar({required this.controller, this.dense = false});
 
   final GameController controller;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
     final text = controller.text;
+    final compactScale = _uiScale(context, min: 0.8, max: 1.2);
+    final iconSize = (dense ? 18 : 20) * compactScale;
 
     Widget actionIcon({required IconData icon, required VoidCallback onTap}) {
       return InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(_rs(context, 12, min: 8)),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF262626),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF434343)),
+          padding: EdgeInsets.symmetric(
+            horizontal: _rs(context, dense ? 8 : 10, min: 6),
+            vertical: _rs(context, dense ? 8 : 10, min: 6),
           ),
-          child: Icon(icon, color: const Color(0xFFD8D8D8), size: 20),
+          decoration: BoxDecoration(
+            color: context.cardBgAlt,
+            borderRadius: BorderRadius.circular(_rs(context, 12, min: 8)),
+            border: Border.all(color: context.cardBorder),
+          ),
+          child: Icon(icon, color: context.iconColor, size: iconSize),
         ),
       );
     }
 
-    final profileCard = Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF242424),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF3C3C3C)),
-      ),
-      child: Row(
-        children: [
-          _SvgIcon(path: 'assets/icons/profile.svg', size: 34),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  controller.playerName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${text.tr('totalStrength')}: ${controller.totalStrength}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFFB5B5B5),
-                  ),
-                ),
-                Text(
-                  'Prestige ${controller.prestigeLevel} | Scherben ${controller.forgeShards}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFFA9A9A9),
-                  ),
-                ),
-                Text(
-                  'HP ${controller.playerHp.round()}/${controller.maxPlayerHp.round()} | Tode ${controller.deaths}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFFA9A9A9),
-                  ),
-                ),
-              ],
-            ),
+    final profileCard = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(_rs(context, 12, min: 8)),
+        onTap: () => _showProfilePanel(context),
+        child: Container(
+          padding: EdgeInsets.all(_rs(context, dense ? 8 : 10, min: 6)),
+          decoration: BoxDecoration(
+            color: context.cardBgAlt,
+            borderRadius: BorderRadius.circular(_rs(context, 12, min: 8)),
+            border: Border.all(color: context.cardBorder),
           ),
-        ],
+          child: Row(
+            children: [
+              _SvgIcon(path: 'assets/icons/profile.svg', size: _rs(context, dense ? 30 : 34, min: 22)),
+              SizedBox(width: _rs(context, 8, min: 5)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      controller.playerName,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: _rs(context, dense ? 13 : 14, min: 11),
+                        color: context.textBright,
+                      ),
+                    ),
+                    SizedBox(height: _rs(context, 2, min: 1)),
+                    Text(
+                      '${text.tr('totalStrength')}: ${controller.totalStrength}',
+                      style: TextStyle(
+                        fontSize: _rs(context, dense ? 11 : 12, min: 9),
+                        color: context.textSecondary,
+                      ),
+                    ),
+                    Text(
+                      'Prestige ${controller.prestigeLevel} | Scherben ${controller.forgeShards}',
+                      style: TextStyle(
+                        fontSize: _rs(context, dense ? 10 : 11, min: 8.5),
+                        color: context.textTertiary,
+                      ),
+                    ),
+                    Text(
+                      'HP ${controller.playerHp.round()}/${controller.maxPlayerHp.round()} | Tode ${controller.deaths}',
+                      style: TextStyle(
+                        fontSize: _rs(context, dense ? 10 : 11, min: 8.5),
+                        color: context.textTertiary,
+                      ),
+                    ),
+                    Text(
+                      'Profil bearbeiten',
+                      style: TextStyle(
+                        fontSize: _rs(context, dense ? 9.5 : 10.5, min: 8.5),
+                        color: const Color(0xFF9FB6CF),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
 
     final goldCard = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: EdgeInsets.symmetric(
+        horizontal: _rs(context, dense ? 10 : 12, min: 8),
+        vertical: _rs(context, dense ? 8 : 10, min: 6),
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFF242424),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF3C3C3C)),
+        color: context.cardBgAlt,
+        borderRadius: BorderRadius.circular(_rs(context, 12, min: 8)),
+        border: Border.all(color: context.cardBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _SvgIcon(path: 'assets/icons/gold.svg', size: 20),
-          const SizedBox(width: 6),
+          _SvgIcon(path: 'assets/icons/gold.svg', size: _rs(context, dense ? 18 : 20, min: 14)),
+          SizedBox(width: _rs(context, 6, min: 4)),
           Text(
             '${controller.gold}',
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 15,
-              color: Color(0xFFE0E0E0),
+              fontSize: _rs(context, dense ? 14 : 15, min: 11),
+              color: context.textPrimary,
             ),
           ),
         ],
@@ -293,22 +439,27 @@ class _TopBar extends StatelessWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      padding: EdgeInsets.fromLTRB(
+        _rs(context, 12, min: 8),
+        _rs(context, dense ? 8 : 12, min: 6),
+        _rs(context, 12, min: 8),
+        _rs(context, dense ? 6 : 8, min: 4),
+      ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < 700;
+          final compact = dense || constraints.maxWidth < 720;
           if (!compact) {
             return Row(
               children: [
                 Expanded(child: profileCard),
-                const SizedBox(width: 8),
+                SizedBox(width: _rs(context, 8, min: 5)),
                 goldCard,
-                const SizedBox(width: 8),
+                SizedBox(width: _rs(context, 8, min: 5)),
                 actionIcon(icon: Icons.auto_awesome, onTap: () => _showSkillTree(context, controller)),
                 const SizedBox(width: 8),
                 actionIcon(icon: Icons.settings, onTap: () => _showSettingsPanel(context)),
                 if (devMode) ...[
-                  const SizedBox(width: 8),
+                  SizedBox(width: _rs(context, 8, min: 5)),
                   actionIcon(icon: Icons.tune, onTap: () => _showDeveloperPanel(context)),
                 ],
               ],
@@ -318,16 +469,16 @@ class _TopBar extends StatelessWidget {
           return Column(
             children: [
               profileCard,
-              const SizedBox(height: 8),
+              SizedBox(height: _rs(context, 8, min: 5)),
               Row(
                 children: [
                   Expanded(child: goldCard),
-                  const SizedBox(width: 8),
+                  SizedBox(width: _rs(context, 8, min: 5)),
                   actionIcon(icon: Icons.auto_awesome, onTap: () => _showSkillTree(context, controller)),
                   const SizedBox(width: 8),
                   actionIcon(icon: Icons.settings, onTap: () => _showSettingsPanel(context)),
                   if (devMode) ...[
-                    const SizedBox(width: 8),
+                    SizedBox(width: _rs(context, 8, min: 5)),
                     actionIcon(icon: Icons.tune, onTap: () => _showDeveloperPanel(context)),
                   ],
                 ],
@@ -347,7 +498,7 @@ class _TopBar extends StatelessWidget {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: context.sheetBg,
       builder: (context) {
         return SafeArea(
           child: SizedBox(
@@ -370,7 +521,7 @@ class _TopBar extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'Live Balancing fuer Kampf und Oekonomie',
+                      'Live Balancing für Kampf und Ökonomie',
                       style: TextStyle(color: Color(0xFFBABABA), fontSize: 12),
                     ),
                     const SizedBox(height: 14),
@@ -382,7 +533,7 @@ class _TopBar extends StatelessWidget {
                               controller.debugAddResources(goldDelta: 200, hammerDelta: 20);
                               setModalState(() {});
                             },
-                            child: const Text('+200 Gold / +20 Haemmer'),
+                            child: const Text('+200 Gold / +20 Hämmer'),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -392,7 +543,7 @@ class _TopBar extends StatelessWidget {
                               controller.debugAdvanceStage(1);
                               setModalState(() {});
                             },
-                            child: const Text('Naechste Stage'),
+                            child: const Text('Nächste Stage'),
                           ),
                         ),
                       ],
@@ -568,7 +719,7 @@ class _TopBar extends StatelessWidget {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: context.sheetBg,
       builder: (ctx) {
         return SafeArea(
           child: SizedBox(
@@ -581,24 +732,23 @@ class _TopBar extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 20),
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF262626),
+                    color: context.cardBg,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF3C3C3C)),
+                    border: Border.all(color: context.cardBorder),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline, color: Color(0xFFB0B0B0), size: 20),
+                      Icon(Icons.info_outline, color: context.iconColor, size: 20),
                       const SizedBox(width: 10),
                       Text(
                         '${controller.text.tr('appVersion')}: ${packageInfo.version}',
-                        style: const TextStyle(color: Color(0xFFD8D8D8), fontSize: 14),
+                        style: TextStyle(color: context.textPrimary, fontSize: 14),
                       ),
                     ],
                   ),
@@ -617,20 +767,20 @@ class _TopBar extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF262626),
+                      color: context.cardBg,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF3C3C3C)),
+                      border: Border.all(color: context.cardBorder),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.bug_report_outlined, color: Color(0xFFB0B0B0), size: 20),
+                        Icon(Icons.bug_report_outlined, color: context.iconColor, size: 20),
                         const SizedBox(width: 10),
                         Text(
                           controller.text.tr('reportBug'),
-                          style: const TextStyle(color: Color(0xFFD8D8D8), fontSize: 14),
+                          style: TextStyle(color: context.textPrimary, fontSize: 14),
                         ),
                         const Spacer(),
-                        const Icon(Icons.open_in_new, color: Color(0xFF7A7A7A), size: 16),
+                        Icon(Icons.open_in_new, color: context.textTertiary, size: 16),
                       ],
                     ),
                   ),
@@ -641,6 +791,171 @@ class _TopBar extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _showProfilePanel(BuildContext context) async {
+    final nameController = TextEditingController(text: controller.playerName);
+    const fpsOptions = [30, 45, 60, 90, 120];
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.sheetBg,
+      isScrollControlled: true,
+      builder: (context) {
+        return SafeArea(
+          child: AnimatedPadding(
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOut,
+            padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+            child: SizedBox(
+              height: _adaptiveSheetHeight(context, factor: 0.62, min: 420, max: 820),
+              child: StatefulBuilder(
+                builder: (context, setModalState) {
+                  return Padding(
+                    padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: ListView(
+                          children: [
+                            const Text(
+                              'Profil',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: nameController,
+                              maxLength: 20,
+                              decoration: const InputDecoration(
+                                labelText: 'Spielername',
+                                counterText: '',
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text('Kapitel ${controller.chapter} - Stage ${controller.stage}'),
+                            Text('Gesamtstärke: ${controller.totalStrength}'),
+                            Text(
+                              'Prestige: ${controller.prestigeLevel} | Scherben: ${controller.forgeShards}',
+                            ),
+                            Text('Bosse besiegt: ${controller.bossDefeats} | Tode: ${controller.deaths}'),
+                            const SizedBox(height: 14),
+                            const Text(
+                              'App Einstellungen',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Expanded(child: Text('Max FPS')),
+                                const SizedBox(width: 10),
+                                SizedBox(
+                                  width: 130,
+                                  child: DropdownButton<int>(
+                                    value: controller.targetFps,
+                                    isExpanded: true,
+                                    items: fpsOptions
+                                        .map(
+                                          (fps) => DropdownMenuItem<int>(
+                                            value: fps,
+                                            child: Text('$fps'),
+                                          ),
+                                        )
+                                        .toList(growable: false),
+                                    onChanged: (value) {
+                                      if (value == null) {
+                                        return;
+                                      }
+                                      controller.setTargetFps(value);
+                                      setModalState(() {});
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SwitchListTile.adaptive(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('Dark Mode'),
+                              value: controller.darkModeEnabled,
+                              onChanged: (value) {
+                                controller.setDarkModeEnabled(value);
+                                setModalState(() {});
+                              },
+                            ),
+                            SwitchListTile.adaptive(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('Kampf-Log anzeigen'),
+                              value: controller.showCombatLog,
+                              onChanged: (value) {
+                                controller.setShowCombatLog(value);
+                                setModalState(() {});
+                              },
+                            ),
+                            SwitchListTile.adaptive(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('Reduzierte Effekte'),
+                              value: controller.reducedEffects,
+                              onChanged: (value) {
+                                controller.setReducedEffects(value);
+                                setModalState(() {});
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('Schliessen'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: FilledButton.tonal(
+                              onPressed: () {
+                                final ok = controller.setPlayerName(nameController.text);
+                                if (!ok && nameController.text.trim() != controller.playerName) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Name ungültig oder unverändert (2-20 Zeichen).',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                setModalState(() {});
+                                FocusScope.of(context).unfocus();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Profil gespeichert.')),
+                                );
+                              },
+                              child: const Text('Speichern'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    // Auto-save name when sheet is dismissed (e.g. swipe-down).
+    // Capture text before any rebuild can interfere.
+    final pendingName = nameController.text;
+    // Do NOT call nameController.dispose() here — the closing sheet
+    // animation still references it and disposing triggers cascading
+    // "used after disposed" / GlobalKey errors.  GC will reclaim it.
+    controller.setPlayerName(pendingName);
   }
 }
 
@@ -667,9 +982,9 @@ class _TuningSlider extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF252525),
+        color: context.inputBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF404040)),
+        border: Border.all(color: context.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -689,53 +1004,83 @@ class _TuningSlider extends StatelessWidget {
 }
 
 class _CombatArea extends StatelessWidget {
-  const _CombatArea({required this.controller});
+  const _CombatArea({required this.controller, this.dense = false});
 
   final GameController controller;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
     final text = controller.text;
     final hpPercent = (controller.enemy.hp / controller.enemy.maxHp).clamp(0.0, 1.0).toDouble();
+    final playerPod = _rs(context, dense ? 64 : 72, min: 54, max: 90);
+    final enemyPod = controller.enemy.isBoss
+        ? _rs(context, dense ? 74 : 82, min: 62, max: 96)
+        : _rs(context, dense ? 64 : 70, min: 54, max: 88);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF3B3B3B)),
-          color: const Color(0xFF222222),
-        ),
-        child: Column(
-          children: [
+    return LayoutBuilder(
+      builder: (context, rootConstraints) {
+        final ultraCompact = rootConstraints.maxHeight < 180;
+
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            _rs(context, 12, min: 8),
+            _rs(context, 4, min: 2),
+            _rs(context, 12, min: 8),
+            _rs(context, 6, min: 3),
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(_rs(context, 16, min: 12)),
+              border: Border.all(color: context.cardBorder),
+              color: context.cardBg,
+            ),
+            child: Column(
+              children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+              padding: EdgeInsets.fromLTRB(
+                _rs(context, 12, min: 8),
+                _rs(context, dense ? 8 : 10, min: 6),
+                _rs(context, 12, min: 8),
+                _rs(context, 6, min: 4),
+              ),
               child: Row(
                 children: [
                   Text(
                     '${text.tr('chapter')} ${controller.chapter}-${controller.stage}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFFE1E1E1),
+                    style: TextStyle(
+                      fontSize: _rs(context, dense ? 12 : 13, min: 10),
+                      color: context.textPrimary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const Spacer(),
                   Text(
                     '${controller.killsInStage}/${controller.stageTargetKills}',
-                    style: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 12),
+                    style: TextStyle(
+                      color: context.textSecondary,
+                      fontSize: _rs(context, dense ? 11 : 12, min: 9.5),
+                    ),
                   ),
                 ],
               ),
             ),
-            if (controller.lastCombatEvent.isNotEmpty)
+            if (controller.showCombatLog && controller.lastCombatEvent.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                padding: EdgeInsets.fromLTRB(
+                  _rs(context, 12, min: 8),
+                  0,
+                  _rs(context, 12, min: 8),
+                  _rs(context, 6, min: 4),
+                ),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     controller.lastCombatEvent,
-                    style: const TextStyle(fontSize: 11, color: Color(0xFFC9A8A8)),
+                    style: TextStyle(
+                      fontSize: _rs(context, dense ? 10 : 11, min: 9),
+                      color: const Color(0xFFC9A8A8),
+                    ),
                   ),
                 ),
               ),
@@ -743,30 +1088,31 @@ class _CombatArea extends StatelessWidget {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
-                  final enemyX = (width * controller.enemy.approach).clamp(width * 0.54, width - 94);
+                  final enemyX =
+                      (width * controller.enemy.approach).clamp(width * 0.5, width - (enemyPod + 12));
                   final playerYBob = controller.animationBob;
 
                   return Stack(
                     children: [
                       Positioned(
-                        left: width * 0.5 - 36,
-                        bottom: 28 + playerYBob,
+                        left: width * 0.5 - (playerPod / 2),
+                        bottom: _rs(context, dense ? 18 : 28, min: 14) + playerYBob,
                         child: Column(
                           children: [
                             SizedBox(
-                              width: 78,
+                              width: playerPod + _rs(context, 6, min: 4),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(999),
                                 child: LinearProgressIndicator(
                                   value: controller.playerHpPercent,
-                                  minHeight: 5,
+                                  minHeight: _rs(context, 5, min: 4),
                                   valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF8FBCE3)),
-                                  backgroundColor: const Color(0xFF4B4B4B),
+                                  backgroundColor: context.borderHeavy,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            const _Runner(),
+                            SizedBox(height: _rs(context, 4, min: 3)),
+                            _Runner(size: playerPod),
                           ],
                         ),
                       ),
@@ -774,47 +1120,56 @@ class _CombatArea extends StatelessWidget {
                         duration: const Duration(milliseconds: 220),
                         curve: Curves.easeOut,
                         left: enemyX,
-                        bottom: 24,
+                        bottom: _rs(context, dense ? 14 : 24, min: 10),
                         child: Column(
                           children: [
                             SizedBox(
-                              width: 88,
+                              width: enemyPod + _rs(context, 6, min: 4),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(999),
                                 child: LinearProgressIndicator(
                                   value: hpPercent,
-                                  minHeight: 6,
+                                  minHeight: _rs(context, 6, min: 4.5),
                                   valueColor: AlwaysStoppedAnimation<Color>(
                                     controller.enemy.isBoss
                                         ? const Color(0xFFE06767)
-                                        : const Color(0xFFD5D5D5),
+                                        : context.textPrimary,
                                   ),
-                                  backgroundColor: const Color(0xFF4B4B4B),
+                                  backgroundColor: context.borderHeavy,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 3),
+                            SizedBox(height: _rs(context, 3, min: 2)),
                             Text(
                               controller.enemy.name,
-                              style: const TextStyle(fontSize: 10, color: Color(0xFFD3D3D3)),
+                              style: TextStyle(
+                                fontSize: _rs(context, dense ? 9 : 10, min: 8),
+                                color: context.textPrimary,
+                              ),
                             ),
-                            const SizedBox(height: 2),
+                            SizedBox(height: _rs(context, 2, min: 1)),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: _rs(context, 6, min: 4),
+                                vertical: _rs(context, 2, min: 1),
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF2F2F2F),
+                                color: context.cardBg,
                                 borderRadius: BorderRadius.circular(999),
-                                border: Border.all(color: const Color(0xFF5A5A5A)),
+                                border: Border.all(color: context.borderHeavy),
                               ),
                               child: Text(
                                 controller.enemy.isBoss
                                     ? 'Boss ${controller.bossPatternLabel(controller.currentBossPattern)} P${controller.currentBossPhase}'
                                     : controller.archetypeLabel(controller.enemy.archetype),
-                                style: const TextStyle(fontSize: 9, color: Color(0xFFD7D7D7)),
+                                style: TextStyle(
+                                  fontSize: _rs(context, dense ? 8 : 9, min: 7),
+                                  color: context.textPrimary,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            _Enemy(isBoss: controller.enemy.isBoss),
+                            SizedBox(height: _rs(context, 4, min: 3)),
+                            _Enemy(isBoss: controller.enemy.isBoss, size: enemyPod),
                           ],
                         ),
                       ),
@@ -823,11 +1178,17 @@ class _CombatArea extends StatelessWidget {
                 },
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 4, 8, 10),
+            if (!ultraCompact)
+              Padding(
+              padding: EdgeInsets.fromLTRB(
+                _rs(context, 8, min: 6),
+                _rs(context, 4, min: 2),
+                _rs(context, 8, min: 6),
+                _rs(context, 10, min: 6),
+              ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final compact = constraints.maxWidth < 520;
+                  final compact = dense || constraints.maxWidth < 560;
 
                   Widget skillCard(int index, {double? width}) {
                     final state = controller.skills[index];
@@ -842,9 +1203,12 @@ class _CombatArea extends StatelessWidget {
                     return SizedBox(
                       width: width,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: _rs(context, 4, min: 2),
+                          vertical: _rs(context, 4, min: 2),
+                        ),
                         child: InkWell(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(_rs(context, 10, min: 7)),
                           onTap: () => controller.activateSkill(index),
                           onLongPress: () {
                             final enabled = controller.toggleAutoSkill(index);
@@ -852,56 +1216,65 @@ class _CombatArea extends StatelessWidget {
                               SnackBar(
                                 content: Text(
                                   enabled
-                                      ? 'Auto-Skill aktiv fuer ${controller.text.tr(state.definition.labelKey)}'
-                                      : 'Auto-Skill deaktiviert fuer ${controller.text.tr(state.definition.labelKey)}',
+                                      ? 'Auto-Skill aktiv für ${controller.text.tr(state.definition.labelKey)}'
+                                      : 'Auto-Skill deaktiviert für ${controller.text.tr(state.definition.labelKey)}',
                                 ),
                               ),
                             );
                           },
                           child: Container(
-                            height: 54,
+                            height: _rs(context, dense ? 48 : 54, min: 42, max: 72),
                             decoration: BoxDecoration(
-                              color: available ? const Color(0xFF2D2D2D) : const Color(0xFF252525),
-                              borderRadius: BorderRadius.circular(10),
+                              color: available ? context.cardBg : context.inputBg,
+                              borderRadius: BorderRadius.circular(_rs(context, 10, min: 7)),
                               border: Border.all(
                                 color: autoEnabled
                                     ? const Color(0xFF8BAF85)
                                     : available
-                                    ? const Color(0xFF5A5A5A)
-                                    : const Color(0xFF464646),
+                                    ? context.borderHeavy
+                                    : context.borderHeavy,
                               ),
                             ),
                             child: Stack(
                               children: [
                                 Positioned(
-                                  left: 8,
-                                  top: 8,
-                                  child: _SvgIcon(path: iconPath, size: 18),
+                                  left: _rs(context, 8, min: 5),
+                                  top: _rs(context, 8, min: 5),
+                                  child: _SvgIcon(path: iconPath, size: _rs(context, 18, min: 14)),
                                 ),
                                 Positioned(
-                                  left: 30,
-                                  top: 8,
-                                  right: 4,
+                                  left: _rs(context, 30, min: 24),
+                                  top: _rs(context, 8, min: 5),
+                                  right: _rs(context, 4, min: 3),
                                   child: Text(
                                     controller.text.tr(state.definition.labelKey),
-                                    style: const TextStyle(fontSize: 10, color: Colors.white),
+                                    style: TextStyle(
+                                      fontSize: _rs(context, dense ? 9 : 10, min: 8),
+                                      color: context.textBright,
+                                    ),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 if (autoEnabled)
                                   Positioned(
-                                    right: 6,
-                                    bottom: 5,
+                                    right: _rs(context, 6, min: 4),
+                                    bottom: _rs(context, 5, min: 3),
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: _rs(context, 5, min: 3),
+                                        vertical: _rs(context, 2, min: 1),
+                                      ),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFF3E5A3B),
                                         borderRadius: BorderRadius.circular(999),
                                       ),
-                                      child: const Text(
+                                      child: Text(
                                         'AUTO',
-                                        style: TextStyle(fontSize: 8, color: Color(0xFFDDE9DA)),
+                                        style: TextStyle(
+                                          fontSize: _rs(context, 8, min: 7),
+                                          color: const Color(0xFFDDE9DA),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -910,14 +1283,14 @@ class _CombatArea extends StatelessWidget {
                                     child: Container(
                                       alignment: Alignment.center,
                                       decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(10),
-                                        color: const Color(0xB0202020),
+                                        borderRadius: BorderRadius.circular(_rs(context, 10, min: 7)),
+                                        color: context.overlayBg,
                                       ),
                                       child: Text(
                                         '${state.cooldownRemaining.toStringAsFixed(1)}s',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          color: Color(0xFFE7E7E7),
+                                          color: context.textPrimary,
                                         ),
                                       ),
                                     ),
@@ -938,199 +1311,109 @@ class _CombatArea extends StatelessWidget {
                           ),
                         )
                       : Wrap(
-                          spacing: 4,
-                          runSpacing: 4,
+                          spacing: _rs(context, 4, min: 2),
+                          runSpacing: _rs(context, 4, min: 2),
                           children: List.generate(
                             controller.skills.length,
                             (index) => skillCard(index, width: (constraints.maxWidth - 12) / 2),
                           ),
                         );
 
-                  Widget flaskControls() {
-                    final cooldownText = controller.flaskCooldownRemaining > 0
-                        ? 'Trank-CD ${controller.flaskCooldownRemaining.toStringAsFixed(1)}s'
-                        : 'Trank bereit';
-
-                    return Container(
-                      margin: const EdgeInsets.only(top: 8),
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF262626),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFF424242)),
+                  return Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      key: const PageStorageKey<String>('combat-skills-tile'),
+                      initiallyExpanded: false,
+                      tilePadding: EdgeInsets.symmetric(
+                        horizontal: _rs(context, 10, min: 6),
+                        vertical: 0,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: CombatStance.values
-                                .map(
-                                  (stance) => ChoiceChip(
-                                    label: Text(controller.combatStanceLabel(stance)),
-                                    selected: controller.combatStance == stance,
-                                    onSelected: (_) => controller.setCombatStance(stance),
-                                  ),
-                                )
-                                .toList(growable: false),
+                      childrenPadding: EdgeInsets.only(bottom: _rs(context, 4, min: 2)),
+                      collapsedIconColor: context.iconColor,
+                      iconColor: context.iconColor,
+                      title: Text(
+                        'Fähigkeiten',
+                        style: TextStyle(
+                          fontSize: _rs(context, dense ? 11.5 : 12.5, min: 10),
+                          fontWeight: FontWeight.w700,
+                          color: context.textPrimary,
+                        ),
+                      ),
+                      subtitle: Text(
+                        controller.autoSkillSlots.isEmpty
+                            ? 'Tippen zum Aufklappen'
+                            : '${controller.autoSkillSlots.length} Auto-Skill${controller.autoSkillSlots.length > 1 ? 's' : ''} aktiv',
+                        style: TextStyle(
+                          fontSize: _rs(context, dense ? 9.5 : 10.5, min: 8.5),
+                          color: controller.autoSkillSlots.isEmpty
+                              ? context.textSecondary
+                              : const Color(0xFF8BAF85),
+                        ),
+                      ),
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: _rs(context, 4, min: 2)),
+                          child: skillStrip,
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: _rs(context, 10, min: 6),
+                            vertical: _rs(context, 4, min: 2),
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            cooldownText,
-                            style: const TextStyle(fontSize: 11, color: Color(0xFFCACACA)),
-                          ),
-                          const SizedBox(height: 6),
-                          if (compact)
-                            Column(
-                              children: [
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: FilledButton.tonal(
-                                    onPressed: controller.useHealingFlask,
-                                    child: Text('Heiltrank nutzen (${controller.healingFlasks})'),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: OutlinedButton(
-                                    onPressed: () {
-                                      final ok = controller.buyFlask(FlaskType.healing);
-                                      if (!ok) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Nicht genug Gold.')),
-                                        );
-                                      }
-                                    },
-                                    child: Text('Heiltrank kaufen (${controller.healingFlaskCost}G)'),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: FilledButton.tonal(
-                                    onPressed: controller.useBerserkFlask,
-                                    child: Text('Berserk nutzen (${controller.berserkFlasks})'),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: OutlinedButton(
-                                    onPressed: () {
-                                      final ok = controller.buyFlask(FlaskType.berserk);
-                                      if (!ok) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Nicht genug Gold.')),
-                                        );
-                                      }
-                                    },
-                                    child: Text('Berserk kaufen (${controller.berserkFlaskCost}G)'),
-                                  ),
-                                ),
-                              ],
-                            )
-                          else
-                            Column(
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: FilledButton.tonal(
-                                        onPressed: controller.useHealingFlask,
-                                        child: Text('Heiltrank (${controller.healingFlasks})'),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: OutlinedButton(
-                                        onPressed: () {
-                                          final ok = controller.buyFlask(FlaskType.healing);
-                                          if (!ok) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Nicht genug Gold.')),
-                                            );
-                                          }
-                                        },
-                                        child: Text('Kaufen ${controller.healingFlaskCost}G'),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: FilledButton.tonal(
-                                        onPressed: controller.useBerserkFlask,
-                                        child: Text('Berserk (${controller.berserkFlasks})'),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: OutlinedButton(
-                                        onPressed: () {
-                                          final ok = controller.buyFlask(FlaskType.berserk);
-                                          if (!ok) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Nicht genug Gold.')),
-                                            );
-                                          }
-                                        },
-                                        child: Text('Kaufen ${controller.berserkFlaskCost}G'),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                          child: Text(
+                            'Lang drücken für Auto-Aktivierung',
+                            style: TextStyle(
+                              fontSize: _rs(context, 9, min: 7.5),
+                              color: context.textTertiary,
+                              fontStyle: FontStyle.italic,
                             ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      skillStrip,
-                      flaskControls(),
-                    ],
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
             ),
           ],
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
 class _ForgePanel extends StatelessWidget {
-  const _ForgePanel({required this.controller});
+  const _ForgePanel({required this.controller, this.dense = false});
 
   final GameController controller;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
     final text = controller.text;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      padding: EdgeInsets.fromLTRB(
+        _rs(context, 12, min: 8),
+        0,
+        _rs(context, 12, min: 8),
+        _rs(context, dense ? 6 : 8, min: 4),
+      ),
       child: Container(
-        padding: const EdgeInsets.all(10),
+        padding: EdgeInsets.all(_rs(context, dense ? 8 : 10, min: 6)),
         decoration: BoxDecoration(
-          color: const Color(0xFF242424),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF3D3D3D)),
+          color: context.cardBgAlt,
+          borderRadius: BorderRadius.circular(_rs(context, 12, min: 8)),
+          border: Border.all(color: context.cardBorder),
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxWidth < 760;
+            final compact = dense || constraints.maxWidth < 800;
 
             final craftCard = InkWell(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(_rs(context, 10, min: 7)),
               onTap: () async {
                 final item = controller.craftItem();
                 if (item == null) {
@@ -1151,32 +1434,35 @@ class _ForgePanel extends StatelessWidget {
                 await _showCraftResultDialog(context, controller, item);
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                padding: EdgeInsets.symmetric(
+                  horizontal: _rs(context, dense ? 8 : 10, min: 6),
+                  vertical: _rs(context, dense ? 9 : 12, min: 6),
+                ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2A2A2A),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFF494949)),
+                  color: context.cardBg,
+                  borderRadius: BorderRadius.circular(_rs(context, 10, min: 7)),
+                  border: Border.all(color: context.borderHeavy),
                 ),
                 child: Row(
                   children: [
-                    _SvgIcon(path: 'assets/icons/forge.svg', size: 30),
-                    const SizedBox(width: 8),
+                    _SvgIcon(path: 'assets/icons/forge.svg', size: _rs(context, dense ? 24 : 30, min: 18)),
+                    SizedBox(width: _rs(context, 8, min: 5)),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           text.tr('forge'),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: context.textBright,
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: _rs(context, dense ? 12.5 : 14, min: 10.5),
                           ),
                         ),
                         Text(
                           '${text.tr('hammers')}: ${controller.hammers}',
-                          style: const TextStyle(
-                            color: Color(0xFFC8C8C8),
-                            fontSize: 12,
+                          style: TextStyle(
+                            color: context.textPrimary,
+                            fontSize: _rs(context, dense ? 11 : 12, min: 9.5),
                           ),
                         ),
                       ],
@@ -1187,7 +1473,7 @@ class _ForgePanel extends StatelessWidget {
             );
 
             final upgradeCard = InkWell(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(_rs(context, 10, min: 7)),
               onTap: () {
                 final success = controller.upgradeForgeChance();
                 if (!success) {
@@ -1197,42 +1483,51 @@ class _ForgePanel extends StatelessWidget {
                 }
               },
               child: Container(
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(_rs(context, dense ? 8 : 10, min: 6)),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2A2A2A),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFF494949)),
+                  color: context.cardBg,
+                  borderRadius: BorderRadius.circular(_rs(context, 10, min: 7)),
+                  border: Border.all(color: context.borderHeavy),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       text.tr('upgradeChance'),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: context.textBright,
                         fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                        fontSize: _rs(context, dense ? 11 : 12, min: 9.5),
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: _rs(context, 6, min: 4)),
                     Text(
                       '${text.tr('forgeLevel')}: ${controller.forgeLevel}',
-                      style: const TextStyle(color: Color(0xFFC7C7C7), fontSize: 11),
+                      style: TextStyle(
+                        color: context.textPrimary,
+                        fontSize: _rs(context, dense ? 10 : 11, min: 8.5),
+                      ),
                     ),
                     Text(
                       'Bonus ${(controller.forgeBonusChance * 100).toStringAsFixed(1)}%',
-                      style: const TextStyle(color: Color(0xFFC7C7C7), fontSize: 11),
+                      style: TextStyle(
+                        color: context.textPrimary,
+                        fontSize: _rs(context, dense ? 10 : 11, min: 8.5),
+                      ),
                     ),
                     Text(
                       'Kosten ${controller.forgeUpgradeCost}',
-                      style: const TextStyle(color: Color(0xFFE0E0E0), fontSize: 11),
+                      style: TextStyle(
+                        color: context.textPrimary,
+                        fontSize: _rs(context, dense ? 10 : 11, min: 8.5),
+                      ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: _rs(context, 6, min: 4)),
                     FilledButton.tonal(
                       onPressed: () => _showPrestigeDialog(context, controller),
                       child: const Text('Prestige'),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: _rs(context, 4, min: 2)),
                     OutlinedButton(
                       onPressed: controller.cycleAutoSellMode,
                       child: Text('Auto-Sell: ${controller.autoSellLabel}'),
@@ -1246,7 +1541,7 @@ class _ForgePanel extends StatelessWidget {
               return Column(
                 children: [
                   craftCard,
-                  const SizedBox(height: 8),
+                  SizedBox(height: _rs(context, 8, min: 5)),
                   upgradeCard,
                 ],
               );
@@ -1255,7 +1550,7 @@ class _ForgePanel extends StatelessWidget {
             return Row(
               children: [
                 Expanded(child: craftCard),
-                const SizedBox(width: 8),
+                SizedBox(width: _rs(context, 8, min: 5)),
                 Expanded(child: upgradeCard),
               ],
             );
@@ -1287,8 +1582,8 @@ class _ForgePanel extends StatelessWidget {
             ? const Color(0xFF8FD39E)
             : powerDelta < 0
                 ? const Color(0xFFE39A9A)
-                : const Color(0xFFC8C8C8)
-        : const Color(0xFFD6D6D6);
+                : context.textPrimary
+        : context.textPrimary;
     final comparisonIcon = hasEquipped
       ? powerDelta > 0
         ? Icons.arrow_upward_rounded
@@ -1323,7 +1618,7 @@ class _ForgePanel extends StatelessWidget {
                 hasEquipped
                     ? 'Aktuell angelegt: ${equipped.name} (+${equipped.power})'
                     : 'Aktuell angelegt: Kein Item',
-                style: const TextStyle(fontSize: 12, color: Color(0xFFCBCBCB)),
+                style: TextStyle(fontSize: 12, color: context.textPrimary),
               ),
               const SizedBox(height: 2),
               Row(
@@ -1345,7 +1640,7 @@ class _ForgePanel extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 item.isLocked ? 'Status: Gesperrt' : 'Status: Offen',
-                style: const TextStyle(fontSize: 12, color: Color(0xFFC8C8C8)),
+                style: TextStyle(fontSize: 12, color: context.textPrimary),
               ),
             ],
           ),
@@ -1407,8 +1702,8 @@ class _ForgePanel extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 canPrestige
-                    ? 'Fortschritt wird zurueckgesetzt (Stage, Items, Gold), Boni bleiben.'
-                    : 'Noch nicht verfuegbar. Erreiche mindestens Kapitel 2.',
+                    ? 'Fortschritt wird zurückgesetzt (Stage, Items, Gold), Boni bleiben.'
+                    : 'Noch nicht verfügbar. Erreiche mindestens Kapitel 2.',
               ),
             ],
           ),
@@ -1436,7 +1731,7 @@ class _ForgePanel extends StatelessWidget {
 Future<void> _showSkillTree(BuildContext context, GameController controller) async {
   await showModalBottomSheet<void>(
     context: context,
-    backgroundColor: const Color(0xFF1F1F1F),
+    backgroundColor: context.sheetBg,
     isScrollControlled: true,
     builder: (context) {
       return SafeArea(
@@ -1455,9 +1750,9 @@ Future<void> _showSkillTree(BuildContext context, GameController controller) asy
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2A2A2A),
+                    color: context.cardBg,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF474747)),
+                    border: Border.all(color: context.borderHeavy),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1492,11 +1787,11 @@ Future<void> _showSkillTree(BuildContext context, GameController controller) asy
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
-                  Text('Verfuegbare Scherben: ${controller.forgeShards}'),
+                  Text('Verfügbare Scherben: ${controller.forgeShards}'),
                   const SizedBox(height: 10),
                   skillCard(
                     title: 'Kraftschlag',
-                    desc: 'Mehr Skill-Schaden und kuerzerer Cooldown.',
+                    desc: 'Mehr Skill-Schaden und kürzerer Cooldown.',
                     level: controller.skillStrikeLevel,
                     cost: controller.skillStrikeCost,
                     onUpgrade: () => buy(0),
@@ -1510,7 +1805,7 @@ Future<void> _showSkillTree(BuildContext context, GameController controller) asy
                   ),
                   skillCard(
                     title: 'Kampffokus',
-                    desc: 'Deutlich staerkerer Burst und kuerzerer Cooldown.',
+                    desc: 'Deutlich stärkerer Burst und kürzerer Cooldown.',
                     level: controller.skillFocusLevel,
                     cost: controller.skillFocusCost,
                     onUpgrade: () => buy(2),
@@ -1526,49 +1821,72 @@ Future<void> _showSkillTree(BuildContext context, GameController controller) asy
 }
 
 class _BottomMenu extends StatelessWidget {
-  const _BottomMenu({required this.controller});
+  const _BottomMenu({required this.controller, this.dense = false});
 
   final GameController controller;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
     final text = controller.text;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-      padding: const EdgeInsets.all(8),
+      margin: EdgeInsets.fromLTRB(
+        _rs(context, 8, min: 4),
+        0,
+        _rs(context, 8, min: 4),
+        _rs(context, dense ? 6 : 8, min: 4),
+      ),
+      padding: EdgeInsets.all(_rs(context, dense ? 6 : 8, min: 4)),
       decoration: BoxDecoration(
-        color: const Color(0xFF232323),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF3C3C3C)),
+        color: context.cardBgAlt,
+        borderRadius: BorderRadius.circular(_rs(context, 14, min: 9)),
+        border: Border.all(color: context.cardBorder),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < 560;
+          final compact = dense || constraints.maxWidth < 620;
           final buttons = [
+            _MenuButton(
+              iconPath: 'assets/icons/forge.svg',
+              label: text.tr('forge'),
+              dense: dense,
+              onTap: () => _showForgePanel(context, controller),
+            ),
+            _MenuButton(
+              icon: Icons.local_drink_rounded,
+              label: 'Tränke',
+              dense: dense,
+              onTap: () => _showFlaskPanel(context, controller),
+            ),
             _MenuButton(
               iconPath: 'assets/icons/menu_world.svg',
               label: text.tr('menuWorld'),
+              dense: dense,
               onTap: () => _showWorldPanel(context, controller),
             ),
             _MenuButton(
               iconPath: 'assets/icons/menu_clan.svg',
               label: text.tr('menuClan'),
+              dense: dense,
               onTap: () => _showTalentTree(context, controller),
             ),
             _MenuButton(
               iconPath: 'assets/icons/menu_shop.svg',
               label: text.tr('menuShop'),
+              dense: dense,
               onTap: () => _showShopPanel(context, controller),
             ),
             _MenuButton(
               iconPath: 'assets/icons/menu_quest.svg',
               label: text.tr('menuQuest'),
+              dense: dense,
               onTap: () => _showQuestBoard(context, controller),
             ),
             _MenuButton(
               iconPath: 'assets/icons/inventory.svg',
               label: text.tr('inventory'),
+              dense: dense,
               onTap: () => _showInventory(context, controller),
             ),
           ];
@@ -1579,11 +1897,12 @@ class _BottomMenu extends StatelessWidget {
             );
           }
 
-          final columns = 3;
-          final itemWidth = (constraints.maxWidth - ((columns - 1) * 6)) / columns;
+          final columns = constraints.maxWidth < 390 ? 2 : 3;
+          final spacing = _rs(context, 6, min: 4);
+          final itemWidth = (constraints.maxWidth - ((columns - 1) * spacing)) / columns;
           return Wrap(
-            spacing: 6,
-            runSpacing: 6,
+            spacing: spacing,
+            runSpacing: spacing,
             children: buttons
                 .map((button) => SizedBox(width: itemWidth, child: button))
                 .toList(growable: false),
@@ -1593,10 +1912,197 @@ class _BottomMenu extends StatelessWidget {
     );
   }
 
+  Future<void> _showForgePanel(BuildContext context, GameController controller) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.sheetBg,
+      isScrollControlled: true,
+      builder: (context) {
+        return SafeArea(
+          child: SizedBox(
+            height: _adaptiveSheetHeight(context, factor: 0.52, min: 320, max: 760),
+            child: ListView(
+              padding: const EdgeInsets.only(top: 10, bottom: 8),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    controller.text.tr('forge'),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                AnimatedBuilder(
+                  animation: controller,
+                  builder: (context, _) => _ForgePanel(controller: controller, dense: true),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showFlaskPanel(BuildContext context, GameController controller) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.sheetBg,
+      isScrollControlled: true,
+      builder: (context) {
+        return SafeArea(
+          child: SizedBox(
+            height: _adaptiveSheetHeight(context, factor: 0.56, min: 340, max: 760),
+            child: AnimatedBuilder(
+              animation: controller,
+              builder: (context, _) {
+                final compact = MediaQuery.sizeOf(context).width < 560;
+                final cooldownText = controller.flaskCooldownRemaining > 0
+                    ? 'Trank-CD ${controller.flaskCooldownRemaining.toStringAsFixed(1)}s'
+                    : 'Trank bereit';
+
+                return ListView(
+                  padding: const EdgeInsets.all(12),
+                  children: [
+                    const Text(
+                      'Tränke',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(cooldownText, style: TextStyle(color: context.textPrimary)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: CombatStance.values
+                          .map(
+                            (stance) => ChoiceChip(
+                              label: Text(controller.combatStanceLabel(stance)),
+                              selected: controller.combatStance == stance,
+                              onSelected: (_) => controller.setCombatStance(stance),
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                    const SizedBox(height: 10),
+                    if (compact)
+                      Column(
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.tonal(
+                              onPressed: controller.useHealingFlask,
+                              child: Text('Heiltrank nutzen (${controller.healingFlasks})'),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              onPressed: () {
+                                final ok = controller.buyFlask(FlaskType.healing);
+                                if (!ok) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Nicht genug Gold.')),
+                                  );
+                                }
+                              },
+                              child: Text('Heiltrank kaufen (${controller.healingFlaskCost}G)'),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.tonal(
+                              onPressed: controller.useBerserkFlask,
+                              child: Text('Berserk nutzen (${controller.berserkFlasks})'),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              onPressed: () {
+                                final ok = controller.buyFlask(FlaskType.berserk);
+                                if (!ok) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Nicht genug Gold.')),
+                                  );
+                                }
+                              },
+                              child: Text('Berserk kaufen (${controller.berserkFlaskCost}G)'),
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: FilledButton.tonal(
+                                  onPressed: controller.useHealingFlask,
+                                  child: Text('Heiltrank (${controller.healingFlasks})'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () {
+                                    final ok = controller.buyFlask(FlaskType.healing);
+                                    if (!ok) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Nicht genug Gold.')),
+                                      );
+                                    }
+                                  },
+                                  child: Text('Kaufen ${controller.healingFlaskCost}G'),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: FilledButton.tonal(
+                                  onPressed: controller.useBerserkFlask,
+                                  child: Text('Berserk (${controller.berserkFlasks})'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () {
+                                    final ok = controller.buyFlask(FlaskType.berserk);
+                                    if (!ok) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Nicht genug Gold.')),
+                                      );
+                                    }
+                                  },
+                                  child: Text('Kaufen ${controller.berserkFlaskCost}G'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _showQuestBoard(BuildContext context, GameController controller) async {
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF1F1F1F),
+      backgroundColor: context.sheetBg,
       isScrollControlled: true,
       builder: (context) {
         return SafeArea(
@@ -1613,16 +2119,16 @@ class _BottomMenu extends StatelessWidget {
                     Widget questCard(QuestStateView quest, {double? width}) {
                       final progressRatio = (quest.progress / quest.target).clamp(0.0, 1.0);
                       final rewardText =
-                          '+${quest.rewardGold} Gold | +${quest.rewardHammers} Haemmer'
+                          '+${quest.rewardGold} Gold | +${quest.rewardHammers} Hämmer'
                           '${quest.rewardShards > 0 ? ' | +${quest.rewardShards} Scherben' : ''}';
                       return Container(
                         width: width,
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2A2A2A),
+                          color: context.cardBg,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF474747)),
+                          border: Border.all(color: context.borderHeavy),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1639,8 +2145,8 @@ class _BottomMenu extends StatelessWidget {
                               child: LinearProgressIndicator(
                                 value: progressRatio,
                                 minHeight: 6,
-                                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFCFCFCF)),
-                                backgroundColor: const Color(0xFF4A4A4A),
+                                valueColor: AlwaysStoppedAnimation<Color>(context.textPrimary),
+                                backgroundColor: context.borderHeavy,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -1715,7 +2221,7 @@ class _BottomMenu extends StatelessWidget {
   Future<void> _showTalentTree(BuildContext context, GameController controller) async {
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF1F1F1F),
+      backgroundColor: context.sheetBg,
       isScrollControlled: true,
       builder: (context) {
         return SafeArea(
@@ -1754,9 +2260,9 @@ class _BottomMenu extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2A2A2A),
+                      color: context.cardBg,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF474747)),
+                      border: Border.all(color: context.borderHeavy),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1788,9 +2294,9 @@ class _BottomMenu extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2A2A2A),
+                      color: context.cardBg,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF474747)),
+                      border: Border.all(color: context.borderHeavy),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1862,7 +2368,7 @@ class _BottomMenu extends StatelessWidget {
                             value: controller.clanXpProgress,
                             minHeight: 8,
                             valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF9BC89E)),
-                            backgroundColor: const Color(0xFF454545),
+                            backgroundColor: context.borderHeavy,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -1919,7 +2425,7 @@ class _BottomMenu extends StatelessWidget {
 
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF1F1F1F),
+      backgroundColor: context.sheetBg,
       isScrollControlled: true,
       builder: (context) {
         return SafeArea(
@@ -1951,8 +2457,17 @@ class _BottomMenu extends StatelessWidget {
 
                 final compact = MediaQuery.sizeOf(context).width < 760;
 
-                return Column(
-                  children: [
+                return LayoutBuilder(
+                  builder: (context, sheetConstraints) {
+                    final itemListHeight =
+                        (sheetConstraints.maxHeight * 0.42).clamp(220.0, 520.0).toDouble();
+
+                    return SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minHeight: sheetConstraints.maxHeight),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
                     Padding(
                       padding: const EdgeInsets.all(12),
                       child: Row(
@@ -1985,7 +2500,7 @@ class _BottomMenu extends StatelessWidget {
                                       title: Text('Loadout $slot'),
                                       content: Text(
                                         hasPreset
-                                            ? 'Loadout laden oder aktuellen Stand ueberschreiben?'
+                                            ? 'Loadout laden oder aktuellen Stand überschreiben?'
                                             : 'Diesen Slot als aktuelles Loadout speichern?',
                                       ),
                                       actions: [
@@ -1996,7 +2511,7 @@ class _BottomMenu extends StatelessWidget {
                                               Navigator.of(dialogContext).pop();
                                               final msg = changes > 0
                                                   ? 'Loadout $slot geladen ($changes Aenderungen).'
-                                                  : 'Loadout $slot ist bereits aktiv oder teilweise nicht verfuegbar.';
+                                                  : 'Loadout $slot ist bereits aktiv oder teilweise nicht verfügbar.';
                                               ScaffoldMessenger.of(context).showSnackBar(
                                                 SnackBar(content: Text(msg)),
                                               );
@@ -2056,9 +2571,9 @@ class _BottomMenu extends StatelessWidget {
                             margin: const EdgeInsets.all(6),
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2A2A2A),
+                              color: context.cardBg,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFF464646)),
+                              border: Border.all(color: context.borderHeavy),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2070,10 +2585,10 @@ class _BottomMenu extends StatelessWidget {
                                   equipped?.name ?? '-',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFFE3E3E3),
+                                    color: context.textPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -2091,7 +2606,7 @@ class _BottomMenu extends StatelessWidget {
                                         ? const Color(0xFF989898)
                                         : upgradeDelta > 0
                                         ? const Color(0xFFBFD8BF)
-                                        : const Color(0xFFA9A9A9),
+                                        : context.textTertiary,
                                   ),
                                 ),
                               ],
@@ -2114,7 +2629,7 @@ class _BottomMenu extends StatelessWidget {
                               const Spacer(),
                               Text(
                                 '${filteredInventory.length}/${controller.inventory.length}',
-                                style: const TextStyle(fontSize: 12, color: Color(0xFFC6C6C6)),
+                                style: TextStyle(fontSize: 12, color: context.textPrimary),
                               ),
                               const SizedBox(width: 8),
                               TextButton(
@@ -2141,7 +2656,7 @@ class _BottomMenu extends StatelessWidget {
                                       );
                                       final msg = changed > 0
                                           ? 'Smart Equip: $changed Slots aktualisiert.'
-                                          : 'Smart Equip: Keine bessere Ausruestung gefunden.';
+                                          : 'Smart Equip: Keine bessere Ausrüstung gefunden.';
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(content: Text(msg)),
                                       );
@@ -2176,7 +2691,7 @@ class _BottomMenu extends StatelessWidget {
                                               children: [
                                                 Text('Im Filter: ${preview.candidateCount} Items'),
                                                 Text('Verkaufbar: ${preview.sellableCount}'),
-                                                Text('Geschuetzt: ${preview.protectedCount}'),
+                                                Text('Geschützt: ${preview.protectedCount}'),
                                                 const SizedBox(height: 8),
                                                 Text('Erwartetes Gold: +${preview.estimatedGold}'),
                                               ],
@@ -2205,8 +2720,8 @@ class _BottomMenu extends StatelessWidget {
                                         filteredInventory.map((item) => item.id),
                                       );
                                       final msg = result.soldCount > 0
-                                          ? 'Massenverkauf: ${result.soldCount} Items fuer +${result.earnedGold} Gold.'
-                                          : 'Massenverkauf: Keine verkaufbaren Items (gesperrt/ausgeruestet).';
+                                          ? 'Massenverkauf: ${result.soldCount} Items für +${result.earnedGold} Gold.'
+                                          : 'Massenverkauf: Keine verkaufbaren Items (gesperrt/ausgerüstet).';
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(content: Text(msg)),
                                       );
@@ -2228,7 +2743,7 @@ class _BottomMenu extends StatelessWidget {
                                       );
                                       final msg = changed > 0
                                           ? 'Smart Equip: $changed Slots aktualisiert.'
-                                          : 'Smart Equip: Keine bessere Ausruestung gefunden.';
+                                          : 'Smart Equip: Keine bessere Ausrüstung gefunden.';
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(content: Text(msg)),
                                       );
@@ -2262,7 +2777,7 @@ class _BottomMenu extends StatelessWidget {
                                             children: [
                                               Text('Im Filter: ${preview.candidateCount} Items'),
                                               Text('Verkaufbar: ${preview.sellableCount}'),
-                                              Text('Geschuetzt: ${preview.protectedCount}'),
+                                              Text('Geschützt: ${preview.protectedCount}'),
                                               const SizedBox(height: 8),
                                               Text('Erwartetes Gold: +${preview.estimatedGold}'),
                                             ],
@@ -2291,8 +2806,8 @@ class _BottomMenu extends StatelessWidget {
                                       filteredInventory.map((item) => item.id),
                                     );
                                     final msg = result.soldCount > 0
-                                        ? 'Massenverkauf: ${result.soldCount} Items fuer +${result.earnedGold} Gold.'
-                                        : 'Massenverkauf: Keine verkaufbaren Items (gesperrt/ausgeruestet).';
+                                        ? 'Massenverkauf: ${result.soldCount} Items für +${result.earnedGold} Gold.'
+                                        : 'Massenverkauf: Keine verkaufbaren Items (gesperrt/ausgerüstet).';
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(content: Text(msg)),
                                     );
@@ -2310,7 +2825,7 @@ class _BottomMenu extends StatelessWidget {
                                 DropdownButton<ItemSet?>(
                                   value: setFilter,
                                   isExpanded: true,
-                                  dropdownColor: const Color(0xFF2A2A2A),
+                                  dropdownColor: context.cardBg,
                                   items: [
                                     const DropdownMenuItem<ItemSet?>(
                                       value: null,
@@ -2332,7 +2847,7 @@ class _BottomMenu extends StatelessWidget {
                                 DropdownButton<ItemSlot?>(
                                   value: slotFilter,
                                   isExpanded: true,
-                                  dropdownColor: const Color(0xFF2A2A2A),
+                                  dropdownColor: context.cardBg,
                                   items: [
                                     const DropdownMenuItem<ItemSlot?>(
                                       value: null,
@@ -2354,7 +2869,7 @@ class _BottomMenu extends StatelessWidget {
                                 DropdownButton<ItemTier?>(
                                   value: tierFilter,
                                   isExpanded: true,
-                                  dropdownColor: const Color(0xFF2A2A2A),
+                                  dropdownColor: context.cardBg,
                                   items: [
                                     const DropdownMenuItem<ItemTier?>(
                                       value: null,
@@ -2381,7 +2896,7 @@ class _BottomMenu extends StatelessWidget {
                                   child: DropdownButton<ItemSet?>(
                                     value: setFilter,
                                     isExpanded: true,
-                                    dropdownColor: const Color(0xFF2A2A2A),
+                                    dropdownColor: context.cardBg,
                                     items: [
                                       const DropdownMenuItem<ItemSet?>(
                                         value: null,
@@ -2405,7 +2920,7 @@ class _BottomMenu extends StatelessWidget {
                                   child: DropdownButton<ItemSlot?>(
                                     value: slotFilter,
                                     isExpanded: true,
-                                    dropdownColor: const Color(0xFF2A2A2A),
+                                    dropdownColor: context.cardBg,
                                     items: [
                                       const DropdownMenuItem<ItemSlot?>(
                                         value: null,
@@ -2429,7 +2944,7 @@ class _BottomMenu extends StatelessWidget {
                                   child: DropdownButton<ItemTier?>(
                                     value: tierFilter,
                                     isExpanded: true,
-                                    dropdownColor: const Color(0xFF2A2A2A),
+                                    dropdownColor: context.cardBg,
                                     items: [
                                       const DropdownMenuItem<ItemTier?>(
                                         value: null,
@@ -2459,7 +2974,7 @@ class _BottomMenu extends StatelessWidget {
                                 DropdownButton<SmartEquipMode>(
                                   value: smartEquipMode,
                                   isExpanded: true,
-                                  dropdownColor: const Color(0xFF2A2A2A),
+                                  dropdownColor: context.cardBg,
                                   items: const [
                                     DropdownMenuItem(
                                       value: SmartEquipMode.purePower,
@@ -2483,7 +2998,7 @@ class _BottomMenu extends StatelessWidget {
                                 DropdownButton<InventorySortMode>(
                                   value: sortMode,
                                   isExpanded: true,
-                                  dropdownColor: const Color(0xFF2A2A2A),
+                                  dropdownColor: context.cardBg,
                                   items: const [
                                     DropdownMenuItem(
                                       value: InventorySortMode.powerDesc,
@@ -2523,7 +3038,7 @@ class _BottomMenu extends StatelessWidget {
                                       child: DropdownButton<SmartEquipMode>(
                                         value: smartEquipMode,
                                         isExpanded: true,
-                                        dropdownColor: const Color(0xFF2A2A2A),
+                                        dropdownColor: context.cardBg,
                                         items: const [
                                           DropdownMenuItem(
                                             value: SmartEquipMode.purePower,
@@ -2554,7 +3069,7 @@ class _BottomMenu extends StatelessWidget {
                                       child: DropdownButton<InventorySortMode>(
                                         value: sortMode,
                                         isExpanded: true,
-                                        dropdownColor: const Color(0xFF2A2A2A),
+                                        dropdownColor: context.cardBg,
                                         items: const [
                                           DropdownMenuItem(
                                             value: InventorySortMode.powerDesc,
@@ -2605,7 +3120,7 @@ class _BottomMenu extends StatelessWidget {
                                 DropdownButton<ItemTier>(
                                   value: controller.autoLockFromTier,
                                   isExpanded: true,
-                                  dropdownColor: const Color(0xFF2A2A2A),
+                                  dropdownColor: context.cardBg,
                                   items: ItemTier.values
                                       .map(
                                         (tier) => DropdownMenuItem<ItemTier>(
@@ -2649,7 +3164,7 @@ class _BottomMenu extends StatelessWidget {
                                   child: DropdownButton<ItemTier>(
                                     value: controller.autoLockFromTier,
                                     isExpanded: true,
-                                    dropdownColor: const Color(0xFF2A2A2A),
+                                    dropdownColor: context.cardBg,
                                     items: ItemTier.values
                                         .map(
                                           (tier) => DropdownMenuItem<ItemTier>(
@@ -2706,9 +3221,9 @@ class _BottomMenu extends StatelessWidget {
                         margin: const EdgeInsets.fromLTRB(12, 10, 12, 4),
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2A2A2A),
+                          color: context.cardBg,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF4A4A4A)),
+                          border: Border.all(color: context.borderHeavy),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2721,13 +3236,14 @@ class _BottomMenu extends StatelessWidget {
                             ...controller.activeSetBonuses.map(
                               (bonus) => Text(
                                 bonus,
-                                style: const TextStyle(fontSize: 12, color: Color(0xFFD6D6D6)),
+                                style: TextStyle(fontSize: 12, color: context.textPrimary),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    Expanded(
+                    SizedBox(
+                      height: itemListHeight,
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           final grid = constraints.maxWidth >= 920;
@@ -2738,9 +3254,9 @@ class _BottomMenu extends StatelessWidget {
                               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF2A2A2A),
+                                color: context.cardBg,
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFF454545)),
+                                border: Border.all(color: context.borderHeavy),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2752,9 +3268,9 @@ class _BottomMenu extends StatelessWidget {
                                       Expanded(
                                         child: Text(
                                           item.name,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.white,
+                                            color: context.textBright,
                                           ),
                                         ),
                                       ),
@@ -2762,7 +3278,7 @@ class _BottomMenu extends StatelessWidget {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF3A3A3A),
+                                            color: context.divider,
                                             borderRadius: BorderRadius.circular(20),
                                           ),
                                           child: Text(
@@ -2775,7 +3291,7 @@ class _BottomMenu extends StatelessWidget {
                                   const SizedBox(height: 3),
                                   Text(
                                     '${controller.tierLabel(item.tier)} | ${controller.setLabel(item.setId)} | +${item.power} | ${controller.slotLabel(item.slot)}',
-                                    style: const TextStyle(color: Color(0xFFC9C9C9), fontSize: 12),
+                                    style: TextStyle(color: context.textPrimary, fontSize: 12),
                                   ),
                                   const SizedBox(height: 8),
                                   Row(
@@ -2850,7 +3366,11 @@ class _BottomMenu extends StatelessWidget {
                         },
                       ),
                     ),
-                  ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -2863,7 +3383,7 @@ class _BottomMenu extends StatelessWidget {
   Future<void> _showWorldPanel(BuildContext context, GameController controller) async {
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF1F1F1F),
+      backgroundColor: context.sheetBg,
       isScrollControlled: true,
       builder: (context) {
         return SafeArea(
@@ -2900,13 +3420,13 @@ class _BottomMenu extends StatelessWidget {
                         width: double.infinity,
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2A2A2A),
+                          color: context.cardBg,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF464646)),
+                          border: Border.all(color: context.borderHeavy),
                         ),
                         child: Text(
                           controller.chapterSetHuntHint,
-                          style: const TextStyle(fontSize: 12, color: Color(0xFFD4D4D4)),
+                          style: TextStyle(fontSize: 12, color: context.textPrimary),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -2923,10 +3443,10 @@ class _BottomMenu extends StatelessWidget {
                                 margin: const EdgeInsets.only(bottom: 8),
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: reached ? const Color(0xFF2D352D) : const Color(0xFF2A2A2A),
+                                  color: reached ? const Color(0xFF2D352D) : context.cardBg,
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
-                                    color: reached ? const Color(0xFF5E7A5E) : const Color(0xFF454545),
+                                    color: reached ? const Color(0xFF5E7A5E) : context.borderHeavy,
                                   ),
                                 ),
                                 child: Row(
@@ -2954,9 +3474,9 @@ class _BottomMenu extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: entry.ownedCount == entry.totalCount
                                       ? const Color(0xFF2D352D)
-                                      : const Color(0xFF2A2A2A),
+                                      : context.cardBg,
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: const Color(0xFF454545)),
+                                  border: Border.all(color: context.borderHeavy),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -2975,7 +3495,7 @@ class _BottomMenu extends StatelessWidget {
                                     const SizedBox(height: 4),
                                     Text(
                                       'Belohnung: +${entry.rewardGold} Gold, +${entry.rewardShards} Scherben',
-                                      style: const TextStyle(fontSize: 12, color: Color(0xFFCFCFCF)),
+                                      style: TextStyle(fontSize: 12, color: context.textPrimary),
                                     ),
                                     const SizedBox(height: 6),
                                     if (entry.rewardClaimed)
@@ -3062,7 +3582,7 @@ class _BottomMenu extends StatelessWidget {
 
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF1F1F1F),
+      backgroundColor: context.sheetBg,
       isScrollControlled: true,
       builder: (context) {
         return SafeArea(
@@ -3095,9 +3615,9 @@ class _BottomMenu extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: entry.claimed ? const Color(0xFF2D352D) : const Color(0xFF2A2A2A),
+                      color: entry.claimed ? const Color(0xFF2D352D) : context.cardBg,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF454545)),
+                      border: Border.all(color: context.borderHeavy),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3121,7 +3641,7 @@ class _BottomMenu extends StatelessWidget {
                         Text(
                           'Fortschritt ${entry.progress}/${def.target} | '
                           '+${def.rewardGold} Gold, +${def.rewardShards} Scherben',
-                          style: const TextStyle(fontSize: 12, color: Color(0xFFCFCFCF)),
+                          style: TextStyle(fontSize: 12, color: context.textPrimary),
                         ),
                         const SizedBox(height: 6),
                         if (entry.claimed)
@@ -3174,7 +3694,7 @@ class _BottomMenu extends StatelessWidget {
                                     }
                                   }
                                 : null,
-                            child: const Text('Alle verfuegbaren einsammeln'),
+                            child: const Text('Alle verfügbaren einsammeln'),
                           ),
                           ChoiceChip(
                             label: const Text('Alle'),
@@ -3256,7 +3776,7 @@ class _BottomMenu extends StatelessWidget {
 
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF1F1F1F),
+      backgroundColor: context.sheetBg,
       isScrollControlled: true,
       builder: (context) {
         return SafeArea(
@@ -3278,9 +3798,9 @@ class _BottomMenu extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2A2A2A),
+                      color: context.cardBg,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF474747)),
+                      border: Border.all(color: context.borderHeavy),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3380,7 +3900,7 @@ class _BottomMenu extends StatelessWidget {
                                     final ok = controller.refreshShopManually();
                                     if (!ok) {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Zu wenig Gold fuer Reroll.')),
+                                        const SnackBar(content: Text('Zu wenig Gold für Reroll.')),
                                       );
                                     }
                                     setModalState(() {});
@@ -3425,9 +3945,9 @@ class _BottomMenu extends StatelessWidget {
                             const Text('Angebote', style: TextStyle(fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),
                             if (offers.isEmpty)
-                              const Text(
+                              Text(
                                 'Keine Angebote in dieser Kategorie.',
-                                style: TextStyle(color: Color(0xFFC0C0C0)),
+                                style: TextStyle(color: context.textPrimary),
                               ),
                             if (!wide)
                               ...offers.map((offer) => shopCard(offer: offer))
@@ -3460,36 +3980,60 @@ class _BottomMenu extends StatelessWidget {
 }
 
 class _MenuButton extends StatelessWidget {
-  const _MenuButton({required this.iconPath, required this.label, required this.onTap});
+  const _MenuButton({
+    this.iconPath,
+    this.icon,
+    required this.label,
+    required this.onTap,
+    this.dense = false,
+  }) : assert(iconPath != null || icon != null);
 
-  final String iconPath;
+  final String? iconPath;
+  final IconData? icon;
   final String label;
   final VoidCallback onTap;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3),
+      padding: EdgeInsets.symmetric(horizontal: _rs(context, 3, min: 1.5)),
       child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(_rs(context, 10, min: 7)),
         onTap: onTap,
         child: Container(
-          height: 64,
+          height: _rs(context, dense ? 54 : 64, min: 48, max: 82),
           decoration: BoxDecoration(
-            color: const Color(0xFF2A2A2A),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFF454545)),
+            color: context.cardBg,
+            borderRadius: BorderRadius.circular(_rs(context, 10, min: 7)),
+            border: Border.all(color: context.borderHeavy),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _SvgIcon(path: iconPath, size: 20),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: const TextStyle(fontSize: 10, color: Color(0xFFD2D2D2)),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              if (iconPath != null)
+                _SvgIcon(path: iconPath!, size: _rs(context, dense ? 17 : 20, min: 14, max: 26))
+              else
+                Icon(
+                  icon,
+                  size: _rs(context, dense ? 17 : 20, min: 14, max: 26),
+                  color: context.textPrimary,
+                ),
+              SizedBox(height: _rs(context, 4, min: 2)),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: _rs(context, 4, min: 2)),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: _rs(context, dense ? 9 : 10, min: 8, max: 12),
+                      color: context.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ),
             ],
           ),
@@ -3497,6 +4041,230 @@ class _MenuButton extends StatelessWidget {
       ),
     );
   }
+}
+
+class _TutorialOverlay extends StatefulWidget {
+  const _TutorialOverlay({required this.controller, required this.onComplete});
+
+  final GameController controller;
+  final VoidCallback onComplete;
+
+  @override
+  State<_TutorialOverlay> createState() => _TutorialOverlayState();
+}
+
+class _TutorialOverlayState extends State<_TutorialOverlay> {
+  int _step = 0;
+
+  static const _steps = <_TutorialStep>[
+    _TutorialStep(
+      icon: Icons.waving_hand_rounded,
+      title: 'Willkommen bei Idle Forge!',
+      body: 'Du bist ein Schmied auf dem Weg zur Legende.\n\n'
+          'Besiege Monster, sammle Gold und schmiede mächtige Ausrüstung!',
+    ),
+    _TutorialStep(
+      icon: Icons.sports_martial_arts_rounded,
+      title: 'Kampf',
+      body: 'Dein Held kämpft automatisch gegen Monster.\n\n'
+          'Oben siehst du das aktuelle Kapitel und die Stage. '
+          'Besiege genug Gegner, um die nächste Stage zu erreichen.',
+    ),
+    _TutorialStep(
+      icon: Icons.flash_on_rounded,
+      title: 'Fähigkeiten',
+      body: 'Klappe den Fähigkeiten-Bereich im Kampfbildschirm auf.\n\n'
+          'Tippe auf eine Fähigkeit, um sie auszulösen. '
+          'Halte LANG gedrueckt, um den Auto-Modus zu aktivieren — '
+          'dann wird sie automatisch eingesetzt!',
+    ),
+    _TutorialStep(
+      icon: Icons.hardware_rounded,
+      title: 'Schmiede',
+      body: 'Im unteren Menue findest du die Schmiede.\n\n'
+          'Gib Hämmer aus, um zufällige Ausrüstung zu schmieden. '
+          'Bessere Items erhöhen deine Stärke!',
+    ),
+    _TutorialStep(
+      icon: Icons.local_drink_rounded,
+      title: 'Tränke',
+      body: 'Unter "Tränke" kannst du Heil- und Berserker-Tränke kaufen.\n\n'
+          'Heiltrank stellt HP wieder her, '
+          'Berserker-Trank erhoeht kurzzeitig deinen Schaden.',
+    ),
+    _TutorialStep(
+      icon: Icons.backpack_rounded,
+      title: 'Inventar & Ausrüstung',
+      body: 'Im Inventar siehst du all deine Items.\n\n'
+          'Rüste die stärksten aus, verkaufe den Rest für Gold '
+          'oder sperre wertvolle Stuecke vor dem Verkauf.',
+    ),
+    _TutorialStep(
+      icon: Icons.public_rounded,
+      title: 'Welt, Quests & Clan',
+      body: 'Welt: Meilensteine und Item-Set-Sammlung.\n'
+          'Quests: Erledige Aufgaben für Belohnungen.\n'
+          'Clan: Investiere Scherben in dauerhafte Boni.\n\n'
+          'Im Shop findest du taeglich wechselnde Angebote!',
+    ),
+    _TutorialStep(
+      icon: Icons.person_rounded,
+      title: 'Profil & Einstellungen',
+      body: 'Tippe oben links auf dein Profil, um deinen Namen zu aendern '
+          'und Einstellungen wie Dark Mode oder FPS anzupassen.\n\n'
+          'Viel Spass beim Schmieden!',
+    ),
+  ];
+
+  void _next() {
+    if (_step < _steps.length - 1) {
+      setState(() => _step++);
+    } else {
+      widget.onComplete();
+    }
+  }
+
+  void _skip() {
+    widget.onComplete();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final step = _steps[_step];
+    final isLast = _step == _steps.length - 1;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 420),
+            padding: const EdgeInsets.fromLTRB(24, 32, 24, 20),
+            decoration: BoxDecoration(
+              color: context.cardBg,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: context.cardBorder, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Step indicator
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_steps.length, (i) {
+                    return Container(
+                      width: i == _step ? 18 : 8,
+                      height: 8,
+                      margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+                        color: i == _step
+                            ? const Color(0xFFD4A44C)
+                            : i < _step
+                                ? const Color(0xFF8BAF85)
+                                : context.borderHeavy,
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 20),
+
+                // Icon
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFD4A44C).withValues(alpha: 0.15),
+                  ),
+                  child: Icon(
+                    step.icon,
+                    size: 44,
+                    color: const Color(0xFFD4A44C),
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // Title
+                Text(
+                  step.title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: context.textBright,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Body
+                Text(
+                  step.body,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: context.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Buttons
+                Row(
+                  children: [
+                    if (!isLast)
+                      TextButton(
+                        onPressed: _skip,
+                        child: Text(
+                          'Überspringen',
+                          style: TextStyle(color: context.textTertiary),
+                        ),
+                      ),
+                    const Spacer(),
+                    FilledButton(
+                      onPressed: _next,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFD4A44C),
+                        foregroundColor: const Color(0xFF1A1A1A),
+                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        isLast ? 'Los geht\'s!' : 'Weiter',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${_step + 1} / ${_steps.length}',
+                  style: TextStyle(fontSize: 12, color: context.textTertiary),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TutorialStep {
+  const _TutorialStep({required this.icon, required this.title, required this.body});
+
+  final IconData icon;
+  final String title;
+  final String body;
 }
 
 class _SvgIcon extends StatelessWidget {
@@ -3507,18 +4275,21 @@ class _SvgIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SvgPicture.asset(path, width: size, height: size, fit: BoxFit.contain);
+    final scaledSize = _rs(context, size, min: size * 0.78, max: size * 1.24);
+    return SvgPicture.asset(path, width: scaledSize, height: scaledSize, fit: BoxFit.contain);
   }
 }
 
 class _Runner extends StatelessWidget {
-  const _Runner();
+  const _Runner({this.size = 72});
+
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 72,
-      height: 72,
+      width: size,
+      height: size,
       alignment: Alignment.center,
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
@@ -3526,21 +4297,24 @@ class _Runner extends StatelessWidget {
           colors: [Color(0x554D4D4D), Color(0x00282828)],
         ),
       ),
-      child: const _SvgIcon(path: 'assets/icons/player.svg', size: 48),
+      child: _SvgIcon(path: 'assets/icons/player.svg', size: size * 0.67),
     );
   }
 }
 
 class _Enemy extends StatelessWidget {
-  const _Enemy({required this.isBoss});
+  const _Enemy({required this.isBoss, this.size});
 
   final bool isBoss;
+  final double? size;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedSize = size ?? (isBoss ? 82 : 70).toDouble();
+
     return Container(
-      width: isBoss ? 82 : 70,
-      height: isBoss ? 82 : 70,
+      width: resolvedSize,
+      height: resolvedSize,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
@@ -3550,7 +4324,7 @@ class _Enemy extends StatelessWidget {
               : const [Color(0x88555555), Color(0x00272727)],
         ),
       ),
-      child: _SvgIcon(path: 'assets/icons/enemy.svg', size: isBoss ? 56 : 48),
+      child: _SvgIcon(path: 'assets/icons/enemy.svg', size: resolvedSize * (isBoss ? 0.68 : 0.69)),
     );
   }
 }

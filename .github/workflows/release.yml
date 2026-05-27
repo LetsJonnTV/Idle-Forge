@@ -34,11 +34,14 @@ jobs:
       - name: Build APK
         run: flutter build apk --release
 
+      - name: Rename APK Artifact
+        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Idle-Forge-release.apk
+
       - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/Idle-Forge-release.apk
 
   build-windows:
     name: Build Windows
@@ -88,7 +91,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release-artifacts/android-apk/app-release.apk
+            release-artifacts/android-apk/Idle-Forge-release.apk
             release-artifacts/windows-build/idle_forge-windows.zip
           generate_release_notes: true
         env:
