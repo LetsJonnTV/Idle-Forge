@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'game/game_controller.dart';
@@ -16,8 +15,6 @@ import 'screens/coop_screen.dart';
 import 'screens/friends_screen.dart';
 import 'screens/leaderboard_screen.dart';
 import 'screens/pvp_screen.dart';
-import 'screens/coming_soon_screen.dart';
-import 'services/api_service.dart';
 import 'services/update_checker.dart';
 import 'services/update_installer.dart';
 
@@ -2266,6 +2263,12 @@ class _BottomMenu extends StatelessWidget {
               label: text.tr('menuAscension'),
               dense: dense,
               onTap: () => _showAscensionPanel(context, controller),
+            ),
+            _MenuButton(
+              icon: Icons.people_outline,
+              label: text.tr('friendsTitle'),
+              dense: dense,
+              onTap: () => _showSocialPanel(context, controller),
             ),
           ];
 
@@ -4899,6 +4902,81 @@ class _AscensionPathView extends StatelessWidget {
   }
 }
 
+Future<void> _showSocialPanel(BuildContext context, GameController controller) async {
+  final text = controller.text;
+  await showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: context.sheetBg,
+    isScrollControlled: true,
+    builder: (ctx) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                text.tr('friendsTitle'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              _SocialTile(
+                icon: Icons.person_outline,
+                label: text.tr('loginButton'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push<void>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AuthScreen(
+                        onLoggedIn: () => Navigator.pop(context),
+                        onSkip: () => Navigator.pop(context),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              _SocialTile(
+                icon: Icons.leaderboard_outlined,
+                label: text.tr('leaderboardTitle'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push<void>(context, MaterialPageRoute(builder: (_) => const LeaderboardScreen()));
+                },
+              ),
+              _SocialTile(
+                icon: Icons.people_outline,
+                label: text.tr('friendsTitle'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push<void>(context, MaterialPageRoute(builder: (_) => const FriendsScreen()));
+                },
+              ),
+              _SocialTile(
+                icon: Icons.sports_kabaddi_outlined,
+                label: text.tr('pvpTitle'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push<void>(context, MaterialPageRoute(builder: (_) => const PvpScreen()));
+                },
+              ),
+              _SocialTile(
+                icon: Icons.group_work_outlined,
+                label: text.tr('coopTitle'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push<void>(context, MaterialPageRoute(builder: (_) => const CoopScreen()));
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
 class _MenuButton extends StatelessWidget {
   const _MenuButton({
     this.iconPath,
@@ -4959,6 +5037,23 @@ class _MenuButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SocialTile extends StatelessWidget {
+  const _SocialTile({required this.icon, required this.label, required this.onTap});
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon, color: context.textPrimary),
+      title: Text(label),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
     );
   }
 }
