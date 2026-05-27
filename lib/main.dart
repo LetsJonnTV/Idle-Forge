@@ -1889,6 +1889,12 @@ class _BottomMenu extends StatelessWidget {
               dense: dense,
               onTap: () => _showRecipePanel(context, controller),
             ),
+            _MenuButton(
+              icon: Icons.account_tree_outlined,
+              label: text.tr('menuAscension'),
+              dense: dense,
+              onTap: () => _showAscensionPanel(context, controller),
+            ),
           ];
 
           if (!compact) {
@@ -4205,6 +4211,87 @@ class _BottomMenu extends StatelessWidget {
     );
   }
 
+  Future<void> _showAscensionPanel(BuildContext context, GameController controller) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.sheetBg,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: SizedBox(
+            height: _adaptiveSheetHeight(ctx, factor: 0.9, min: 500, max: 900),
+            child: StatefulBuilder(
+              builder: (context, setModalState) {
+                final text = controller.text;
+
+                return DefaultTabController(
+                  length: 3,
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    text.tr('ascensionTitle'),
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${text.tr("ascensionPoints")}: ${controller.ascensionPoints}',
+                                    style: TextStyle(color: context.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      TabBar(
+                        tabs: [
+                          Tab(text: text.tr('ascensionPathWarrior')),
+                          Tab(text: text.tr('ascensionPathSmith')),
+                          Tab(text: text.tr('ascensionPathRogue')),
+                        ],
+                      ),
+                      Expanded(
+                        child: TabBarView(
+                          children: [
+                            _AscensionPathView(
+                              path: AscensionPath.warrior,
+                              controller: controller,
+                              onRefresh: () => setModalState(() {}),
+                            ),
+                            _AscensionPathView(
+                              path: AscensionPath.smith,
+                              controller: controller,
+                              onRefresh: () => setModalState(() {}),
+                            ),
+                            _AscensionPathView(
+                              path: AscensionPath.rogue,
+                              controller: controller,
+                              onRefresh: () => setModalState(() {}),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _showRecipePanel(BuildContext context, GameController controller) async {
     await showModalBottomSheet<void>(
       context: context,
@@ -4265,6 +4352,139 @@ class _BottomMenu extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+class _AscensionPathView extends StatelessWidget {
+  const _AscensionPathView({
+    required this.path,
+    required this.controller,
+    required this.onRefresh,
+  });
+
+  final AscensionPath path;
+  final GameController controller;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = controller.text;
+    final nodes = GameController.ascensionNodes
+        .where((n) => n.path == path)
+        .toList();
+    nodes.sort((a, b) => a.tier.compareTo(b.tier));
+
+    if (controller.ascensionPoints == 0 && controller.unlockedAscensionNodes.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            text.tr('ascensionNoPoints'),
+            textAlign: TextAlign.center,
+            style: TextStyle(color: context.textSecondary),
+          ),
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: nodes.map((node) {
+        final isUnlocked = controller.unlockedAscensionNodes.contains(node.id);
+        final canUnlock = controller.canUnlockAscensionNode(node.id);
+        final name = controller.localeCode == 'de' ? node.nameDe : node.nameEn;
+        final desc = controller.localeCode == 'de' ? node.descDe : node.descEn;
+
+        return Container(
+          margin: EdgeInsets.only(
+            left: (node.tier - 1) * 16.0,
+            bottom: 8,
+          ),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: isUnlocked
+                ? const Color(0xFF1B5E20).withValues(alpha: 0.3)
+                : context.cardBg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isUnlocked
+                  ? const Color(0xFF4CAF50)
+                  : canUnlock
+                      ? const Color(0xFFFF9800).withValues(alpha: 0.7)
+                      : context.cardBorder,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    isUnlocked
+                        ? Icons.check_circle
+                        : canUnlock
+                            ? Icons.lock_open
+                            : Icons.lock,
+                    color: isUnlocked
+                        ? const Color(0xFF4CAF50)
+                        : canUnlock
+                            ? const Color(0xFFFF9800)
+                            : context.textTertiary,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: isUnlocked ? const Color(0xFF4CAF50) : context.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${node.cost} ${text.tr("ascensionPoints")}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: context.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 3),
+              Text(desc, style: TextStyle(fontSize: 12, color: context.textSecondary)),
+              if (node.requiredNodeId != null && !isUnlocked)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    '${text.tr("ascensionRequires")}: ${_getNodeName(node.requiredNodeId!, controller)}',
+                    style: const TextStyle(fontSize: 11, color: Colors.orange),
+                  ),
+                ),
+              if (canUnlock) ...[
+                const SizedBox(height: 6),
+                FilledButton.tonal(
+                  onPressed: () {
+                    controller.unlockAscensionNode(node.id);
+                    onRefresh();
+                  },
+                  child: Text(text.tr('ascensionUnlock')),
+                ),
+              ],
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  String _getNodeName(String nodeId, GameController controller) {
+    for (final node in GameController.ascensionNodes) {
+      if (node.id == nodeId) {
+        return controller.localeCode == 'de' ? node.nameDe : node.nameEn;
+      }
+    }
+    return nodeId;
   }
 }
 

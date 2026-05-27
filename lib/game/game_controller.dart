@@ -213,6 +213,8 @@ class GameController extends ChangeNotifier {
   final Set<ItemSet> claimedSetRewards = {};
   final Set<String> claimedAchievements = {};
   final Set<String> discoveredRecipes = {};
+  final Set<String> unlockedAscensionNodes = {};
+  int ascensionPoints = 0;
 
   EnemyState enemy = const EnemyState(
     name: 'Schleim',
@@ -322,6 +324,209 @@ class GameController extends ChangeNotifier {
       goldCost: 500,
       hammerCost: 30,
       dropChance: 0.0008,
+    ),
+  ];
+
+  static const List<AscensionNode> ascensionNodes = [
+    // === Krieger-Pfad ===
+    AscensionNode(
+      id: 'warrior_1_attack',
+      path: AscensionPath.warrior,
+      nameDe: 'Kampfkraft I',
+      nameEn: 'Combat Power I',
+      descDe: '+8% Angriffs-Schaden dauerhaft.',
+      descEn: '+8% attack damage permanently.',
+      cost: 1,
+      bonusType: AscensionBonusType.attackMultiplier,
+      bonusValue: 0.08,
+      requiredNodeId: null,
+      tier: 1,
+    ),
+    AscensionNode(
+      id: 'warrior_1_hp',
+      path: AscensionPath.warrior,
+      nameDe: 'Eisenhaut I',
+      nameEn: 'Iron Skin I',
+      descDe: '+10% maximale HP dauerhaft.',
+      descEn: '+10% max HP permanently.',
+      cost: 1,
+      bonusType: AscensionBonusType.hpMultiplier,
+      bonusValue: 0.1,
+      requiredNodeId: null,
+      tier: 1,
+    ),
+    AscensionNode(
+      id: 'warrior_2_attack',
+      path: AscensionPath.warrior,
+      nameDe: 'Kampfkraft II',
+      nameEn: 'Combat Power II',
+      descDe: '+12% Angriffs-Schaden dauerhaft.',
+      descEn: '+12% attack damage permanently.',
+      cost: 2,
+      bonusType: AscensionBonusType.attackMultiplier,
+      bonusValue: 0.12,
+      requiredNodeId: 'warrior_1_attack',
+      tier: 2,
+    ),
+    AscensionNode(
+      id: 'warrior_2_skill',
+      path: AscensionPath.warrior,
+      nameDe: 'Kampffokus',
+      nameEn: 'Combat Focus',
+      descDe: '-10% Skill-Cooldowns dauerhaft.',
+      descEn: '-10% skill cooldowns permanently.',
+      cost: 2,
+      bonusType: AscensionBonusType.skillCooldownReduction,
+      bonusValue: 0.1,
+      requiredNodeId: 'warrior_1_attack',
+      tier: 2,
+    ),
+    AscensionNode(
+      id: 'warrior_3_apex',
+      path: AscensionPath.warrior,
+      nameDe: 'Kriegsmeister',
+      nameEn: 'Warlord',
+      descDe: '+20% Angriff und +15% HP dauerhaft.',
+      descEn: '+20% attack and +15% HP permanently.',
+      cost: 3,
+      bonusType: AscensionBonusType.attackMultiplier,
+      bonusValue: 0.2,
+      requiredNodeId: 'warrior_2_attack',
+      tier: 3,
+    ),
+
+    // === Schmied-Pfad ===
+    AscensionNode(
+      id: 'smith_1_forge',
+      path: AscensionPath.smith,
+      nameDe: 'Schmiedemeister I',
+      nameEn: 'Master Smith I',
+      descDe: '+3% Schmiedechance dauerhaft.',
+      descEn: '+3% forge chance permanently.',
+      cost: 1,
+      bonusType: AscensionBonusType.forgeBonusChance,
+      bonusValue: 0.03,
+      requiredNodeId: null,
+      tier: 1,
+    ),
+    AscensionNode(
+      id: 'smith_1_hammer',
+      path: AscensionPath.smith,
+      nameDe: 'Hammer-Kult I',
+      nameEn: 'Hammer Cult I',
+      descDe: '+15% Hammer-Drop-Chance.',
+      descEn: '+15% hammer drop chance.',
+      cost: 1,
+      bonusType: AscensionBonusType.hammerDropChance,
+      bonusValue: 0.15,
+      requiredNodeId: null,
+      tier: 1,
+    ),
+    AscensionNode(
+      id: 'smith_2_forge',
+      path: AscensionPath.smith,
+      nameDe: 'Schmiedemeister II',
+      nameEn: 'Master Smith II',
+      descDe: '+5% Schmiedechance dauerhaft.',
+      descEn: '+5% forge chance permanently.',
+      cost: 2,
+      bonusType: AscensionBonusType.forgeBonusChance,
+      bonusValue: 0.05,
+      requiredNodeId: 'smith_1_forge',
+      tier: 2,
+    ),
+    AscensionNode(
+      id: 'smith_2_power',
+      path: AscensionPath.smith,
+      nameDe: 'Item-Meister',
+      nameEn: 'Item Master',
+      descDe: '+5 Bonus-Power auf alle gecrafteten Items.',
+      descEn: '+5 bonus power on all crafted items.',
+      cost: 2,
+      bonusType: AscensionBonusType.itemPowerBonus,
+      bonusValue: 5,
+      requiredNodeId: 'smith_1_forge',
+      tier: 2,
+    ),
+    AscensionNode(
+      id: 'smith_3_apex',
+      path: AscensionPath.smith,
+      nameDe: 'Legenden-Schmied',
+      nameEn: 'Legendary Smith',
+      descDe: '+8% Schmiedechance und +10 Item-Power dauerhaft.',
+      descEn: '+8% forge chance and +10 item power permanently.',
+      cost: 3,
+      bonusType: AscensionBonusType.forgeBonusChance,
+      bonusValue: 0.08,
+      requiredNodeId: 'smith_2_forge',
+      tier: 3,
+    ),
+
+    // === Schurken-Pfad ===
+    AscensionNode(
+      id: 'rogue_1_gold',
+      path: AscensionPath.rogue,
+      nameDe: 'Gold-Gier I',
+      nameEn: 'Gold Greed I',
+      descDe: '+10% Gold aus allen Quellen dauerhaft.',
+      descEn: '+10% gold from all sources permanently.',
+      cost: 1,
+      bonusType: AscensionBonusType.goldMultiplier,
+      bonusValue: 0.1,
+      requiredNodeId: null,
+      tier: 1,
+    ),
+    AscensionNode(
+      id: 'rogue_1_drop',
+      path: AscensionPath.rogue,
+      nameDe: 'Beute-Spezialist I',
+      nameEn: 'Loot Specialist I',
+      descDe: '+20% Drop-Rate für Items und Rezepte.',
+      descEn: '+20% drop rate for items and recipes.',
+      cost: 1,
+      bonusType: AscensionBonusType.dropRateBonus,
+      bonusValue: 0.2,
+      requiredNodeId: null,
+      tier: 1,
+    ),
+    AscensionNode(
+      id: 'rogue_2_gold',
+      path: AscensionPath.rogue,
+      nameDe: 'Gold-Gier II',
+      nameEn: 'Gold Greed II',
+      descDe: '+15% Gold aus allen Quellen dauerhaft.',
+      descEn: '+15% gold from all sources permanently.',
+      cost: 2,
+      bonusType: AscensionBonusType.goldMultiplier,
+      bonusValue: 0.15,
+      requiredNodeId: 'rogue_1_gold',
+      tier: 2,
+    ),
+    AscensionNode(
+      id: 'rogue_2_offline',
+      path: AscensionPath.rogue,
+      nameDe: 'Schattenwirtschaft',
+      nameEn: 'Shadow Economy',
+      descDe: '+25% Offline-Belohnungen dauerhaft.',
+      descEn: '+25% offline rewards permanently.',
+      cost: 2,
+      bonusType: AscensionBonusType.offlineRewardMultiplier,
+      bonusValue: 0.25,
+      requiredNodeId: 'rogue_1_gold',
+      tier: 2,
+    ),
+    AscensionNode(
+      id: 'rogue_3_apex',
+      path: AscensionPath.rogue,
+      nameDe: 'Meisterdieb',
+      nameEn: 'Master Thief',
+      descDe: '+20% Gold, +30% Drop-Rate und +30% Offline dauerhaft.',
+      descEn: '+20% gold, +30% drop rate and +30% offline permanently.',
+      cost: 3,
+      bonusType: AscensionBonusType.goldMultiplier,
+      bonusValue: 0.2,
+      requiredNodeId: 'rogue_2_gold',
+      tier: 3,
     ),
   ];
 
@@ -735,7 +940,7 @@ class GameController extends ChangeNotifier {
   double get maxPlayerHp {
     final base = 140 + (totalStrength * 2.4);
     final prestigeBoost = 1 + (prestigeLevel * 0.03) + (talentVitalityLevel * 0.08);
-    return base * prestigeBoost * setHpBonusMultiplier;
+    return base * prestigeBoost * setHpBonusMultiplier * ascensionHpMultiplier;
   }
 
   double get playerHpPercent {
@@ -748,7 +953,9 @@ class GameController extends ChangeNotifier {
   int get forgeUpgradeCost => 40 + (forgeLevel + 1) * 35;
 
   double get prestigeDamageBonus =>
-      (1 + (prestigeLevel * 0.08) + (talentAttackLevel * 0.06)) * clanDamageBonusMultiplier;
+      (1 + (prestigeLevel * 0.08) + (talentAttackLevel * 0.06)) *
+      clanDamageBonusMultiplier *
+      ascensionAttackMultiplier;
 
   double get prestigeForgeBonus => (prestigeLevel * 0.01).clamp(0, 0.2);
 
@@ -756,8 +963,63 @@ class GameController extends ChangeNotifier {
       (forgeLevel * 0.018 +
           prestigeForgeBonus +
           (talentForgeLevel * 0.008) +
-          setForgeBonus)
+          setForgeBonus +
+          ascensionForgeBonusChance)
         .clamp(0, 0.65);
+
+  double get ascensionAttackMultiplier {
+    return 1.0 + _sumAscensionBonus(AscensionBonusType.attackMultiplier);
+  }
+
+  double get ascensionHpMultiplier {
+    return 1.0 + _sumAscensionBonus(AscensionBonusType.hpMultiplier);
+  }
+
+  double get ascensionSkillCooldownReduction {
+    return _sumAscensionBonus(AscensionBonusType.skillCooldownReduction).clamp(0, 0.5);
+  }
+
+  double get ascensionForgeBonusChance {
+    return _sumAscensionBonus(AscensionBonusType.forgeBonusChance).clamp(0, 0.25);
+  }
+
+  double get ascensionHammerDropChance {
+    return _sumAscensionBonus(AscensionBonusType.hammerDropChance).clamp(0, 0.5);
+  }
+
+  int get ascensionItemPowerBonus {
+    return _sumAscensionBonus(AscensionBonusType.itemPowerBonus).round();
+  }
+
+  double get ascensionGoldMultiplier {
+    return 1.0 + _sumAscensionBonus(AscensionBonusType.goldMultiplier);
+  }
+
+  double get ascensionDropRateBonus {
+    return _sumAscensionBonus(AscensionBonusType.dropRateBonus).clamp(0, 0.8);
+  }
+
+  double get ascensionOfflineMultiplier {
+    return 1.0 + _sumAscensionBonus(AscensionBonusType.offlineRewardMultiplier);
+  }
+
+  double _sumAscensionBonus(AscensionBonusType type) {
+    double total = 0;
+    for (final nodeId in unlockedAscensionNodes) {
+      final node = _findAscensionNode(nodeId);
+      if (node != null && node.bonusType == type) {
+        total += node.bonusValue;
+      }
+    }
+    return total;
+  }
+
+  AscensionNode? _findAscensionNode(String nodeId) {
+    for (final node in ascensionNodes) {
+      if (node.id == nodeId) return node;
+    }
+    return null;
+  }
 
   String get autoSellLabel {
     if (!autoSellEnabled) {
@@ -2327,6 +2589,7 @@ class GameController extends ChangeNotifier {
     final gained = prestigeShardGain;
     forgeShards += _scaledShardReward(gained);
     prestigeLevel += gained;
+    ascensionPoints += gained;
     _gainClanXp(40 + (gained * 2));
 
     gold = 60;
@@ -2478,7 +2741,30 @@ class GameController extends ChangeNotifier {
   }
 
   int _scaledGoldReward(int base) {
-    return max(1, (base * clanGoldBonusMultiplier).round());
+    return max(1, (base * clanGoldBonusMultiplier * ascensionGoldMultiplier).round());
+  }
+
+  bool canUnlockAscensionNode(String nodeId) {
+    if (unlockedAscensionNodes.contains(nodeId)) return false;
+    final node = _findAscensionNode(nodeId);
+    if (node == null) return false;
+    if (ascensionPoints < node.cost) return false;
+    if (node.requiredNodeId != null && !unlockedAscensionNodes.contains(node.requiredNodeId)) {
+      return false;
+    }
+    return true;
+  }
+
+  bool unlockAscensionNode(String nodeId) {
+    if (!canUnlockAscensionNode(nodeId)) return false;
+    final node = _findAscensionNode(nodeId);
+    if (node == null) return false;
+
+    ascensionPoints -= node.cost;
+    unlockedAscensionNodes.add(nodeId);
+    _save();
+    notifyListeners();
+    return true;
   }
 
   int _scaledShardReward(int base) {
@@ -3256,6 +3542,11 @@ class GameController extends ChangeNotifier {
     discoveredRecipes
       ..clear()
       ..addAll((map['discoveredRecipes'] as List<dynamic>? ?? []).cast<String>());
+
+    ascensionPoints = map['ascensionPoints'] as int? ?? 0;
+    unlockedAscensionNodes
+      ..clear()
+      ..addAll((map['unlockedAscensionNodes'] as List<dynamic>? ?? []).cast<String>());
   }
 
   void _applyOfflineReward(DateTime lastActive) {
@@ -3270,7 +3561,8 @@ class GameController extends ChangeNotifier {
     final earnedGold = (estimatedKills *
             (6 + chapter) *
             tuning.offlineRewardMultiplier *
-            clanGoldBonusMultiplier)
+            clanGoldBonusMultiplier *
+            ascensionOfflineMultiplier)
         .round();
     final earnedHammers = estimatedKills;
 
@@ -3514,6 +3806,8 @@ class GameController extends ChangeNotifier {
           .map((e) => e?.toJson())
           .toList(growable: false),
       'discoveredRecipes': discoveredRecipes.toList(growable: false),
+      'unlockedAscensionNodes': unlockedAscensionNodes.toList(growable: false),
+      'ascensionPoints': ascensionPoints,
     };
 
     await prefs.setString(_saveKey, jsonEncode(map));

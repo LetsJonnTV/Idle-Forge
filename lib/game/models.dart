@@ -500,3 +500,45 @@ class CraftingRecipe {
   final int hammerCost;
   final double dropChance;
 }
+
+enum AscensionPath { warrior, smith, rogue }
+
+enum AscensionBonusType {
+  attackMultiplier,
+  hpMultiplier,
+  skillCooldownReduction,
+  forgeBonusChance,
+  hammerDropChance,
+  itemPowerBonus,
+  goldMultiplier,
+  dropRateBonus,
+  offlineRewardMultiplier,
+}
+
+class AscensionNode {
+  const AscensionNode({
+    required this.id,
+    required this.path,
+    required this.nameDe,
+    required this.nameEn,
+    required this.descDe,
+    required this.descEn,
+    required this.cost,
+    required this.bonusType,
+    required this.bonusValue,
+    this.requiredNodeId,
+    required this.tier,
+  });
+
+  final String id;
+  final AscensionPath path;
+  final String nameDe;
+  final String nameEn;
+  final String descDe;
+  final String descEn;
+  final int cost;
+  final AscensionBonusType bonusType;
+  final double bonusValue;
+  final String? requiredNodeId;
+  final int tier;
+}
