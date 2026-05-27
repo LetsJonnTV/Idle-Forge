@@ -69,7 +69,6 @@ class AppText {
       'dungeonComplete': 'Dungeon abgeschlossen!',
       'dungeonNotEnoughEnergy': 'Nicht genug Energie.',
       'later': 'Später',
-<<<<<<< HEAD
       'menuExpedition': 'Expedition',
       'expeditionTitle': 'Expeditionen',
       'expeditionSlot': 'Slot',
@@ -133,7 +132,6 @@ class AppText {
       'equipDiffSame': 'Gleiche Power',
       'setBonusActive': 'Set-Bonus aktiv',
       'setBonusNone': 'Kein Set-Bonus',
-<<<<<<< HEAD
       'pet': 'Begleiter',
       'petTitle': 'Begleiter',
       'petNone': 'Kein Begleiter. Wähle einen aus!',
@@ -265,7 +263,6 @@ class AppText {
       'dungeonComplete': 'Dungeon complete!',
       'dungeonNotEnoughEnergy': 'Not enough energy.',
       'later': 'Later',
-<<<<<<< HEAD
       'menuExpedition': 'Expedition',
       'expeditionTitle': 'Expeditions',
       'expeditionSlot': 'Slot',
@@ -329,7 +326,6 @@ class AppText {
       'equipDiffSame': 'Same power',
       'setBonusActive': 'Set bonus active',
       'setBonusNone': 'No set bonus',
-<<<<<<< HEAD
       'pet': 'Companion',
       'petTitle': 'Companion',
       'petNone': 'No companion. Choose one!',

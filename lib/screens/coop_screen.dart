@@ -160,7 +160,7 @@ class _CoopScreenState extends State<CoopScreen> {
             });
           },
         );
-      await _channel!.subscribe();
+      _channel!.subscribe();
     } catch (_) {
       // Realtime not available — fall back to polling only
     }

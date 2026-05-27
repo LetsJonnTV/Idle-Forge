@@ -121,4 +121,4 @@ ALTER TABLE coop_sessions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Public read players" ON players FOR SELECT USING (true);
 CREATE POLICY "Public read clans" ON clans FOR SELECT USING (true);
-CREATE POLICY "Public read leaderboard" ON leaderboard FOR SELECT USING (true);
+-- Note: leaderboard is a view on players; it inherits players' RLS policies.
