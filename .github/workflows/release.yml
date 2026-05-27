@@ -41,6 +41,9 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      - name: Inject Build Number
+        run: sed -i "s/^version: \(.*\)+.*/version: \1+${{ github.run_number }}/" pubspec.yaml
+
       - name: Build APK
         run: flutter build apk --release
 
@@ -79,6 +82,11 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      - name: Inject Build Number
+        shell: pwsh
+        run: |
+          (Get-Content pubspec.yaml) -replace '^(version: .+)\+\d+$', "`$1+${{ github.run_number }}" | Set-Content pubspec.yaml
+
       - name: Build Windows Release
         run: flutter build windows --release
 
@@ -110,6 +118,7 @@ jobs:
       - name: Create GitHub Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
+          prerelease: ${{ contains(github.ref_name, '-') }}
           files: |
             release-artifacts/android-apk/Idle-Forge-release.apk
             release-artifacts/windows-build/idle_forge-windows.zip
