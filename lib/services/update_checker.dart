@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -29,11 +30,27 @@ class UpdateChecker {
 
       if (latestVersion.isEmpty) return null;
 
+      // Extract platform-specific download URL from assets
+      String? downloadUrl;
+      final assets = json['assets'] as List<dynamic>? ?? [];
+      for (final asset in assets) {
+        final name = (asset['name'] as String? ?? '').toLowerCase();
+        final url = asset['browser_download_url'] as String? ?? '';
+        if (defaultTargetPlatform == TargetPlatform.android && name.endsWith('.apk')) {
+          downloadUrl = url;
+          break;
+        } else if (defaultTargetPlatform == TargetPlatform.windows && name.endsWith('.zip')) {
+          downloadUrl = url;
+          break;
+        }
+      }
+
       if (_isNewer(latestVersion, currentVersion)) {
         return UpdateInfo(
           currentVersion: currentVersion,
           latestVersion: latestVersion,
           releaseUrl: htmlUrl,
+          downloadUrl: downloadUrl,
         );
       }
       return null;
@@ -63,9 +80,11 @@ class UpdateInfo {
     required this.currentVersion,
     required this.latestVersion,
     required this.releaseUrl,
+    this.downloadUrl,
   });
 
   final String currentVersion;
   final String latestVersion;
   final String releaseUrl;
+  final String? downloadUrl;
 }

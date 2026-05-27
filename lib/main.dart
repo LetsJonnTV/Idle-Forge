@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'game/game_controller.dart';
 import 'game/models.dart';
 import 'services/update_checker.dart';
+import 'services/update_installer.dart';
 
 const bool devMode = bool.fromEnvironment('DEV_MODE', defaultValue: false);
 
@@ -164,31 +165,11 @@ class _IdleForgeAppState extends State<IdleForgeApp> {
         if (!mounted) return;
         showDialog<void>(
           context: context,
-          builder: (context) {
-            final message = controller.text
-                .tr('newVersionMessage')
-                .replaceAll('{version}', updateInfo.latestVersion);
-            return AlertDialog(
-              title: Text(controller.text.tr('newVersionAvailable')),
-              content: Text(message),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(controller.text.tr('later')),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    Navigator.of(context).pop();
-                    final uri = Uri.parse(updateInfo.releaseUrl);
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                    }
-                  },
-                  child: Text(controller.text.tr('download')),
-                ),
-              ],
-            );
-          },
+          barrierDismissible: false,
+          builder: (context) => _UpdateDialog(
+            updateInfo: updateInfo,
+            controller: controller,
+          ),
         );
       });
     }
@@ -4040,6 +4021,114 @@ class _MenuButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Update Dialog with download progress
+// ---------------------------------------------------------------------------
+
+class _UpdateDialog extends StatefulWidget {
+  const _UpdateDialog({required this.updateInfo, required this.controller});
+
+  final UpdateInfo updateInfo;
+  final GameController controller;
+
+  @override
+  State<_UpdateDialog> createState() => _UpdateDialogState();
+}
+
+class _UpdateDialogState extends State<_UpdateDialog> {
+  bool _downloading = false;
+  double _progress = 0.0;
+  String? _error;
+
+  @override
+  Widget build(BuildContext context) {
+    final message = widget.controller.text
+        .tr('newVersionMessage')
+        .replaceAll('{version}', widget.updateInfo.latestVersion);
+
+    return AlertDialog(
+      title: Text(widget.controller.text.tr('newVersionAvailable')),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(message),
+          if (_downloading) ...[
+            const SizedBox(height: 16),
+            LinearProgressIndicator(value: _progress > 0 ? _progress : null),
+            const SizedBox(height: 8),
+            Text(
+              '${(_progress * 100).toStringAsFixed(0)}%',
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+          ],
+        ],
+      ),
+      actions: _downloading
+          ? []
+          : [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(widget.controller.text.tr('later')),
+              ),
+              if (widget.updateInfo.downloadUrl != null)
+                FilledButton(
+                  onPressed: _startUpdate,
+                  child: const Text('Aktualisieren'),
+                )
+              else
+                TextButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    final uri = Uri.parse(widget.updateInfo.releaseUrl);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  child: Text(widget.controller.text.tr('download')),
+                ),
+            ],
+    );
+  }
+
+  Future<void> _startUpdate() async {
+    setState(() {
+      _downloading = true;
+      _progress = 0.0;
+      _error = null;
+    });
+
+    final filePath = await UpdateInstaller.download(
+      widget.updateInfo.downloadUrl!,
+      onProgress: (p) {
+        if (mounted) setState(() => _progress = p);
+      },
+    );
+
+    if (filePath == null) {
+      if (mounted) {
+        setState(() {
+          _downloading = false;
+          _error = 'Download fehlgeschlagen. Bitte erneut versuchen.';
+        });
+      }
+      return;
+    }
+
+    final success = await UpdateInstaller.install(filePath);
+    if (!success && mounted) {
+      setState(() {
+        _downloading = false;
+        _error = 'Installation fehlgeschlagen.';
+      });
+    }
   }
 }
 

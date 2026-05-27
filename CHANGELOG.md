@@ -10,16 +10,20 @@ All notable changes to Idle Forge are documented here.
 - Auto-Skill Sichtbarkeit: aktive Auto-Skills als grüner Subtitle im Kampf-Panel,
   Hinweistext „Lang drücken für Auto-Aktivierung"
 - Settings-Panel (Zahnrad-Icon) mit App-Version und Bug-Report-Link nun theme-aware
+- In-App Auto-Update: App lädt APK/ZIP direkt herunter und installiert sich selbst
+  (Fortschrittsanzeige im Dialog, Android APK-Install via FileProvider, Windows Batch-Update-Script)
 
 ### Changed
 - Komplettes Dark/Light-Mode-System: `_AppColors`-Extension mit 14 semantischen Farb-Gettern,
   ~120 hardcodierte Farben ersetzt — alle Panels, Sheets und Cards reagieren auf ThemeMode
 - Alle deutschen Texte verwenden nun korrekte Umlaute (ä/ö/ü) statt ae/oe/ue (36 Ersetzungen)
+- Update-Dialog zeigt jetzt „Aktualisieren"-Button mit Download-Fortschritt statt nur Browser-Link
 
 ### Fixed
 - Spielername wird beim Schließen des Profil-Sheets (Swipe-Down) automatisch gespeichert
 - TextEditingController-Crash behoben: Controller wird nicht mehr manuell disposed,
   verhindert kaskadierende Exceptions bei Sheet-Close-Animation
+- Bug-Report-Button funktioniert jetzt auf Android 11+ (fehlende `<queries>` für https-Scheme)
 
 ## [1.0.1] - 2026-05-26
 
