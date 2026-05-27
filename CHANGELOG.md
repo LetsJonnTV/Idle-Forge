@@ -2,7 +2,7 @@
 
 All notable changes to Idle Forge are documented here.
 
-## [1.0.4] - 2026-05-27
+## [2.0.0] - 2026-05-27
 
 ### Added
 - **Dungeon-System**: Mehrstufige Instanzen mit 3 Schwierigkeiten (Normal/Hard/Nightmare), 5 Stages pro Run, Boss-HP-Balken, garantierter Legendary-Reward auf Stage 5, Energie-Regeneration (1 Energie alle 30 Min.)
