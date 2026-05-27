@@ -3974,8 +3974,9 @@ class GameController extends ChangeNotifier {
   bool claimExpeditionReward(int slotIndex) {
     if (slotIndex < 0 || slotIndex >= expeditionSlotCount) return false;
     final expedition = expeditionSlots[slotIndex];
-    if (expedition == null || !expedition.isComplete || expedition.claimed)
+    if (expedition == null || !expedition.isComplete || expedition.claimed) {
       return false;
+    }
 
     final def = expeditionDefinitions.firstWhere(
       (d) => d.id == expedition.expeditionId,
