@@ -1877,6 +1877,12 @@ class _BottomMenu extends StatelessWidget {
               dense: dense,
               onTap: () => _showDungeonPanel(context, controller),
             ),
+            _MenuButton(
+              icon: Icons.explore_outlined,
+              label: text.tr('menuExpedition'),
+              dense: dense,
+              onTap: () => _showExpeditionPanel(context, controller),
+            ),
           ];
 
           if (!compact) {
@@ -4148,6 +4154,50 @@ class _BottomMenu extends StatelessWidget {
       DungeonDifficulty.nightmare => text.tr('dungeonDiffNightmare'),
     };
   }
+
+  Future<void> _showExpeditionPanel(BuildContext context, GameController controller) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.sheetBg,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: SizedBox(
+            height: _adaptiveSheetHeight(ctx, factor: 0.85, min: 450, max: 900),
+            child: StatefulBuilder(
+              builder: (context, setModalState) {
+                final text = controller.text;
+
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Text(
+                      text.tr('expeditionTitle'),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Sende Helden auf Expeditionen für Belohnungen.',
+                      style: TextStyle(color: context.textSecondary, fontSize: 12),
+                    ),
+                    const SizedBox(height: 16),
+                    for (int i = 0; i < GameController.expeditionSlotCount; i++) ...[
+                      _ExpeditionSlotCard(
+                        slotIndex: i,
+                        controller: controller,
+                        onRefresh: () => setModalState(() {}),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _MenuButton extends StatelessWidget {
@@ -4681,6 +4731,146 @@ class _DifficultyCard extends StatelessWidget {
           FilledButton.tonal(
             onPressed: canStart ? onStart : null,
             child: Text(text.tr('dungeonStart')),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExpeditionSlotCard extends StatefulWidget {
+  const _ExpeditionSlotCard({
+    required this.slotIndex,
+    required this.controller,
+    required this.onRefresh,
+  });
+
+  final int slotIndex;
+  final GameController controller;
+  final VoidCallback onRefresh;
+
+  @override
+  State<_ExpeditionSlotCard> createState() => _ExpeditionSlotCardState();
+}
+
+class _ExpeditionSlotCardState extends State<_ExpeditionSlotCard> {
+  String? _selectedExpeditionId;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = widget.controller.text;
+    final expedition = widget.controller.expeditionSlots[widget.slotIndex];
+
+    if (expedition != null && !expedition.claimed) {
+      final def = GameController.expeditionDefinitions.firstWhere(
+        (d) => d.id == expedition.expeditionId,
+        orElse: () => GameController.expeditionDefinitions.first,
+      );
+      final isComplete = expedition.isComplete;
+      final remaining = expedition.remaining;
+
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: context.cardBg,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isComplete ? const Color(0xFF4CAF50) : context.cardBorder,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isComplete ? Icons.check_circle : Icons.explore,
+                  color: isComplete ? const Color(0xFF4CAF50) : context.iconColor,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    def.nameDe,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Text(
+                  '${def.durationHours}${text.tr("expeditionHours")}',
+                  style: TextStyle(color: context.textSecondary, fontSize: 12),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            if (!isComplete)
+              Text(
+                '${text.tr("expeditionInProgress")} — '
+                '${remaining.inHours}h ${remaining.inMinutes.remainder(60)}m',
+                style: TextStyle(color: context.textSecondary, fontSize: 12),
+              ),
+            if (isComplete)
+              Text(
+                text.tr('expeditionComplete'),
+                style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 12),
+              ),
+            const SizedBox(height: 8),
+            if (isComplete)
+              FilledButton.tonal(
+                onPressed: () {
+                  widget.controller.claimExpeditionReward(widget.slotIndex);
+                  widget.onRefresh();
+                },
+                child: Text(text.tr('expeditionClaim')),
+              ),
+          ],
+        ),
+      );
+    }
+
+    if (expedition != null && expedition.claimed) {
+      widget.controller.clearExpeditionSlot(widget.slotIndex);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: context.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${text.tr("expeditionSlot")} ${widget.slotIndex + 1}',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          DropdownButton<String>(
+            value: _selectedExpeditionId,
+            hint: Text(text.tr('expeditionEmpty'), style: const TextStyle(fontSize: 12)),
+            isExpanded: true,
+            items: GameController.expeditionDefinitions.map((def) {
+              return DropdownMenuItem<String>(
+                value: def.id,
+                child: Text(
+                  '${def.nameDe} (${def.durationHours}h)',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              );
+            }).toList(),
+            onChanged: (value) => setState(() => _selectedExpeditionId = value),
+          ),
+          const SizedBox(height: 6),
+          FilledButton.tonal(
+            onPressed: _selectedExpeditionId != null
+                ? () {
+                    widget.controller.startExpedition(widget.slotIndex, _selectedExpeditionId!);
+                    setState(() => _selectedExpeditionId = null);
+                    widget.onRefresh();
+                  }
+                : null,
+            child: Text(text.tr('expeditionStart')),
           ),
         ],
       ),

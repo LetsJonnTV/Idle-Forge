@@ -69,6 +69,15 @@ class AppText {
       'dungeonComplete': 'Dungeon abgeschlossen!',
       'dungeonNotEnoughEnergy': 'Nicht genug Energie.',
       'later': 'Später',
+      'menuExpedition': 'Expedition',
+      'expeditionTitle': 'Expeditionen',
+      'expeditionSlot': 'Slot',
+      'expeditionStart': 'Senden',
+      'expeditionClaim': 'Belohnung',
+      'expeditionComplete': 'Abgeschlossen',
+      'expeditionInProgress': 'Unterwegs',
+      'expeditionEmpty': 'Leer — Expedition starten',
+      'expeditionHours': 'h',
     },
     'en': {
       'appTitle': 'Idle Forge',
@@ -133,6 +142,15 @@ class AppText {
       'dungeonComplete': 'Dungeon complete!',
       'dungeonNotEnoughEnergy': 'Not enough energy.',
       'later': 'Later',
+      'menuExpedition': 'Expedition',
+      'expeditionTitle': 'Expeditions',
+      'expeditionSlot': 'Slot',
+      'expeditionStart': 'Send',
+      'expeditionClaim': 'Claim',
+      'expeditionComplete': 'Complete',
+      'expeditionInProgress': 'In Progress',
+      'expeditionEmpty': 'Empty — Start expedition',
+      'expeditionHours': 'h',
     }
   };
 

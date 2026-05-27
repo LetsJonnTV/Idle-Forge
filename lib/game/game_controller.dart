@@ -224,6 +224,8 @@ class GameController extends ChangeNotifier {
   OfflineReward? lastOfflineReward;
   BalanceTuning tuning = const BalanceTuning();
 
+  final List<ActiveExpedition?> expeditionSlots = [null, null, null];
+
   double _autoAttackAccumulator = 0;
   double _enemyAttackAccumulator = 0;
   double _bossSpecialAccumulator = 0;
@@ -237,6 +239,83 @@ class GameController extends ChangeNotifier {
   String lastCombatEvent = '';
 
   static const _saveKey = 'idle_forge.save.v1';
+
+  static const int expeditionSlotCount = 3;
+
+  static const List<ExpeditionDefinition> expeditionDefinitions = [
+    ExpeditionDefinition(
+      id: 'hunt_1h',
+      type: ExpeditionType.hunt,
+      name: 'Kurze Jagd',
+      nameDe: 'Kurze Jagd',
+      nameEn: 'Quick Hunt',
+      durationHours: 1,
+      baseGold: 80,
+      baseHammers: 8,
+      baseShards: 0,
+      itemDropChance: 0.3,
+    ),
+    ExpeditionDefinition(
+      id: 'scavenge_1h',
+      type: ExpeditionType.scavenge,
+      name: 'Plünderung',
+      nameDe: 'Plünderung',
+      nameEn: 'Scavenge Run',
+      durationHours: 1,
+      baseGold: 120,
+      baseHammers: 4,
+      baseShards: 1,
+      itemDropChance: 0.2,
+    ),
+    ExpeditionDefinition(
+      id: 'hunt_4h',
+      type: ExpeditionType.hunt,
+      name: 'Große Jagd',
+      nameDe: 'Große Jagd',
+      nameEn: 'Grand Hunt',
+      durationHours: 4,
+      baseGold: 380,
+      baseHammers: 35,
+      baseShards: 2,
+      itemDropChance: 0.55,
+    ),
+    ExpeditionDefinition(
+      id: 'raid_4h',
+      type: ExpeditionType.raid,
+      name: 'Überfall',
+      nameDe: 'Überfall',
+      nameEn: 'Raid',
+      durationHours: 4,
+      baseGold: 280,
+      baseHammers: 25,
+      baseShards: 4,
+      itemDropChance: 0.45,
+    ),
+    ExpeditionDefinition(
+      id: 'expedition_12h',
+      type: ExpeditionType.scavenge,
+      name: 'Große Expedition',
+      nameDe: 'Große Expedition',
+      nameEn: 'Grand Expedition',
+      durationHours: 12,
+      baseGold: 1200,
+      baseHammers: 100,
+      baseShards: 10,
+      itemDropChance: 0.85,
+    ),
+    ExpeditionDefinition(
+      id: 'raid_12h',
+      type: ExpeditionType.raid,
+      name: 'Großer Überfall',
+      nameDe: 'Großer Überfall',
+      nameEn: 'Grand Raid',
+      durationHours: 12,
+      baseGold: 900,
+      baseHammers: 80,
+      baseShards: 15,
+      itemDropChance: 0.8,
+    ),
+  ];
 
   static const List<SkillDefinition> _definitions = [
     SkillDefinition(
@@ -3079,6 +3158,16 @@ class GameController extends ChangeNotifier {
     if (lastActiveMillis != null) {
       _applyOfflineReward(DateTime.fromMillisecondsSinceEpoch(lastActiveMillis));
     }
+
+    final expeditionSlotsJson = (map['expeditionSlots'] as List<dynamic>? ?? []);
+    for (int i = 0; i < expeditionSlotsJson.length && i < 3; i++) {
+      final slotJson = expeditionSlotsJson[i];
+      if (slotJson != null) {
+        expeditionSlots[i] = ActiveExpedition.fromJson(
+          Map<String, dynamic>.from(slotJson as Map),
+        );
+      }
+    }
   }
 
   void _applyOfflineReward(DateTime lastActive) {
@@ -3107,6 +3196,71 @@ class GameController extends ChangeNotifier {
       minutes: clampedMinutes,
     );
   }
+
+  bool startExpedition(int slotIndex, String expeditionId) {
+    if (slotIndex < 0 || slotIndex >= expeditionSlotCount) return false;
+    if (expeditionSlots[slotIndex] != null && !expeditionSlots[slotIndex]!.claimed) {
+      if (!expeditionSlots[slotIndex]!.isComplete) return false;
+    }
+
+    final def = expeditionDefinitions.firstWhere(
+      (d) => d.id == expeditionId,
+      orElse: () => expeditionDefinitions.first,
+    );
+
+    final completesAt = DateTime.now().add(Duration(hours: def.durationHours));
+    expeditionSlots[slotIndex] = ActiveExpedition(
+      slotIndex: slotIndex,
+      expeditionId: expeditionId,
+      completesAt: completesAt,
+    );
+
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  bool claimExpeditionReward(int slotIndex) {
+    if (slotIndex < 0 || slotIndex >= expeditionSlotCount) return false;
+    final expedition = expeditionSlots[slotIndex];
+    if (expedition == null || !expedition.isComplete || expedition.claimed) return false;
+
+    final def = expeditionDefinitions.firstWhere(
+      (d) => d.id == expedition.expeditionId,
+      orElse: () => expeditionDefinitions.first,
+    );
+
+    final progression = 1 + (chapter ~/ 2) + (prestigeLevel ~/ 5);
+    gold += _scaledGoldReward((def.baseGold * progression / 2).round());
+    hammers += (def.baseHammers * progression / 2).round();
+    if (def.baseShards > 0) {
+      forgeShards += _scaledShardReward((def.baseShards * progression / 3).round());
+    }
+
+    if (_random.nextDouble() < def.itemDropChance) {
+      final tier = _random.nextDouble() < 0.2 ? ItemTier.rare : ItemTier.uncommon;
+      final item = _craftItemWithTier(tier);
+      inventory.add(item);
+    }
+
+    expedition.claimed = true;
+    _gainClanXp(8 + def.durationHours);
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  void clearExpeditionSlot(int slotIndex) {
+    if (slotIndex < 0 || slotIndex >= expeditionSlotCount) return;
+    final expedition = expeditionSlots[slotIndex];
+    if (expedition == null || (expedition.isComplete && expedition.claimed)) {
+      expeditionSlots[slotIndex] = null;
+      _save();
+      notifyListeners();
+    }
+  }
+
+  List<ActiveExpedition?> get currentExpeditions => List.unmodifiable(expeditionSlots);
 
   Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();
@@ -3179,6 +3333,9 @@ class GameController extends ChangeNotifier {
       ),
       'dungeonState': _dungeonController.toJson(),
       'lastActiveMillis': DateTime.now().millisecondsSinceEpoch,
+      'expeditionSlots': expeditionSlots
+          .map((e) => e?.toJson())
+          .toList(growable: false),
     };
 
     await prefs.setString(_saveKey, jsonEncode(map));

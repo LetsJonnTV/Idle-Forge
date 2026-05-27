@@ -379,3 +379,66 @@ class DungeonReward {
   final int shards;
   final List<GameItem> items;
 }
+
+enum ExpeditionType { hunt, scavenge, raid }
+
+class ExpeditionDefinition {
+  const ExpeditionDefinition({
+    required this.id,
+    required this.type,
+    required this.name,
+    required this.nameDe,
+    required this.nameEn,
+    required this.durationHours,
+    required this.baseGold,
+    required this.baseHammers,
+    required this.baseShards,
+    required this.itemDropChance,
+  });
+
+  final String id;
+  final ExpeditionType type;
+  final String name;
+  final String nameDe;
+  final String nameEn;
+  final int durationHours;
+  final int baseGold;
+  final int baseHammers;
+  final int baseShards;
+  final double itemDropChance;
+}
+
+class ActiveExpedition {
+  ActiveExpedition({
+    required this.slotIndex,
+    required this.expeditionId,
+    required this.completesAt,
+    this.claimed = false,
+  });
+
+  final int slotIndex;
+  final String expeditionId;
+  final DateTime completesAt;
+  bool claimed;
+
+  bool get isComplete => DateTime.now().isAfter(completesAt);
+
+  Duration get remaining {
+    final diff = completesAt.difference(DateTime.now());
+    return diff.isNegative ? Duration.zero : diff;
+  }
+
+  Map<String, dynamic> toJson() => {
+    'slotIndex': slotIndex,
+    'expeditionId': expeditionId,
+    'completesAtMillis': completesAt.millisecondsSinceEpoch,
+    'claimed': claimed,
+  };
+
+  factory ActiveExpedition.fromJson(Map<String, dynamic> json) => ActiveExpedition(
+    slotIndex: json['slotIndex'] as int? ?? 0,
+    expeditionId: json['expeditionId'] as String? ?? '',
+    completesAt: DateTime.fromMillisecondsSinceEpoch(json['completesAtMillis'] as int? ?? 0),
+    claimed: json['claimed'] as bool? ?? false,
+  );
+}
