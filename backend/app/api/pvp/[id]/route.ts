@@ -31,9 +31,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 
   // Only participants can view
-  const isParticipant =
-    (battle.challenger as { id: string } | null)?.id === auth.playerId ||
-    (battle.defender as { id: string } | null)?.id === auth.playerId;
+  const challengerRaw = battle.challenger;
+  const defenderRaw = battle.defender;
+  const challengerId = (Array.isArray(challengerRaw) ? challengerRaw[0] : challengerRaw as { id: string } | null)?.id;
+  const defenderId = (Array.isArray(defenderRaw) ? defenderRaw[0] : defenderRaw as { id: string } | null)?.id;
+  const isParticipant = challengerId === auth.playerId || defenderId === auth.playerId;
 
   if (!isParticipant) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
