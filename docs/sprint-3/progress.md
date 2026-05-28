@@ -3,7 +3,7 @@
 ## Goal
 Build complete Angular 17 frontend for Idle Forge game website.
 
-## Status: 🟡 In Progress
+## Status: ✅ Complete — PR #4 open
 
 ---
 
