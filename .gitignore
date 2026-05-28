@@ -18,9 +18,7 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
+# VS Code
 .vscode/
 
 # Flutter/Dart/Pub related
@@ -44,5 +42,25 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 android/local.properties
+android/build/
 
-.vscode/
+# Angular build output — deployed via GitHub Actions, not committed
+# Keep only the CNAME file for custom domain
+docs/*.js
+docs/*.css
+docs/*.txt
+docs/favicon.ico
+docs/index.html
+
+# Frontend tooling
+frontend/node_modules/
+frontend/.angular/
+frontend/dist/
+
+# Backend tooling
+backend/node_modules/
+backend/.next/
+backend/out/
+backend/.env
+backend/.env.local
+backend/.env.*.local

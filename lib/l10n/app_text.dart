@@ -282,6 +282,10 @@ class AppText {
       'cloudLoaded': 'Cloud-Stand geladen!',
       'cloudError': 'Cloud-Fehler. Bitte erneut versuchen.',
       'cloudSection': 'Cloud-Speicher',
+      'logoutButton': 'Abmelden',
+      'logoutConfirmTitle': 'Abmelden?',
+      'logoutConfirmMessage': 'Möchtest du dich wirklich abmelden?',
+      'cancel': 'Abbrechen',
     },
     'en': {
       'appTitle': 'Idle Forge',
@@ -556,6 +560,10 @@ class AppText {
       'cloudLoaded': 'Cloud save loaded!',
       'cloudError': 'Cloud error. Please try again.',
       'cloudSection': 'Cloud Save',
+      'logoutButton': 'Log Out',
+      'logoutConfirmTitle': 'Log Out?',
+      'logoutConfirmMessage': 'Do you really want to log out?',
+      'cancel': 'Cancel',
     },
   };
 
