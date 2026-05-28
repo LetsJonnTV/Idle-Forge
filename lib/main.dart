@@ -1017,17 +1017,27 @@ class _TopBar extends StatelessWidget {
                                 if (controller.cloudSyncStatus != null) ...[
                                   Text(
                                     () {
-                                      return switch (controller.cloudSyncStatus) {
-                                        'saving' => controller.text.tr('cloudSaving'),
-                                        'loading' => controller.text.tr('cloudLoading'),
-                                        'saved' => controller.text.tr('cloudSaved'),
-                                        'loaded' => controller.text.tr('cloudLoaded'),
+                                      return switch (controller
+                                          .cloudSyncStatus) {
+                                        'saving' => controller.text.tr(
+                                          'cloudSaving',
+                                        ),
+                                        'loading' => controller.text.tr(
+                                          'cloudLoading',
+                                        ),
+                                        'saved' => controller.text.tr(
+                                          'cloudSaved',
+                                        ),
+                                        'loaded' => controller.text.tr(
+                                          'cloudLoaded',
+                                        ),
                                         _ => controller.text.tr('cloudError'),
                                       };
                                     }(),
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: controller.cloudSyncStatus == 'error'
+                                      color:
+                                          controller.cloudSyncStatus == 'error'
                                           ? Colors.red
                                           : const Color(0xFF8FD39E),
                                     ),
@@ -1038,55 +1048,78 @@ class _TopBar extends StatelessWidget {
                                   children: [
                                     Expanded(
                                       child: OutlinedButton.icon(
-                                        icon: controller.cloudSyncStatus == 'saving'
+                                        icon:
+                                            controller.cloudSyncStatus ==
+                                                'saving'
                                             ? const SizedBox(
                                                 width: 14,
                                                 height: 14,
-                                                child: CircularProgressIndicator(strokeWidth: 2),
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
                                               )
-                                            : const Icon(Icons.cloud_upload_outlined, size: 16),
+                                            : const Icon(
+                                                Icons.cloud_upload_outlined,
+                                                size: 16,
+                                              ),
                                         label: Text(
                                           controller.text.tr('cloudSave'),
                                           style: const TextStyle(fontSize: 12),
                                         ),
-                                        onPressed: (controller.cloudSyncStatus == 'saving' ||
-                                                controller.cloudSyncStatus == 'loading')
+                                        onPressed:
+                                            (controller.cloudSyncStatus ==
+                                                    'saving' ||
+                                                controller.cloudSyncStatus ==
+                                                    'loading')
                                             ? null
                                             : () async {
                                                 setModalState(() {});
                                                 await controller.cloudSave();
-                                                if (context.mounted) setModalState(() {});
+                                                if (context.mounted)
+                                                  setModalState(() {});
                                               },
                                       ),
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: OutlinedButton.icon(
-                                        icon: controller.cloudSyncStatus == 'loading'
+                                        icon:
+                                            controller.cloudSyncStatus ==
+                                                'loading'
                                             ? const SizedBox(
                                                 width: 14,
                                                 height: 14,
-                                                child: CircularProgressIndicator(strokeWidth: 2),
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
                                               )
-                                            : const Icon(Icons.cloud_download_outlined, size: 16),
+                                            : const Icon(
+                                                Icons.cloud_download_outlined,
+                                                size: 16,
+                                              ),
                                         label: Text(
                                           controller.text.tr('cloudLoad'),
                                           style: const TextStyle(fontSize: 12),
                                         ),
-                                        onPressed: (controller.cloudSyncStatus == 'saving' ||
-                                                controller.cloudSyncStatus == 'loading')
+                                        onPressed:
+                                            (controller.cloudSyncStatus ==
+                                                    'saving' ||
+                                                controller.cloudSyncStatus ==
+                                                    'loading')
                                             ? null
                                             : () async {
                                                 setModalState(() {});
                                                 await controller.cloudLoad();
-                                                if (context.mounted) setModalState(() {});
+                                                if (context.mounted)
+                                                  setModalState(() {});
                                               },
                                       ),
                                     ),
                                   ],
                                 ),
                               ],
-
                             ],
                           ),
                         ),
@@ -1110,7 +1143,9 @@ class _TopBar extends StatelessWidget {
                                     if (!ok &&
                                         nameController.text.trim() !=
                                             controller.playerName) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         const SnackBar(
                                           content: Text(
                                             'Name ungültig oder unverändert (2-20 Zeichen).',
@@ -2613,10 +2648,8 @@ class _BottomMenuState extends State<_BottomMenu> {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute<void>(
-                    builder: (_) => ClanScreen(
-                      text: text,
-                      controller: controller,
-                    ),
+                    builder: (_) =>
+                        ClanScreen(text: text, controller: controller),
                   ),
                 ),
               ),
@@ -2695,8 +2728,7 @@ class _BottomMenuState extends State<_BottomMenu> {
                 child: PageView.builder(
                   controller: _pageController,
                   itemCount: pageCount,
-                  onPageChanged: (page) =>
-                      setState(() => _currentPage = page),
+                  onPageChanged: (page) => setState(() => _currentPage = page),
                   itemBuilder: (context, pageIndex) {
                     final start = pageIndex * 2;
                     final end = (start + 2).clamp(0, buttons.length);
@@ -3266,9 +3298,7 @@ class _BottomMenuState extends State<_BottomMenu> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          'Verfügbare Scherben: ${controller.forgeShards}',
-                        ),
+                        Text('Verfügbare Scherben: ${controller.forgeShards}'),
                         const SizedBox(height: 12),
                         const Text(
                           'Talentzweig (Scherben)',
@@ -6060,13 +6090,11 @@ Future<void> _showSocialPanel(
                         content: Text(text.tr('logoutConfirmMessage')),
                         actions: [
                           TextButton(
-                            onPressed: () =>
-                                Navigator.pop(dialogCtx, false),
+                            onPressed: () => Navigator.pop(dialogCtx, false),
                             child: Text(text.tr('cancel')),
                           ),
                           TextButton(
-                            onPressed: () =>
-                                Navigator.pop(dialogCtx, true),
+                            onPressed: () => Navigator.pop(dialogCtx, true),
                             child: Text(text.tr('logoutButton')),
                           ),
                         ],

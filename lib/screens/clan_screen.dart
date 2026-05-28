@@ -8,11 +8,7 @@ import '../services/api_service.dart';
 
 /// Full clan screen — browse/create/join clans, chat, invite members.
 class ClanScreen extends StatefulWidget {
-  const ClanScreen({
-    super.key,
-    required this.text,
-    required this.controller,
-  });
+  const ClanScreen({super.key, required this.text, required this.controller});
 
   final AppText text;
   final GameController controller;
@@ -138,8 +134,9 @@ class _ClanScreenState extends State<ClanScreen>
     try {
       final members = await api.getClanMembers(clanId);
       final clans = await api.getClans();
-      final clanList =
-          clans.where((c) => c['id'] == clanId).toList(growable: false);
+      final clanList = clans
+          .where((c) => c['id'] == clanId)
+          .toList(growable: false);
       final clanData = clanList.isNotEmpty ? clanList.first : null;
 
       if (!mounted) return;
@@ -190,16 +187,20 @@ class _ClanScreenState extends State<ClanScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _cardBg,
-        title: Text(t.tr('clanCreate'),
-            style: TextStyle(color: _textPrimary, fontWeight: FontWeight.bold)),
+        title: Text(
+          t.tr('clanCreate'),
+          style: TextStyle(color: _textPrimary, fontWeight: FontWeight.bold),
+        ),
         content: SingleChildScrollView(
           child: Form(
             key: formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(t.tr('clanCreateCost'),
-                    style: TextStyle(color: _accent, fontSize: 13)),
+                Text(
+                  t.tr('clanCreateCost'),
+                  style: TextStyle(color: _accent, fontSize: 13),
+                ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: nameController,
@@ -301,10 +302,14 @@ class _ClanScreenState extends State<ClanScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _cardBg,
-        title: Text(t.tr('clanLeave'),
-            style: TextStyle(color: _textPrimary, fontWeight: FontWeight.bold)),
-        content: Text(t.tr('clanLeaveConfirm'),
-            style: TextStyle(color: _textSecondary)),
+        title: Text(
+          t.tr('clanLeave'),
+          style: TextStyle(color: _textPrimary, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          t.tr('clanLeaveConfirm'),
+          style: TextStyle(color: _textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -312,7 +317,8 @@ class _ClanScreenState extends State<ClanScreen>
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFE07070)),
+              backgroundColor: const Color(0xFFE07070),
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(t.tr('clanLeave')),
           ),
@@ -343,8 +349,10 @@ class _ClanScreenState extends State<ClanScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _cardBg,
-        title: Text(t.tr('clanInvite'),
-            style: TextStyle(color: _textPrimary, fontWeight: FontWeight.bold)),
+        title: Text(
+          t.tr('clanInvite'),
+          style: TextStyle(color: _textPrimary, fontWeight: FontWeight.bold),
+        ),
         content: TextField(
           controller: usernameController,
           decoration: InputDecoration(
@@ -374,7 +382,9 @@ class _ClanScreenState extends State<ClanScreen>
 
     try {
       final ok = await api.invitePlayerToClan(
-          _playerClanId!, usernameController.text.trim());
+        _playerClanId!,
+        usernameController.text.trim(),
+      );
       if (!mounted) return;
       if (ok) _showSnack(t.tr('clanInviteSent'));
     } on ApiException catch (e) {
@@ -414,8 +424,9 @@ class _ClanScreenState extends State<ClanScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor:
-            error ? const Color(0xFFE07070) : const Color(0xFF7AC97A),
+        backgroundColor: error
+            ? const Color(0xFFE07070)
+            : const Color(0xFF7AC97A),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -440,10 +451,11 @@ class _ClanScreenState extends State<ClanScreen>
           if (_playerClanId != null)
             TextButton.icon(
               onPressed: _leaveClan,
-              icon:
-                  const Icon(Icons.logout_rounded, color: Color(0xFFE07070)),
-              label: Text(t.tr('clanLeave'),
-                  style: const TextStyle(color: Color(0xFFE07070))),
+              icon: const Icon(Icons.logout_rounded, color: Color(0xFFE07070)),
+              label: Text(
+                t.tr('clanLeave'),
+                style: const TextStyle(color: Color(0xFFE07070)),
+              ),
             ),
           IconButton(
             icon: Icon(Icons.refresh, color: _textSecondary),
@@ -523,11 +535,17 @@ class _ClanScreenState extends State<ClanScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(t.tr('clanCreate'),
-                    style: TextStyle(
-                        color: _textPrimary, fontWeight: FontWeight.bold)),
-                Text(t.tr('clanCreateCost'),
-                    style: TextStyle(color: _textSecondary, fontSize: 12)),
+                Text(
+                  t.tr('clanCreate'),
+                  style: TextStyle(
+                    color: _textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  t.tr('clanCreateCost'),
+                  style: TextStyle(color: _textSecondary, fontSize: 12),
+                ),
               ],
             ),
           ),
@@ -565,8 +583,7 @@ class _ClanScreenState extends State<ClanScreen>
                 backgroundColor: _accent.withAlpha(60),
                 child: Text(
                   name.isNotEmpty ? name[0].toUpperCase() : '?',
-                  style:
-                      TextStyle(color: _accent, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: _accent, fontWeight: FontWeight.bold),
                 ),
               ),
               const SizedBox(width: 10),
@@ -574,14 +591,16 @@ class _ClanScreenState extends State<ClanScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name,
-                        style: TextStyle(
-                            color: _textPrimary,
-                            fontWeight: FontWeight.bold)),
+                    Text(
+                      name,
+                      style: TextStyle(
+                        color: _textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     Text(
                       '${t.tr('clanLevel')} $level · ${t.tr('pvpStrLabel')}: $leaderName',
-                      style:
-                          TextStyle(color: _textSecondary, fontSize: 12),
+                      style: TextStyle(color: _textSecondary, fontSize: 12),
                     ),
                   ],
                 ),
@@ -594,8 +613,10 @@ class _ClanScreenState extends State<ClanScreen>
           ),
           if (description.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text(description,
-                style: TextStyle(color: _textSecondary, fontSize: 12)),
+            Text(
+              description,
+              style: TextStyle(color: _textSecondary, fontSize: 12),
+            ),
           ],
         ],
       ),
@@ -651,9 +672,13 @@ class _ClanScreenState extends State<ClanScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(clanName,
-                    style: TextStyle(
-                        color: _textPrimary, fontWeight: FontWeight.bold)),
+                Text(
+                  clanName,
+                  style: TextStyle(
+                    color: _textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 Text(
                   '${t.tr('clanLevel')} $clanLevel · von $inviterName',
                   style: TextStyle(color: _textSecondary, fontSize: 12),
@@ -662,14 +687,15 @@ class _ClanScreenState extends State<ClanScreen>
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.check_circle_outline,
-                color: Color(0xFF7AC97A)),
+            icon: const Icon(
+              Icons.check_circle_outline,
+              color: Color(0xFF7AC97A),
+            ),
             onPressed: () => _respondToInvite(inviteId, true),
             tooltip: t.tr('friendsAccept'),
           ),
           IconButton(
-            icon: const Icon(Icons.cancel_outlined,
-                color: Color(0xFFE07070)),
+            icon: const Icon(Icons.cancel_outlined, color: Color(0xFFE07070)),
             onPressed: () => _respondToInvite(inviteId, false),
             tooltip: t.tr('friendsReject'),
           ),
@@ -723,7 +749,9 @@ class _ClanScreenState extends State<ClanScreen>
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: _accent.withAlpha(40),
                         borderRadius: BorderRadius.circular(8),
@@ -731,18 +759,20 @@ class _ClanScreenState extends State<ClanScreen>
                       child: Text(
                         '${t.tr('clanLevel')} $clanLevel',
                         style: TextStyle(
-                            color: _accent,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12),
+                          color: _accent,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ],
                 ),
                 if (description.isNotEmpty) ...[
                   const SizedBox(height: 6),
-                  Text(description,
-                      style:
-                          TextStyle(color: _textSecondary, fontSize: 13)),
+                  Text(
+                    description,
+                    style: TextStyle(color: _textSecondary, fontSize: 13),
+                  ),
                 ],
               ],
             ),
@@ -770,9 +800,10 @@ class _ClanScreenState extends State<ClanScreen>
           Text(
             '${t.tr('clanMembers')} (${_members.length})',
             style: TextStyle(
-                color: _textSecondary,
-                fontSize: 13,
-                fontWeight: FontWeight.w600),
+              color: _textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 8),
 
@@ -783,8 +814,7 @@ class _ClanScreenState extends State<ClanScreen>
     );
   }
 
-  Widget _buildMemberCard(
-      Map<String, dynamic> member, String? leaderId) {
+  Widget _buildMemberCard(Map<String, dynamic> member, String? leaderId) {
     final playerId = member['player_id'] as String? ?? '';
     final username = member['username'] as String? ?? 'Unbekannt';
     final strength = member['total_strength'] as int? ?? 0;
@@ -798,9 +828,7 @@ class _ClanScreenState extends State<ClanScreen>
       decoration: BoxDecoration(
         color: _cardBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isLeader ? _accent.withAlpha(100) : _border,
-        ),
+        border: Border.all(color: isLeader ? _accent.withAlpha(100) : _border),
       ),
       child: Row(
         children: [
@@ -826,35 +854,39 @@ class _ClanScreenState extends State<ClanScreen>
                     Text(
                       username,
                       style: TextStyle(
-                          color: _textPrimary,
-                          fontWeight: FontWeight.bold),
+                        color: _textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     if (isLeader) ...[
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: _accent.withAlpha(40),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text('Leader',
-                            style:
-                                TextStyle(color: _accent, fontSize: 10)),
+                        child: Text(
+                          'Leader',
+                          style: TextStyle(color: _accent, fontSize: 10),
+                        ),
                       ),
                     ],
                     if (isMe) ...[
                       const SizedBox(width: 6),
-                      Text('(${t.tr('you')})',
-                          style: TextStyle(
-                              color: _textSecondary, fontSize: 12)),
+                      Text(
+                        '(${t.tr('you')})',
+                        style: TextStyle(color: _textSecondary, fontSize: 12),
+                      ),
                     ],
                   ],
                 ),
                 Text(
                   '${t.tr('totalStrength')}: $strength · Prestige: $prestige',
-                  style:
-                      TextStyle(color: _textSecondary, fontSize: 12),
+                  style: TextStyle(color: _textSecondary, fontSize: 12),
                 ),
               ],
             ),
@@ -880,8 +912,7 @@ class _ClanScreenState extends State<ClanScreen>
                   controller: _chatScrollController,
                   padding: const EdgeInsets.all(12),
                   itemCount: _chatMessages.length,
-                  itemBuilder: (_, i) =>
-                      _buildChatMessage(_chatMessages[i]),
+                  itemBuilder: (_, i) => _buildChatMessage(_chatMessages[i]),
                 ),
         ),
         // Input
@@ -908,7 +939,9 @@ class _ClanScreenState extends State<ClanScreen>
                       borderSide: BorderSide.none,
                     ),
                     contentPadding: const EdgeInsets.symmetric(
-                        vertical: 10, horizontal: 14),
+                      vertical: 10,
+                      horizontal: 14,
+                    ),
                   ),
                   style: TextStyle(color: _textPrimary),
                   textInputAction: TextInputAction.send,
@@ -921,13 +954,18 @@ class _ClanScreenState extends State<ClanScreen>
                 style: FilledButton.styleFrom(
                   backgroundColor: _accent,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 14),
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: const Icon(Icons.send_rounded,
-                    color: Colors.white, size: 18),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
               ),
             ],
           ),
@@ -984,15 +1022,17 @@ class _ClanScreenState extends State<ClanScreen>
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Text(timeLabel,
-                        style: TextStyle(
-                            color: _textSecondary, fontSize: 11)),
+                    Text(
+                      timeLabel,
+                      style: TextStyle(color: _textSecondary, fontSize: 11),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text(message,
-                    style:
-                        TextStyle(color: _textPrimary, fontSize: 14)),
+                Text(
+                  message,
+                  style: TextStyle(color: _textPrimary, fontSize: 14),
+                ),
               ],
             ),
           ),

@@ -491,7 +491,10 @@ class ApiService {
   Future<bool> respondToInvite(String inviteId, bool accept) async {
     if (!isLoggedIn) return false;
     try {
-      await _put('/api/clans/invites', {'inviteId': inviteId, 'accept': accept});
+      await _put('/api/clans/invites', {
+        'inviteId': inviteId,
+        'accept': accept,
+      });
       return true;
     } on ApiException {
       rethrow;

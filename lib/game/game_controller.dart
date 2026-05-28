@@ -1154,7 +1154,7 @@ class GameController extends ChangeNotifier {
   double get clanGoldBonusMultiplier => 1.0;
   double get clanShardBonusMultiplier => 1.0;
 
-  int get skillStrikeCost=> 2 + (skillStrikeLevel * 2);
+  int get skillStrikeCost => 2 + (skillStrikeLevel * 2);
   int get skillWhirlCost => 2 + (skillWhirlLevel * 2);
   int get skillFocusCost => 3 + (skillFocusLevel * 3);
 
@@ -2125,8 +2125,7 @@ class GameController extends ChangeNotifier {
     if (isBossStage) {
       forgeShards += _scaledShardReward(1);
       bossDefeats += 1;
-    } else {
-    }
+    } else {}
 
     if (isBossStage) {
       chapter += 1;
