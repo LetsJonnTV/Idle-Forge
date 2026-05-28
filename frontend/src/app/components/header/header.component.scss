@@ -1,0 +1,92 @@
+.site-header {
+  width: 100%;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+.header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.85rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* Brand */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  text-decoration: none;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  background: linear-gradient(135deg, #f0a840, #e8922a, #c0692a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: opacity 0.2s;
+
+  &:hover { opacity: 0.85; }
+}
+
+/* Nav wrapper */
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+/* User chip */
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(232, 146, 42, 0.08);
+  border: 1px solid rgba(232, 146, 42, 0.2);
+  font-size: 0.85rem;
+}
+
+.user-icon {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.username-text {
+  color: var(--text);
+  font-weight: 600;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Active link highlight */
+.btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Responsive ─────────────────────────────────────── */
+@media (max-width: 560px) {
+  .header-inner {
+    padding: 0.7rem 1rem;
+  }
+
+  .username-text {
+    display: none;
+  }
+
+  .user-chip {
+    padding: 0.3rem 0.45rem;
+  }
+}

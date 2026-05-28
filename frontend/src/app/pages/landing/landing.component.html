@@ -1,0 +1,69 @@
+<!-- ── Hero ──────────────────────────────────────────── -->
+<div class="landing-hero">
+  <div class="hero-icon">⚒️</div>
+  <h1 class="game-title">Idle Forge</h1>
+  <p class="tagline">Schmiede legendäre Ausrüstung. Besiege Bosse. Werde zur Legende — auch im Schlaf.</p>
+</div>
+
+<!-- ── Main content ───────────────────────────────────── -->
+<main class="landing-main">
+
+  <!-- Description -->
+  <section class="landing-section">
+    <h2 class="section-title">Über das Spiel</h2>
+    <div class="description">
+      <p>
+        <strong>Idle Forge</strong> ist ein Idle-RPG für Android und Windows, entwickelt mit Flutter.
+        Rüste deinen Helden mit mächtigen Waffen und Rüstungen aus, die du in deiner eigenen Schmiede
+        herstellst — und schau zu, wie er immer gefährlichere Stages bezwingt, ganz ohne ständiges Eingreifen.
+      </p>
+      <p>
+        Sammle Ressourcen, entdecke seltene Rezepte, besiege Dungeon-Bosse und kehre zu einem stärkeren
+        Helden zurück. Dank Offline-Belohnungen läuft dein Fortschritt immer weiter.
+      </p>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="landing-section">
+    <h2 class="section-title">Features</h2>
+    <div class="features" role="list">
+      <div class="feature" *ngFor="let f of features" role="listitem">
+        <span class="feature-emoji" aria-hidden="true">{{ f.emoji }}</span>
+        <span>{{ f.text }}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <a
+      class="btn-download"
+      href="https://github.com/LetsJonnTV/Idle-Forge/releases/latest"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Neueste Version von Idle Forge herunterladen"
+    >
+      ⬇️ Neueste Version herunterladen
+    </a>
+    <p class="hint">
+      Android (.apk) &amp; Windows (.zip) · Kostenlos ·
+      Anmeldung auf unserem Server nötig, um online zu spielen!
+    </p>
+    <p class="hint" style="margin-top: 0.5rem;">
+      Deine Daten werden nicht an Dritte weitergegeben oder verarbeitet.
+      Wenn du Fragen hast, melde dich gerne bei mir.
+    </p>
+  </section>
+
+</main>
+
+<!-- ── Footer ─────────────────────────────────────────── -->
+<footer class="site-footer" role="contentinfo">
+  <a href="https://github.com/LetsJonnTV/Idle-Forge" target="_blank" rel="noopener">GitHub</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/LetsJonnTV/Idle-Forge/releases" target="_blank" rel="noopener">Alle Releases</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/LetsJonnTV/Idle-Forge/issues" target="_blank" rel="noopener">Bug melden</a>
+  &nbsp;·&nbsp; MIT License
+</footer>

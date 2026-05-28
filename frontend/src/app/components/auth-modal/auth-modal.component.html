@@ -1,0 +1,164 @@
+<div
+  class="modal-backdrop"
+  *ngIf="isVisible"
+  (click)="onBackdropClick($event)"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="modal-heading"
+>
+  <div class="modal-box">
+
+    <!-- Close button -->
+    <button class="modal-close" (click)="close()" aria-label="Modal schließen" type="button">✕</button>
+
+    <!-- Tab switcher -->
+    <div class="modal-tabs" role="tablist" aria-label="Authentifizierungs-Tabs">
+      <button
+        class="tab-btn"
+        role="tab"
+        [attr.aria-selected]="activeTab === 'login'"
+        [class.active]="activeTab === 'login'"
+        (click)="switchTab('login')"
+        type="button"
+      >
+        Einloggen
+      </button>
+      <button
+        class="tab-btn"
+        role="tab"
+        [attr.aria-selected]="activeTab === 'register'"
+        [class.active]="activeTab === 'register'"
+        (click)="switchTab('register')"
+        type="button"
+      >
+        Registrieren
+      </button>
+    </div>
+
+    <!-- ── Login Form ─────────────────────────────── -->
+    <form
+      *ngIf="activeTab === 'login'"
+      (ngSubmit)="onLogin()"
+      class="auth-form"
+      novalidate
+    >
+      <h2 id="modal-heading" class="form-heading">Willkommen zurück</h2>
+
+      <div class="form-group">
+        <label for="login-username">Benutzername</label>
+        <input
+          id="login-username"
+          class="input"
+          type="text"
+          [(ngModel)]="loginUsername"
+          name="loginUsername"
+          autocomplete="username"
+          placeholder="Dein Benutzername"
+          required
+          [attr.aria-invalid]="loginError ? 'true' : null"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="login-password">Passwort</label>
+        <input
+          id="login-password"
+          class="input"
+          type="password"
+          [(ngModel)]="loginPassword"
+          name="loginPassword"
+          autocomplete="current-password"
+          placeholder="Dein Passwort"
+          required
+        />
+      </div>
+
+      <div class="error-msg" *ngIf="loginError" role="alert">
+        {{ loginError }}
+      </div>
+
+      <button
+        class="btn btn-primary submit-btn"
+        type="submit"
+        [disabled]="loginLoading"
+      >
+        {{ loginLoading ? 'Wird geprüft…' : 'Einloggen' }}
+      </button>
+
+      <p class="switch-hint">
+        Noch kein Konto?
+        <button type="button" class="link-btn" (click)="switchTab('register')">Jetzt registrieren</button>
+      </p>
+    </form>
+
+    <!-- ── Register Form ──────────────────────────── -->
+    <form
+      *ngIf="activeTab === 'register'"
+      (ngSubmit)="onRegister()"
+      class="auth-form"
+      novalidate
+    >
+      <h2 id="modal-heading" class="form-heading">Konto erstellen</h2>
+
+      <div class="form-group">
+        <label for="reg-username">Benutzername</label>
+        <input
+          id="reg-username"
+          class="input"
+          type="text"
+          [(ngModel)]="regUsername"
+          name="regUsername"
+          autocomplete="username"
+          placeholder="Gewünschter Benutzername"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="reg-password">Passwort</label>
+        <input
+          id="reg-password"
+          class="input"
+          type="password"
+          [(ngModel)]="regPassword"
+          name="regPassword"
+          autocomplete="new-password"
+          placeholder="Mindestens 6 Zeichen"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="reg-confirm">Passwort bestätigen</label>
+        <input
+          id="reg-confirm"
+          class="input"
+          type="password"
+          [(ngModel)]="regConfirm"
+          name="regConfirm"
+          autocomplete="new-password"
+          placeholder="Passwort wiederholen"
+          required
+        />
+      </div>
+
+      <div class="error-msg" *ngIf="regError" role="alert">
+        {{ regError }}
+      </div>
+
+      <button
+        class="btn btn-primary submit-btn"
+        type="submit"
+        [disabled]="regLoading"
+      >
+        {{ regLoading ? 'Wird erstellt…' : 'Registrieren' }}
+      </button>
+
+      <p class="switch-hint">
+        Bereits ein Konto?
+        <button type="button" class="link-btn" (click)="switchTab('login')">Jetzt einloggen</button>
+      </p>
+    </form>
+
+  </div>
+</div>

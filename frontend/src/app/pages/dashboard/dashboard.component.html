@@ -1,0 +1,323 @@
+<div class="dashboard-page">
+  <div class="dashboard-container">
+
+    <!-- Page header -->
+    <div class="dash-header">
+      <h1 class="dash-title">⚒️ Dashboard</h1>
+      <span class="player-pill" *ngIf="player">
+        <span>👤</span> {{ player.username }}
+      </span>
+    </div>
+
+    <!-- Tab navigation -->
+    <div class="tab-bar" role="tablist" aria-label="Dashboard-Tabs">
+      <button
+        class="tab"
+        role="tab"
+        [class.active]="activeTab === 'profile'"
+        [attr.aria-selected]="activeTab === 'profile'"
+        (click)="setTab('profile')"
+      >👤 Profil</button>
+
+      <button
+        class="tab"
+        role="tab"
+        [class.active]="activeTab === 'save'"
+        [attr.aria-selected]="activeTab === 'save'"
+        (click)="setTab('save')"
+      >☁️ Cloud Save</button>
+
+      <button
+        class="tab"
+        role="tab"
+        [class.active]="activeTab === 'friends'"
+        [attr.aria-selected]="activeTab === 'friends'"
+        (click)="setTab('friends')"
+      >👥 Freunde</button>
+
+      <button
+        class="tab"
+        role="tab"
+        [class.active]="activeTab === 'password'"
+        [attr.aria-selected]="activeTab === 'password'"
+        (click)="setTab('password')"
+      >🔑 Passwort</button>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         TAB 1 — Profile & Stats
+    ══════════════════════════════════════════════════ -->
+    <div class="tab-content" *ngIf="activeTab === 'profile'" role="tabpanel">
+      <div class="loading" *ngIf="playerLoading">Lade Profildaten…</div>
+      <div class="error-card" *ngIf="playerError" role="alert">{{ playerError }}</div>
+
+      <ng-container *ngIf="player && !playerLoading">
+        <!-- Avatar + name hero -->
+        <div class="profile-hero">
+          <div class="profile-avatar" aria-hidden="true">
+            {{ player.username.charAt(0).toUpperCase() }}
+          </div>
+          <div class="profile-info">
+            <h2 class="profile-name">{{ player.username }}</h2>
+            <div class="profile-clan">
+              <span *ngIf="player.clan_name" class="clan-tag">🏰 {{ player.clan_name }}</span>
+              <span *ngIf="!player.clan_name" class="muted-text">Kein Clan</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats grid -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">⚔️</div>
+            <div class="stat-label">Gesamtstärke</div>
+            <div class="stat-value">{{ player.total_strength | number:'1.0-0' }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">⭐</div>
+            <div class="stat-label">Prestige-Level</div>
+            <div class="stat-value">{{ player.prestige_level }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📖</div>
+            <div class="stat-label">Kapitel</div>
+            <div class="stat-value">{{ player.chapter }}</div>
+          </div>
+          <div class="stat-card" *ngIf="player.clan_name">
+            <div class="stat-icon">🏰</div>
+            <div class="stat-label">Clan</div>
+            <div class="stat-value stat-clan">{{ player.clan_name }}</div>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button class="btn btn-secondary btn-sm" (click)="loadProfile()">
+            🔄 Profil neu laden
+          </button>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         TAB 2 — Cloud Save
+    ══════════════════════════════════════════════════ -->
+    <div class="tab-content" *ngIf="activeTab === 'save'" role="tabpanel">
+      <div class="loading" *ngIf="saveLoading">Lade Speicherstand…</div>
+      <div class="error-card" *ngIf="saveError" role="alert">{{ saveError }}</div>
+
+      <ng-container *ngIf="!saveLoading">
+        <!-- No save -->
+        <div class="info-card" *ngIf="!saveData && !saveError">
+          <p>☁️ Kein Cloud-Speicherstand gefunden.</p>
+          <p style="margin-top: 0.5rem; font-size: 0.88rem;">
+            Starte das Spiel und aktiviere die Cloud-Synchronisation,
+            um deinen Fortschritt zu sichern.
+          </p>
+        </div>
+
+        <!-- Save info -->
+        <ng-container *ngIf="saveData">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon">🕐</div>
+              <div class="stat-label">Letzte Synchronisation</div>
+              <div class="stat-value save-date">{{ saveSyncDate | date:'dd.MM.yyyy, HH:mm' }} Uhr</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">📦</div>
+              <div class="stat-label">Speichergröße</div>
+              <div class="stat-value">{{ getSaveSize() }}</div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Pending rewards -->
+        <div class="rewards-section" *ngIf="pendingRewards.length > 0">
+          <h3 class="section-subtitle">🎁 Ausstehende Belohnungen</h3>
+          <div class="reward-list">
+            <div class="reward-item" *ngFor="let reward of pendingRewards">
+              ⚡ {{ getRewardLabel(reward) }}
+            </div>
+          </div>
+        </div>
+
+        <div class="action-row" *ngIf="!saveError">
+          <button class="btn btn-secondary btn-sm" (click)="loadSave()">🔄 Neu laden</button>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         TAB 3 — Friends
+    ══════════════════════════════════════════════════ -->
+    <div class="tab-content" *ngIf="activeTab === 'friends'" role="tabpanel">
+      <div class="loading" *ngIf="friendsLoading">Lade Freundesliste…</div>
+      <div class="error-card" *ngIf="friendsError" role="alert">{{ friendsError }}</div>
+
+      <ng-container *ngIf="!friendsLoading">
+
+        <!-- Add friend -->
+        <div class="friend-add-box">
+          <h3 class="section-subtitle">Freund hinzufügen</h3>
+          <div class="add-friend-row">
+            <input
+              class="input"
+              type="text"
+              [(ngModel)]="friendUsername"
+              placeholder="Benutzername eingeben"
+              (keydown.enter)="addFriend()"
+              aria-label="Benutzername des Freundes"
+            />
+            <button class="btn btn-primary btn-sm" (click)="addFriend()">Anfrage senden</button>
+          </div>
+          <div class="success-msg" *ngIf="friendAddMsg" role="status">{{ friendAddMsg }}</div>
+          <div class="error-card"  *ngIf="friendAddError" role="alert">{{ friendAddError }}</div>
+        </div>
+
+        <!-- Incoming requests -->
+        <div class="friend-section" *ngIf="pendingReceived.length > 0">
+          <h3 class="section-subtitle">
+            📬 Eingehende Anfragen
+            <span class="count-badge">{{ pendingReceived.length }}</span>
+          </h3>
+          <div class="friend-list">
+            <div class="friend-card friend-card--pending" *ngFor="let f of pendingReceived">
+              <div class="friend-meta">
+                <span class="friend-name">{{ f.requester.username }}</span>
+                <span class="friend-stats">
+                  💪 {{ f.requester.total_strength | number:'1.0-0' }} &nbsp;·&nbsp;
+                  ⭐ Prestige {{ f.requester.prestige_level }}
+                </span>
+              </div>
+              <div class="friend-actions">
+                <button class="btn btn-primary btn-sm" (click)="respondToFriend(f.id, 'accepted')">
+                  ✓ Annehmen
+                </button>
+                <button class="btn btn-danger btn-sm" (click)="respondToFriend(f.id, 'blocked')">
+                  ✗ Ablehnen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accepted friends -->
+        <div class="friend-section">
+          <h3 class="section-subtitle">
+            👥 Freunde
+            <span class="count-badge">{{ acceptedFriends.length }}</span>
+          </h3>
+          <div class="empty-state" *ngIf="acceptedFriends.length === 0">
+            Noch keine Freunde. Lade jemanden ein!
+          </div>
+          <div class="friend-list">
+            <div class="friend-card" *ngFor="let f of acceptedFriends">
+              <div class="friend-meta">
+                <span class="friend-name">{{ getFriendOf(f).username }}</span>
+                <span class="friend-stats">
+                  💪 {{ getFriendOf(f).total_strength | number:'1.0-0' }} &nbsp;·&nbsp;
+                  ⭐ Prestige {{ getFriendOf(f).prestige_level }}
+                </span>
+              </div>
+              <button class="btn btn-secondary btn-sm" (click)="removeFriend(f.id)">
+                Entfernen
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sent requests -->
+        <div class="friend-section" *ngIf="pendingSent.length > 0">
+          <h3 class="section-subtitle">
+            📤 Gesendete Anfragen
+            <span class="count-badge">{{ pendingSent.length }}</span>
+          </h3>
+          <div class="friend-list">
+            <div class="friend-card friend-card--sent" *ngFor="let f of pendingSent">
+              <div class="friend-meta">
+                <span class="friend-name">{{ f.addressee.username }}</span>
+              </div>
+              <span class="badge badge-muted">Ausstehend</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button class="btn btn-secondary btn-sm" (click)="loadFriends()">🔄 Aktualisieren</button>
+        </div>
+
+      </ng-container>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         TAB 4 — Change Password
+    ══════════════════════════════════════════════════ -->
+    <div class="tab-content" *ngIf="activeTab === 'password'" role="tabpanel">
+      <h3 class="section-subtitle">Passwort ändern</h3>
+
+      <form [formGroup]="passwordForm" (ngSubmit)="onPasswordSubmit()" class="password-form" novalidate>
+
+        <div class="form-group">
+          <label for="curr-pw">Aktuelles Passwort</label>
+          <input
+            id="curr-pw"
+            class="input"
+            type="password"
+            formControlName="currentPassword"
+            autocomplete="current-password"
+            placeholder="Dein aktuelles Passwort"
+          />
+          <span class="field-error"
+            *ngIf="f['currentPassword'].touched && f['currentPassword'].hasError('required')">
+            Dieses Feld ist erforderlich.
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label for="new-pw">Neues Passwort</label>
+          <input
+            id="new-pw"
+            class="input"
+            type="password"
+            formControlName="newPassword"
+            autocomplete="new-password"
+            placeholder="Mindestens 6 Zeichen"
+          />
+          <span class="field-error"
+            *ngIf="f['newPassword'].touched && f['newPassword'].hasError('required')">
+            Dieses Feld ist erforderlich.
+          </span>
+          <span class="field-error"
+            *ngIf="f['newPassword'].touched && f['newPassword'].hasError('minlength')">
+            Das Passwort muss mindestens 6 Zeichen lang sein.
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label for="confirm-pw">Neues Passwort bestätigen</label>
+          <input
+            id="confirm-pw"
+            class="input"
+            type="password"
+            formControlName="confirmPassword"
+            autocomplete="new-password"
+            placeholder="Passwort wiederholen"
+          />
+          <span class="field-error"
+            *ngIf="f['confirmPassword'].touched && passwordForm.hasError('mismatch')">
+            Die Passwörter stimmen nicht überein.
+          </span>
+        </div>
+
+        <div class="success-msg" *ngIf="passwordSuccess" role="status">{{ passwordSuccess }}</div>
+        <div class="error-card"  *ngIf="passwordError"   role="alert">{{ passwordError }}</div>
+
+        <button class="btn btn-primary" type="submit" [disabled]="passwordLoading">
+          {{ passwordLoading ? 'Wird gespeichert…' : '🔐 Passwort speichern' }}
+        </button>
+
+      </form>
+    </div>
+
+  </div><!-- /.dashboard-container -->
+</div><!-- /.dashboard-page -->
