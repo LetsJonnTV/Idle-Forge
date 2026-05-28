@@ -29,10 +29,12 @@ CREATE TABLE IF NOT EXISTS players (
   clan_id UUID REFERENCES clans(id) ON DELETE SET NULL
 );
 
--- Add FK on clans.leader_id now that players exists
-ALTER TABLE clans
-  ADD CONSTRAINT clans_leader_id_fkey
-  FOREIGN KEY (leader_id) REFERENCES players(id) ON DELETE SET NULL;
+-- Add FK on clans.leader_id now that players exists (idempotent)
+DO $$ BEGIN
+  ALTER TABLE clans ADD CONSTRAINT clans_leader_id_fkey
+    FOREIGN KEY (leader_id) REFERENCES players(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ============================================================
 -- FRIENDS
@@ -83,6 +85,15 @@ CREATE TABLE IF NOT EXISTS coop_sessions (
 );
 
 -- ============================================================
+-- GAME SAVES
+-- ============================================================
+CREATE TABLE IF NOT EXISTS game_saves (
+  player_id UUID PRIMARY KEY REFERENCES players(id) ON DELETE CASCADE,
+  save_data JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
 -- LEADERBOARD VIEW
 -- ============================================================
 CREATE OR REPLACE VIEW leaderboard AS
@@ -104,6 +115,15 @@ CREATE INDEX IF NOT EXISTS idx_coop_host ON coop_sessions(host_id);
 CREATE INDEX IF NOT EXISTS idx_coop_status ON coop_sessions(status);
 
 -- ============================================================
+-- ROW LEVEL SECURITY for GAME SAVES
+-- ============================================================
+ALTER TABLE game_saves ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  CREATE POLICY "Allow all game_saves" ON game_saves FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ============================================================
 -- ROW LEVEL SECURITY
 -- Enable RLS and add policies for each table.
 -- Players can only update their own row.
@@ -119,6 +139,75 @@ ALTER TABLE coop_sessions ENABLE ROW LEVEL SECURITY;
 -- The Next.js backend uses the anon key but all auth is done via JWT at API layer.
 -- For full production: use service_role key in backend, anon key for client-only reads.
 
-CREATE POLICY "Public read players" ON players FOR SELECT USING (true);
-CREATE POLICY "Public read clans" ON clans FOR SELECT USING (true);
+DO $$ BEGIN
+  CREATE POLICY "Public read players" ON players FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Allow insert players" ON players FOR INSERT WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read clans" ON clans FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- Note: leaderboard is a view on players; it inherits players' RLS policies.
+
+DO $$ BEGIN
+  CREATE POLICY "Allow select pvp_battles" ON pvp_battles FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Allow insert pvp_battles" ON pvp_battles FOR INSERT WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Allow select coop_sessions" ON coop_sessions FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Allow insert coop_sessions" ON coop_sessions FOR INSERT WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Allow update coop_sessions" ON coop_sessions FOR UPDATE USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ============================================================
+-- CLAN CHAT
+-- ============================================================
+CREATE TABLE IF NOT EXISTS clan_chat (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  clan_id UUID REFERENCES clans(id) ON DELETE CASCADE,
+  player_id UUID REFERENCES players(id) ON DELETE CASCADE,
+  username TEXT NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_clan_chat_clan_id ON clan_chat(clan_id, created_at DESC);
+
+-- ============================================================
+-- CLAN INVITES
+-- ============================================================
+CREATE TABLE IF NOT EXISTS clan_invites (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  clan_id UUID REFERENCES clans(id) ON DELETE CASCADE,
+  invitee_id UUID REFERENCES players(id) ON DELETE CASCADE,
+  inviter_id UUID REFERENCES players(id) ON DELETE CASCADE,
+  status TEXT CHECK (status IN ('pending', 'accepted', 'declined')) DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(clan_id, invitee_id)
+);
+
+-- ============================================================
+-- RLS for new tables
+-- ============================================================
+ALTER TABLE clan_chat ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clan_invites ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  CREATE POLICY "Public read clan_chat" ON clan_chat FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Allow insert clan_chat" ON clan_chat FOR INSERT WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read clan_invites" ON clan_invites FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Allow all clan_invites" ON clan_invites FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;

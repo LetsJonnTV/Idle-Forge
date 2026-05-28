@@ -14,8 +14,6 @@ enum QuestType { kills, crafts, bosses }
 
 enum TalentType { attack, vitality, forge }
 
-enum ClanPerkType { warpath, bulwark, prosperity, rituals }
-
 enum ShopUpgradeType { speed, hammer, recovery }
 
 enum BossPattern { berserker, venom, titan }

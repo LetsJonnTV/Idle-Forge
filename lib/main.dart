@@ -11,6 +11,7 @@ import 'game/game_controller.dart';
 import 'game/models.dart';
 import 'l10n/app_text.dart';
 import 'screens/auth_screen.dart';
+import 'screens/clan_screen.dart';
 import 'screens/coop_screen.dart';
 import 'screens/friends_screen.dart';
 import 'screens/leaderboard_screen.dart';
@@ -866,6 +867,11 @@ class _TopBar extends StatelessWidget {
   }
 
   Future<void> _showProfilePanel(BuildContext context) async {
+    final isLoggedIn = ApiService.instance.isLoggedIn;
+    final loginName = ApiService.instance.currentUsername;
+    if (isLoggedIn && loginName != null && loginName.isNotEmpty) {
+      controller.setPlayerName(loginName);
+    }
     final nameController = TextEditingController(text: controller.playerName);
     const fpsOptions = [30, 45, 60, 90, 120];
 
@@ -909,9 +915,14 @@ class _TopBar extends StatelessWidget {
                               TextField(
                                 controller: nameController,
                                 maxLength: 20,
-                                decoration: const InputDecoration(
+                                readOnly: isLoggedIn,
+                                enabled: !isLoggedIn,
+                                decoration: InputDecoration(
                                   labelText: 'Spielername',
                                   counterText: '',
+                                  suffixIcon: isLoggedIn
+                                      ? const Icon(Icons.lock_outline, size: 18)
+                                      : null,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -925,19 +936,88 @@ class _TopBar extends StatelessWidget {
                               Text(
                                 'Bosse besiegt: ${controller.bossDefeats} | Tode: ${controller.deaths}',
                               ),
-                              const SizedBox(height: 14),
-                              const Text(
-                                'Begleiter',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                              if (isLoggedIn) ...[
+                                const SizedBox(height: 14),
+                                Text(
+                                  controller.text.tr('cloudSection'),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              _PetPanel(
-                                controller: controller,
-                                onRefresh: () => setModalState(() {}),
-                              ),
+                                const SizedBox(height: 8),
+                                if (controller.cloudSyncStatus != null) ...[
+                                  Text(
+                                    () {
+                                      return switch (controller.cloudSyncStatus) {
+                                        'saving' => controller.text.tr('cloudSaving'),
+                                        'loading' => controller.text.tr('cloudLoading'),
+                                        'saved' => controller.text.tr('cloudSaved'),
+                                        'loaded' => controller.text.tr('cloudLoaded'),
+                                        _ => controller.text.tr('cloudError'),
+                                      };
+                                    }(),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: controller.cloudSyncStatus == 'error'
+                                          ? Colors.red
+                                          : const Color(0xFF8FD39E),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                ],
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        icon: controller.cloudSyncStatus == 'saving'
+                                            ? const SizedBox(
+                                                width: 14,
+                                                height: 14,
+                                                child: CircularProgressIndicator(strokeWidth: 2),
+                                              )
+                                            : const Icon(Icons.cloud_upload_outlined, size: 16),
+                                        label: Text(
+                                          controller.text.tr('cloudSave'),
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                        onPressed: (controller.cloudSyncStatus == 'saving' ||
+                                                controller.cloudSyncStatus == 'loading')
+                                            ? null
+                                            : () async {
+                                                setModalState(() {});
+                                                await controller.cloudSave();
+                                                if (context.mounted) setModalState(() {});
+                                              },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        icon: controller.cloudSyncStatus == 'loading'
+                                            ? const SizedBox(
+                                                width: 14,
+                                                height: 14,
+                                                child: CircularProgressIndicator(strokeWidth: 2),
+                                              )
+                                            : const Icon(Icons.cloud_download_outlined, size: 16),
+                                        label: Text(
+                                          controller.text.tr('cloudLoad'),
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                        onPressed: (controller.cloudSyncStatus == 'saving' ||
+                                                controller.cloudSyncStatus == 'loading')
+                                            ? null
+                                            : () async {
+                                                setModalState(() {});
+                                                await controller.cloudLoad();
+                                                if (context.mounted) setModalState(() {});
+                                              },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                               const SizedBox(height: 14),
                               const Text(
                                 'App Einstellungen',
@@ -1014,36 +1094,38 @@ class _TopBar extends StatelessWidget {
                                 child: const Text('Schliessen'),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: FilledButton.tonal(
-                                onPressed: () {
-                                  final ok = controller.setPlayerName(
-                                    nameController.text,
-                                  );
-                                  if (!ok &&
-                                      nameController.text.trim() !=
-                                          controller.playerName) {
+                            if (!isLoggedIn) ...[
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: FilledButton.tonal(
+                                  onPressed: () {
+                                    final ok = controller.setPlayerName(
+                                      nameController.text,
+                                    );
+                                    if (!ok &&
+                                        nameController.text.trim() !=
+                                            controller.playerName) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Name ungültig oder unverändert (2-20 Zeichen).',
+                                          ),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    setModalState(() {});
+                                    FocusScope.of(context).unfocus();
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text(
-                                          'Name ungültig oder unverändert (2-20 Zeichen).',
-                                        ),
+                                        content: Text('Profil gespeichert.'),
                                       ),
                                     );
-                                    return;
-                                  }
-                                  setModalState(() {});
-                                  FocusScope.of(context).unfocus();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Profil gespeichert.'),
-                                    ),
-                                  );
-                                },
-                                child: const Text('Speichern'),
+                                  },
+                                  child: const Text('Speichern'),
+                                ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       ],
@@ -1063,7 +1145,9 @@ class _TopBar extends StatelessWidget {
     // Do NOT call nameController.dispose() here — the closing sheet
     // animation still references it and disposing triggers cascading
     // "used after disposed" / GlobalKey errors.  GC will reclaim it.
-    controller.setPlayerName(pendingName);
+    if (!isLoggedIn) {
+      controller.setPlayerName(pendingName);
+    }
   }
 }
 
@@ -2455,14 +2539,30 @@ Future<void> _showSkillTree(
   );
 }
 
-class _BottomMenu extends StatelessWidget {
+class _BottomMenu extends StatefulWidget {
   const _BottomMenu({required this.controller, this.dense = false});
 
   final GameController controller;
   final bool dense;
 
   @override
+  State<_BottomMenu> createState() => _BottomMenuState();
+}
+
+class _BottomMenuState extends State<_BottomMenu> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
+    final dense = widget.dense;
     final text = controller.text;
 
     return Container(
@@ -2500,12 +2600,21 @@ class _BottomMenu extends StatelessWidget {
               dense: dense,
               onTap: () => _showWorldPanel(context, controller),
             ),
-            _MenuButton(
-              iconPath: 'assets/icons/menu_clan.svg',
-              label: text.tr('menuClan'),
-              dense: dense,
-              onTap: () => _showTalentTree(context, controller),
-            ),
+            if (ApiService.instance.isLoggedIn)
+              _MenuButton(
+                iconPath: 'assets/icons/menu_clan.svg',
+                label: text.tr('menuClan'),
+                dense: dense,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => ClanScreen(
+                      text: text,
+                      controller: controller,
+                    ),
+                  ),
+                ),
+              ),
             _MenuButton(
               iconPath: 'assets/icons/menu_shop.svg',
               label: text.tr('menuShop'),
@@ -2570,16 +2679,58 @@ class _BottomMenu extends StatelessWidget {
             );
           }
 
-          final columns = constraints.maxWidth < 390 ? 2 : 3;
-          final spacing = _rs(context, 6, min: 4);
-          final itemWidth =
-              (constraints.maxWidth - ((columns - 1) * spacing)) / columns;
-          return Wrap(
-            spacing: spacing,
-            runSpacing: spacing,
-            children: buttons
-                .map((button) => SizedBox(width: itemWidth, child: button))
-                .toList(growable: false),
+          final pageCount = (buttons.length / 2).ceil();
+          final btnHeight = _rs(context, dense ? 54 : 64, min: 48, max: 82);
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: btnHeight,
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: pageCount,
+                  onPageChanged: (page) =>
+                      setState(() => _currentPage = page),
+                  itemBuilder: (context, pageIndex) {
+                    final start = pageIndex * 2;
+                    final end = (start + 2).clamp(0, buttons.length);
+                    final pageBtns = buttons.sublist(start, end);
+                    return Row(
+                      children: pageBtns
+                          .map((b) => Expanded(child: b))
+                          .toList(growable: false),
+                    );
+                  },
+                ),
+              ),
+              SizedBox(height: _rs(context, 6, min: 4)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(pageCount, (i) {
+                  final active = i == _currentPage;
+                  return GestureDetector(
+                    onTap: () => _pageController.animateToPage(
+                      i,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                    ),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: active ? 14 : 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: active
+                            ? context.textPrimary
+                            : context.textPrimary.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
           );
         },
       ),
@@ -3005,6 +3156,7 @@ class _BottomMenu extends StatelessWidget {
     );
   }
 
+  // ignore: unused_element
   Future<void> _showTalentTree(
     BuildContext context,
     GameController controller,
@@ -3029,16 +3181,6 @@ class _BottomMenu extends StatelessWidget {
                   if (!ok) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Nicht genug Scherben.')),
-                    );
-                  }
-                  setModalState(() {});
-                }
-
-                Future<void> tryUpgradeClanPerk(ClanPerkType type) async {
-                  final ok = controller.upgradeClanPerk(type);
-                  if (!ok) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Nicht genug Clan-Punkte.')),
                     );
                   }
                   setModalState(() {});
@@ -3080,62 +3222,9 @@ class _BottomMenu extends StatelessWidget {
                   );
                 }
 
-                Widget clanPerkCard({
-                  required ClanPerkType type,
-                  double? width,
-                }) {
-                  final title = controller.clanPerkTitle(type);
-                  final desc = controller.clanPerkDescription(type);
-                  final level = controller.clanPerkLevel(type);
-                  final cost = controller.clanPerkCost(type);
-                  final affordable = controller.clanPoints >= cost;
-
-                  return Container(
-                    width: width,
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: context.cardBg,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: context.borderHeavy),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(desc, style: const TextStyle(fontSize: 12)),
-                        const SizedBox(height: 4),
-                        Text('Perk-Level $level | Kosten $cost Clan-Punkte'),
-                        const SizedBox(height: 6),
-                        FilledButton.tonal(
-                          onPressed: affordable
-                              ? () => tryUpgradeClanPerk(type)
-                              : null,
-                          child: const Text('Perk verbessern'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
                 return LayoutBuilder(
                   builder: (context, constraints) {
                     final wide = constraints.maxWidth >= 900;
-                    final clanCards = ClanPerkType.values
-                        .map((type) {
-                          if (!wide) {
-                            return clanPerkCard(type: type);
-                          }
-                          return clanPerkCard(
-                            type: type,
-                            width: (constraints.maxWidth - 10) / 2,
-                          );
-                        })
-                        .toList(growable: false);
 
                     final talentCards = [
                       talentCard(
@@ -3165,7 +3254,7 @@ class _BottomMenu extends StatelessWidget {
                       padding: const EdgeInsets.all(12),
                       children: [
                         Text(
-                          'Clan Stufe ${controller.clanLevel}',
+                          'Talentzweig',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -3173,38 +3262,9 @@ class _BottomMenu extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Clan-XP: ${controller.clanXp}/${controller.clanXpRequired}',
-                        ),
-                        const SizedBox(height: 6),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(999),
-                          child: LinearProgressIndicator(
-                            value: controller.clanXpProgress,
-                            minHeight: 8,
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              Color(0xFF9BC89E),
-                            ),
-                            backgroundColor: context.borderHeavy,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Clan-Punkte: ${controller.clanPoints} | Scherben: ${controller.forgeShards}',
+                          'Verfügbare Scherben: ${controller.forgeShards}',
                         ),
                         const SizedBox(height: 12),
-                        const Text(
-                          'Clan Perks',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        if (!wide)
-                          ...clanCards
-                        else
-                          Wrap(spacing: 10, runSpacing: 0, children: clanCards),
-                        const SizedBox(height: 8),
                         const Text(
                           'Talentzweig (Scherben)',
                           style: TextStyle(
@@ -6345,7 +6405,7 @@ class _TutorialOverlayState extends State<_TutorialOverlay> {
       body:
           'Welt: Meilensteine und Item-Set-Sammlung.\n'
           'Quests: Erledige Aufgaben für Belohnungen.\n'
-          'Clan: Investiere Scherben in dauerhafte Boni.\n\n'
+          'Clan: Tritt einem Clan bei oder gründe einen eigenen (1000 Gold).\n\n'
           'Im Shop findest du taeglich wechselnde Angebote!',
     ),
     _TutorialStep(

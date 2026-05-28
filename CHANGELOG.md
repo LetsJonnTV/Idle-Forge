@@ -2,7 +2,64 @@
 
 All notable changes to Idle Forge are documented here.
 
+
+## [2.1.0] - 2026-05-28
+
+### Added
+- **Echtes Clan-System**: Vollständig server-gestütztes Clan-System ersetzt die lokale Clan-Logik
+  - Neue `ClanScreen`-Seite mit Tab-Navigation: Clan suchen + Einladungen (außerhalb Clan) / Mitglieder + Chat (innerhalb Clan)
+  - **Clan gründen**: Kostet 1000 Gold, öffnet Dialog für Name und Beschreibung
+  - **Clan beitreten**: Spieler ohne Clan können offenen Clans beitreten
+  - **Clan verlassen**: Mit Bestätigungsdialog; Leader übergibt Führung automatisch oder löscht den Clan wenn solo
+  - **Clan-Chat**: Echtzeit-ähnlicher Chat mit 5-Sekunden-Polling, Scroll-to-Bottom beim Senden
+  - **Einladungssystem**: Clan-Leader kann Spieler per Benutzername einladen; Spieler können annehmen/ablehnen
+  - Clan-Menü-Button nur für eingeloggte Spieler sichtbar
+- **Neue Backend-Endpunkte**:
+  - `GET/POST /api/clans/[id]/chat` — Clan-Chat lesen und schreiben
+  - `POST /api/clans/[id]/leave` — Clan verlassen (mit Leadership-Transfer-Logik)
+  - `POST /api/clans/[id]/invite` — Spieler einladen (nur Leader)
+  - `GET /api/clans/invites` — Ausstehende Einladungen abrufen
+  - `PUT /api/clans/invites` — Auf Einladung antworten (annehmen/ablehnen)
+  - `GET /api/players/me` — Eigenes Spielerprofil inkl. Clan-ID abrufen
+- **Neue DB-Tabellen** (`schema.sql`):
+  - `clan_chat` — Clan-Nachrichten mit RLS
+  - `clan_invites` — Clan-Einladungen mit Status-Constraints und RLS
+- **Neue `ApiService`-Methoden**: `getMyProfile`, `getClanChat`, `sendClanMessage`, `invitePlayerToClan`, `getMyInvites`, `respondToInvite`, `leaveClan`
+- **`spendGold(int amount)`** in `GameController` — atomares Gold-Abziehen mit Rückgabewert
+- Neue Übersetzungsschlüssel für das Clan-System in DE und EN
+
+### Changed
+- **Clan-Menü-Button** navigiert jetzt zur echten `ClanScreen` statt zum alten lokalen Talent-/Clan-Panel
+- **`_showTalentTree`** enthält nur noch den Talentzweig (Scherben-Upgrades), keine Clan-Perks mehr
+- Tutorial-Text für Clan angepasst: beschreibt jetzt das echte Clan-Beitreten/-Gründen
+
+### Removed
+- **Lokale Clan-Logik** vollständig entfernt:
+  - `ClanPerkType`-Enum aus `models.dart` entfernt
+  - Felder `clanLevel`, `clanXp`, `clanPoints`, `clanWarpathLevel`, `clanBulwarkLevel`, `clanProsperityLevel`, `clanRitualsLevel` aus `GameController` entfernt
+  - Methoden `clanPerkLevel`, `clanPerkCost`, `clanPerkTitle`, `clanPerkDescription`, `upgradeClanPerk`, `_gainClanXp` entfernt
+  - Alle ~15 `_gainClanXp()`-Aufrufe entfernt
+  - Clan-Felder aus Save/Load-Maps entfernt (alte Spielstände werden ignoriert, rückwärtskompatibel)
+  - Clan-Perk-Sektion aus `_showTalentTree` entfernt
+
+
 ## [2.0.1] - 2026-05-28
+
+### Added
+- **Cloud-Spielstand**: Eingeloggte Spieler können ihren Spielstand in der Cloud speichern und laden
+  - Neuer Backend-Endpunkt `GET /api/saves` (Laden) und `PUT /api/saves` (Speichern) mit JWT-Auth
+  - Neue Supabase-Tabelle `game_saves` (`player_id`, `save_data JSONB`, `updated_at`)
+  - **Auto-Sync beim Start**: Cloud-Stand wird automatisch geladen, wenn er neuer ist als der lokale Stand
+  - **Auto-Cloud-Save**: Spielstand wird automatisch alle 5 Minuten in die Cloud hochgeladen (wenn eingeloggt)
+  - **Manueller Cloud-Speicher**: „In Cloud speichern" und „Aus Cloud laden" Buttons im Profil-Panel
+  - Statusanzeige im Profil-Panel (Wird gespeichert… / Erfolgreich / Fehler) mit Spinner
+  - Übersetzungen für alle Cloud-Save-Texte in DE und EN
+
+### Changed
+- Menü-Buttons im Kompaktmodus (Smartphone) werden jetzt als wischbares **PageView** angezeigt — immer 2 Buttons nebeneinander, nach links wischen für die nächsten 2
+- Punkte-Indikatoren unter dem Menü zeigen die aktuelle Seite an und sind antippbar
+- Spielername wird beim Login automatisch auf den Account-Namen gesetzt und kann danach nicht mehr manuell geändert werden (Namensfeld gesperrt, Speichern-Button ausgeblendet)
+- Begleiter aus den Profil-/User-Einstellungen entfernt — er ist jetzt ausschließlich über die eigene **Haustier**-Menükachel erreichbar
 
 ### Fixed
 - Social-Panel (Online-Button) ist jetzt durch Login-Gating gesichert — Zugriff ohne Account wird sofort zur Auth-Seite geleitet

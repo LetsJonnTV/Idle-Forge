@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_text.dart';
+import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import 'dungeon_controller.dart';
 import 'models.dart';
@@ -152,7 +153,12 @@ class GameController extends ChangeNotifier {
   Timer? _timer;
   DateTime? _lastTickAt;
   DateTime? _lastSaveAt;
+  DateTime? _lastCloudSaveAt;
   bool _isLoaded = false;
+
+  /// Tracks the last cloud save/load result for UI feedback.
+  /// Values: null = idle, 'saving', 'saved', 'loading', 'loaded', 'error'
+  String? cloudSyncStatus;
 
   int gold = 60;
   int hammers = 0;
@@ -182,14 +188,6 @@ class GameController extends ChangeNotifier {
   int talentAttackLevel = 0;
   int talentVitalityLevel = 0;
   int talentForgeLevel = 0;
-
-  int clanLevel = 1;
-  int clanXp = 0;
-  int clanPoints = 0;
-  int clanWarpathLevel = 0;
-  int clanBulwarkLevel = 0;
-  int clanProsperityLevel = 0;
-  int clanRitualsLevel = 0;
 
   int skillStrikeLevel = 0;
   int skillWhirlLevel = 0;
@@ -1151,15 +1149,12 @@ class GameController extends ChangeNotifier {
   int get talentVitalityCost => 3 + (talentVitalityLevel * 2);
   int get talentForgeCost => 4 + (talentForgeLevel * 3);
 
-  int get clanXpRequired => 120 + ((clanLevel - 1) * 80);
-  double get clanXpProgress =>
-      clanXpRequired <= 0 ? 0 : (clanXp / clanXpRequired).clamp(0.0, 1.0);
-  double get clanDamageBonusMultiplier => 1 + (clanWarpathLevel * 0.04);
-  double get clanDefenseReduction => (clanBulwarkLevel * 0.03).clamp(0.0, 0.45);
-  double get clanGoldBonusMultiplier => 1 + (clanProsperityLevel * 0.04);
-  double get clanShardBonusMultiplier => 1 + (clanRitualsLevel * 0.05);
+  double get clanDamageBonusMultiplier => 1.0;
+  double get clanDefenseReduction => 0.0;
+  double get clanGoldBonusMultiplier => 1.0;
+  double get clanShardBonusMultiplier => 1.0;
 
-  int get skillStrikeCost => 2 + (skillStrikeLevel * 2);
+  int get skillStrikeCost=> 2 + (skillStrikeLevel * 2);
   int get skillWhirlCost => 2 + (skillWhirlLevel * 2);
   int get skillFocusCost => 3 + (skillFocusLevel * 3);
 
@@ -1340,7 +1335,6 @@ class GameController extends ChangeNotifier {
     claimedAchievements.add(achievementId);
     gold += _scaledGoldReward(achievement.definition.rewardGold);
     forgeShards += _scaledShardReward(achievement.definition.rewardShards);
-    _gainClanXp(8);
     _save();
     notifyListeners();
     return true;
@@ -1364,7 +1358,6 @@ class GameController extends ChangeNotifier {
 
     gold += _scaledGoldReward(rewardGold);
     forgeShards += _scaledShardReward(rewardShards);
-    _gainClanXp(claimable.length * 5);
     _save();
     notifyListeners();
     return claimable.length;
@@ -1673,7 +1666,6 @@ class GameController extends ChangeNotifier {
     claimedSetRewards.add(setId);
     gold += setCompletionGoldReward(setId);
     forgeShards += setCompletionShardReward(setId);
-    _gainClanXp(24);
     _save();
     notifyListeners();
     return true;
@@ -1793,6 +1785,10 @@ class GameController extends ChangeNotifier {
   Future<void> initialize() async {
     await NotificationService.initialize();
     await _load();
+    // If logged in, try to sync with the cloud save. Use cloud if it is newer.
+    if (ApiService.instance.isLoggedIn) {
+      await _syncCloudOnStartup();
+    }
     checkAndClaimLoginStreak();
     _ensureDailyOffers();
     if (_shopOffers.isEmpty) {
@@ -2129,9 +2125,7 @@ class GameController extends ChangeNotifier {
     if (isBossStage) {
       forgeShards += _scaledShardReward(1);
       bossDefeats += 1;
-      _gainClanXp(28 + chapter);
     } else {
-      _gainClanXp(4 + chapter);
     }
 
     if (isBossStage) {
@@ -2413,7 +2407,6 @@ class GameController extends ChangeNotifier {
 
     _dungeonController.pendingDungeonReward = null;
     _dungeonController.activeDungeonRun = null;
-    _gainClanXp(15);
     _save();
     notifyListeners();
     return reward;
@@ -2478,8 +2471,6 @@ class GameController extends ChangeNotifier {
       isLocked: autoLockEnabled && tier.index >= autoLockFromTier.index,
     );
 
-    _gainClanXp(3 + tier.index);
-
     discoveredSetSlots.add(_collectionKey(setId, slot));
 
     _lastCraftAutoSold = false;
@@ -2541,7 +2532,6 @@ class GameController extends ChangeNotifier {
       (item.sellValue * tuning.goldGainMultiplier * clanGoldBonusMultiplier)
           .round(),
     );
-    _gainClanXp(2);
     _save();
     notifyListeners();
     return true;
@@ -2651,7 +2641,6 @@ class GameController extends ChangeNotifier {
 
     if (soldCount > 0) {
       gold += earnedGold;
-      _gainClanXp(soldCount);
       _save();
       notifyListeners();
     }
@@ -2756,7 +2745,6 @@ class GameController extends ChangeNotifier {
     forgeShards += _scaledShardReward(gained);
     prestigeLevel += gained;
     ascensionPoints += gained;
-    _gainClanXp(40 + (gained * 2));
 
     gold = 60;
     hammers = 0;
@@ -2790,7 +2778,6 @@ class GameController extends ChangeNotifier {
     gold += quest.rewardGold;
     hammers += quest.rewardHammers;
     forgeShards += quest.rewardShards;
-    _gainClanXp(18 + (questCycle * 2));
 
     if (type == QuestType.kills) {
       questKillsClaimed = true;
@@ -2851,67 +2838,19 @@ class GameController extends ChangeNotifier {
     return true;
   }
 
-  int clanPerkLevel(ClanPerkType type) {
-    return switch (type) {
-      ClanPerkType.warpath => clanWarpathLevel,
-      ClanPerkType.bulwark => clanBulwarkLevel,
-      ClanPerkType.prosperity => clanProsperityLevel,
-      ClanPerkType.rituals => clanRitualsLevel,
-    };
-  }
-
-  int clanPerkCost(ClanPerkType type) {
-    final level = clanPerkLevel(type);
-    return 1 + (level ~/ 2);
-  }
-
-  String clanPerkTitle(ClanPerkType type) {
-    return switch (type) {
-      ClanPerkType.warpath => 'Kriegspfad',
-      ClanPerkType.bulwark => 'Bollwerk',
-      ClanPerkType.prosperity => 'Wohlstand',
-      ClanPerkType.rituals => 'Rituale',
-    };
-  }
-
-  String clanPerkDescription(ClanPerkType type) {
-    return switch (type) {
-      ClanPerkType.warpath => '+4% Gesamtschaden pro Stufe.',
-      ClanPerkType.bulwark => '-3% erlittener Schaden pro Stufe.',
-      ClanPerkType.prosperity =>
-        '+4% Gold aus Belohnungen und Verkaeufen pro Stufe.',
-      ClanPerkType.rituals => '+5% Scherben aus Belohnungen pro Stufe.',
-    };
-  }
-
-  bool upgradeClanPerk(ClanPerkType type) {
-    final cost = clanPerkCost(type);
-    if (clanPoints < cost) {
-      return false;
-    }
-
-    clanPoints -= cost;
-    switch (type) {
-      case ClanPerkType.warpath:
-        clanWarpathLevel += 1;
-      case ClanPerkType.bulwark:
-        clanBulwarkLevel += 1;
-      case ClanPerkType.prosperity:
-        clanProsperityLevel += 1;
-      case ClanPerkType.rituals:
-        clanRitualsLevel += 1;
-    }
-
-    _save();
-    notifyListeners();
-    return true;
-  }
-
   int _scaledGoldReward(int base) {
     return max(
       1,
       (base * clanGoldBonusMultiplier * ascensionGoldMultiplier).round(),
     );
+  }
+
+  /// Deduct gold. Returns false if insufficient funds.
+  bool spendGold(int amount) {
+    if (gold < amount) return false;
+    gold -= amount;
+    notifyListeners();
+    return true;
   }
 
   bool canUnlockAscensionNode(String nodeId) {
@@ -2940,25 +2879,6 @@ class GameController extends ChangeNotifier {
 
   int _scaledShardReward(int base) {
     return max(1, (base * clanShardBonusMultiplier).round());
-  }
-
-  void _gainClanXp(int amount) {
-    if (amount <= 0) {
-      return;
-    }
-
-    clanXp += amount;
-    var leveled = false;
-    while (clanXp >= clanXpRequired) {
-      clanXp -= clanXpRequired;
-      clanLevel += 1;
-      clanPoints += 1;
-      leveled = true;
-    }
-
-    if (leveled) {
-      lastCombatEvent = 'Clan aufgestiegen!';
-    }
   }
 
   bool upgradeShop(ShopUpgradeType type) {
@@ -3065,7 +2985,6 @@ class GameController extends ChangeNotifier {
     }
 
     source[index] = offer.copyWith(stock: max(0, offer.stock - 1));
-    _gainClanXp(offer.isDaily ? 6 : 3);
     _save();
     notifyListeners();
     return true;
@@ -3709,14 +3628,6 @@ class GameController extends ChangeNotifier {
     talentVitalityLevel =
         map['talentVitalityLevel'] as int? ?? talentVitalityLevel;
     talentForgeLevel = map['talentForgeLevel'] as int? ?? talentForgeLevel;
-    clanLevel = map['clanLevel'] as int? ?? clanLevel;
-    clanXp = map['clanXp'] as int? ?? clanXp;
-    clanPoints = map['clanPoints'] as int? ?? clanPoints;
-    clanWarpathLevel = map['clanWarpathLevel'] as int? ?? clanWarpathLevel;
-    clanBulwarkLevel = map['clanBulwarkLevel'] as int? ?? clanBulwarkLevel;
-    clanProsperityLevel =
-        map['clanProsperityLevel'] as int? ?? clanProsperityLevel;
-    clanRitualsLevel = map['clanRitualsLevel'] as int? ?? clanRitualsLevel;
     skillStrikeLevel = map['skillStrikeLevel'] as int? ?? skillStrikeLevel;
     skillWhirlLevel = map['skillWhirlLevel'] as int? ?? skillWhirlLevel;
     skillFocusLevel = map['skillFocusLevel'] as int? ?? skillFocusLevel;
@@ -3938,7 +3849,6 @@ class GameController extends ChangeNotifier {
 
     gold += earnedGold;
     hammers += earnedHammers;
-    _gainClanXp(max(4, estimatedKills ~/ 3));
 
     lastOfflineReward = OfflineReward(
       gold: earnedGold,
@@ -4001,7 +3911,6 @@ class GameController extends ChangeNotifier {
     }
 
     expedition.claimed = true;
-    _gainClanXp(8 + def.durationHours);
     _save();
     notifyListeners();
     return true;
@@ -4089,7 +3998,6 @@ class GameController extends ChangeNotifier {
     final result = _craftItemWithTier(recipe.resultTier);
     inventory.add(result);
     craftedItems += 1;
-    _gainClanXp(10 + recipe.resultTier.index * 3);
     _save();
     notifyListeners();
     return result;
@@ -4114,9 +4022,8 @@ class GameController extends ChangeNotifier {
     }
   }
 
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    final map = {
+  Map<String, dynamic> _buildSaveMap() {
+    return {
       'playerName': playerName,
       'darkModeEnabled': darkModeEnabled,
       'targetFps': targetFps,
@@ -4141,13 +4048,6 @@ class GameController extends ChangeNotifier {
       'talentAttackLevel': talentAttackLevel,
       'talentVitalityLevel': talentVitalityLevel,
       'talentForgeLevel': talentForgeLevel,
-      'clanLevel': clanLevel,
-      'clanXp': clanXp,
-      'clanPoints': clanPoints,
-      'clanWarpathLevel': clanWarpathLevel,
-      'clanBulwarkLevel': clanBulwarkLevel,
-      'clanProsperityLevel': clanProsperityLevel,
-      'clanRitualsLevel': clanRitualsLevel,
       'skillStrikeLevel': skillStrikeLevel,
       'skillWhirlLevel': skillWhirlLevel,
       'skillFocusLevel': skillFocusLevel,
@@ -4208,7 +4108,97 @@ class GameController extends ChangeNotifier {
       'loginStreakDays': loginStreakDays,
       'lastLoginDateKey': _lastLoginDateKey,
     };
+  }
 
+  Future<void> _save() async {
+    final prefs = await SharedPreferences.getInstance();
+    final map = _buildSaveMap();
     await prefs.setString(_saveKey, jsonEncode(map));
+
+    // Periodic cloud auto-save: upload at most once every 5 minutes.
+    if (ApiService.instance.isLoggedIn) {
+      final now = DateTime.now();
+      if (_lastCloudSaveAt == null ||
+          now.difference(_lastCloudSaveAt!) >= const Duration(minutes: 5)) {
+        _lastCloudSaveAt = now;
+        ApiService.instance.uploadSave(map).ignore();
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------ //
+  //  Public Cloud Save / Load
+  // ------------------------------------------------------------------ //
+
+  /// Manually save the current game state to the cloud.
+  /// Updates [cloudSyncStatus] and notifies listeners.
+  Future<void> cloudSave() async {
+    if (!ApiService.instance.isLoggedIn) return;
+    cloudSyncStatus = 'saving';
+    notifyListeners();
+    try {
+      await _save();
+      final map = _buildSaveMap();
+      final ok = await ApiService.instance.uploadSave(map);
+      if (ok) {
+        _lastCloudSaveAt = DateTime.now();
+        cloudSyncStatus = 'saved';
+      } else {
+        cloudSyncStatus = 'error';
+      }
+    } catch (_) {
+      cloudSyncStatus = 'error';
+    }
+    notifyListeners();
+  }
+
+  /// Manually load the game state from the cloud.
+  /// If the cloud save is newer than the local save, it is applied.
+  /// Updates [cloudSyncStatus] and notifies listeners.
+  Future<void> cloudLoad() async {
+    if (!ApiService.instance.isLoggedIn) return;
+    cloudSyncStatus = 'loading';
+    notifyListeners();
+    try {
+      final cloudData = await ApiService.instance.downloadSave();
+      if (cloudData == null) {
+        cloudSyncStatus = 'error';
+        notifyListeners();
+        return;
+      }
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_saveKey, jsonEncode(cloudData));
+      await _load();
+      _spawnEnemy();
+      playerHp = playerHp.clamp(1.0, maxPlayerHp).toDouble();
+      cloudSyncStatus = 'loaded';
+    } catch (_) {
+      cloudSyncStatus = 'error';
+    }
+    notifyListeners();
+  }
+
+  /// Called once on startup to auto-load cloud save if it is newer.
+  Future<void> _syncCloudOnStartup() async {
+    try {
+      final cloudData = await ApiService.instance.downloadSave();
+      if (cloudData == null) return;
+
+      final cloudMillis = cloudData['lastActiveMillis'] as int? ?? 0;
+      final prefs = await SharedPreferences.getInstance();
+      final localRaw = prefs.getString(_saveKey);
+      int localMillis = 0;
+      if (localRaw != null) {
+        final localMap = jsonDecode(localRaw) as Map<String, dynamic>;
+        localMillis = localMap['lastActiveMillis'] as int? ?? 0;
+      }
+
+      if (cloudMillis > localMillis) {
+        await prefs.setString(_saveKey, jsonEncode(cloudData));
+        await _load();
+      }
+    } catch (_) {
+      // Silently ignore startup cloud sync errors.
+    }
   }
 }

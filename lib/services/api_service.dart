@@ -422,6 +422,97 @@ class ApiService {
     }
   }
 
+  /// Get current player's profile (clan_id, etc.).
+  Future<Map<String, dynamic>?> getMyProfile() async {
+    if (!isLoggedIn) return null;
+    try {
+      final data = await _get('/api/players/me');
+      return data['player'] as Map<String, dynamic>?;
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Get chat messages for a clan.
+  Future<List<Map<String, dynamic>>> getClanChat(String clanId) async {
+    if (!isLoggedIn) return [];
+    try {
+      final data = await _get('/api/clans/$clanId/chat');
+      return List<Map<String, dynamic>>.from(data['messages'] as List? ?? []);
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Send a chat message to a clan.
+  Future<bool> sendClanMessage(String clanId, String message) async {
+    if (!isLoggedIn) return false;
+    try {
+      await _post('/api/clans/$clanId/chat', {'message': message});
+      return true;
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Invite a player to a clan by username (leader only).
+  Future<bool> invitePlayerToClan(String clanId, String username) async {
+    if (!isLoggedIn) return false;
+    try {
+      await _post('/api/clans/$clanId/invite', {'username': username});
+      return true;
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Get pending invites for the current player.
+  Future<List<Map<String, dynamic>>> getMyInvites() async {
+    if (!isLoggedIn) return [];
+    try {
+      final data = await _get('/api/clans/invites');
+      return List<Map<String, dynamic>>.from(data['invites'] as List? ?? []);
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Respond to a clan invite.
+  Future<bool> respondToInvite(String inviteId, bool accept) async {
+    if (!isLoggedIn) return false;
+    try {
+      await _put('/api/clans/invites', {'inviteId': inviteId, 'accept': accept});
+      return true;
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Leave a clan.
+  Future<bool> leaveClan(String clanId) async {
+    if (!isLoggedIn) return false;
+    try {
+      await _post('/api/clans/$clanId/leave', {});
+      return true;
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // ------------------------------------------------------------------ //
   //  PVP
   // ------------------------------------------------------------------ //
@@ -520,6 +611,40 @@ class ApiService {
       rethrow;
     } catch (_) {
       return [];
+    }
+  }
+
+  // ------------------------------------------------------------------ //
+  //  Cloud Save
+  // ------------------------------------------------------------------ //
+
+  /// Upload the full game save JSON to the server.
+  Future<bool> uploadSave(Map<String, dynamic> saveData) async {
+    if (!isLoggedIn) return false;
+    try {
+      await _put('/api/saves', {'save_data': saveData});
+      return true;
+    } on ApiException catch (e) {
+      if (e.isOffline) return false;
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Download the full game save JSON from the server.
+  /// Returns null if no save exists on the server or on any error.
+  Future<Map<String, dynamic>?> downloadSave() async {
+    if (!isLoggedIn) return null;
+    try {
+      final data = await _get('/api/saves');
+      final save = data['save'];
+      if (save == null) return null;
+      return Map<String, dynamic>.from(save as Map);
+    } on ApiException {
+      return null;
+    } catch (_) {
+      return null;
     }
   }
 }
