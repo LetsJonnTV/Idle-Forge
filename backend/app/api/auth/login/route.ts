@@ -30,12 +30,16 @@ export async function POST(request: NextRequest) {
   // Fetch player
   const { data: player, error } = await supabase
     .from('players')
-    .select('id, username, password_hash')
+    .select('id, username, password_hash, is_admin, is_blocked')
     .eq('username', cleanUsername)
     .maybeSingle();
 
   if (error || !player) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+  }
+
+  if (player.is_blocked) {
+    return NextResponse.json({ error: 'Account blocked' }, { status: 403 });
   }
 
   // Verify password — constant-time comparison
@@ -44,7 +48,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
-  const token = signJwt({ playerId: player.id, username: player.username });
+  const token = signJwt({ playerId: player.id, username: player.username, isAdmin: player.is_admin ?? false });
 
-  return NextResponse.json({ token, playerId: player.id, username: player.username });
+  return NextResponse.json({ token, playerId: player.id, username: player.username, isAdmin: player.is_admin ?? false });
 }

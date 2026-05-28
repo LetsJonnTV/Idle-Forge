@@ -21,7 +21,7 @@
 
       <!-- Logged-in state -->
       <ng-container *ngIf="isLoggedIn">
-        <span class="user-chip" aria-label="Angemeldeter Benutzer: {{ username }}">
+        <span class="user-chip" [attr.aria-label]="'Angemeldeter Benutzer: ' + username">
           <span class="user-icon">👤</span>
           <span class="username-text">{{ username }}</span>
         </span>

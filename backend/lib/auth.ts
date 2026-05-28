@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 export interface JwtPayload {
   playerId: string;
   username: string;
+  isAdmin: boolean;
   iat?: number;
   exp?: number;
 }
