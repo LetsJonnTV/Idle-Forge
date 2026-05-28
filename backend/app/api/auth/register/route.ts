@@ -63,10 +63,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to create account' }, { status: 500 });
   }
 
-  const token = signJwt({ playerId: player.id, username: player.username });
+  const token = signJwt({ playerId: player.id, username: player.username, isAdmin: false });
 
   return NextResponse.json(
-    { token, playerId: player.id, username: player.username },
+    { token, playerId: player.id, username: player.username, isAdmin: false },
     { status: 201 }
   );
 }
