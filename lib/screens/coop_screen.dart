@@ -380,6 +380,7 @@ class _CoopScreenState extends State<CoopScreen> {
                         textSecondary: _textSecondary,
                         accent: _accent,
                         onJoin: () => _enterSession(s),
+                        text: widget.text,
                       ),
                     ),
                   ],
@@ -436,8 +437,10 @@ class _CoopScreenState extends State<CoopScreen> {
     final sessionId = session['id'] as String? ?? '';
     final host = session['host'] as Map<String, dynamic>? ?? {};
     final guest = session['guest'] as Map<String, dynamic>? ?? {};
-    final hostName = host['username'] as String? ?? 'Host';
-    final guestName = guest['username'] as String? ?? 'Waiting...';
+    final hostName =
+        host['username'] as String? ?? widget.text.tr('coopHostLabel');
+    final guestName =
+        guest['username'] as String? ?? widget.text.tr('coopWaitingGuest');
     final hpRatio = _bossHp / _bossMaxHp;
     final bossDefeated = _bossHp <= 0;
 
@@ -568,9 +571,12 @@ class _CoopScreenState extends State<CoopScreen> {
               FilledButton.icon(
                 onPressed: _dealDamage,
                 icon: const Icon(Icons.flash_on_rounded, size: 22),
-                label: const Text(
-                  'Attack!',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                label: Text(
+                  widget.text.tr('coopAttack'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFFB84040),
@@ -584,9 +590,9 @@ class _CoopScreenState extends State<CoopScreen> {
             else
               Column(
                 children: [
-                  const Text(
-                    '🏆 Boss Defeated!',
-                    style: TextStyle(
+                  Text(
+                    '🏆 ${widget.text.tr('coopBossDefeated')}',
+                    style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFFFFD700),
@@ -600,7 +606,7 @@ class _CoopScreenState extends State<CoopScreen> {
                       backgroundColor: _accent,
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text('Collect Reward'),
+                    child: Text(widget.text.tr('coopCollectReward')),
                   ),
                 ],
               ),
@@ -676,6 +682,7 @@ class _SessionCard extends StatelessWidget {
     required this.textSecondary,
     required this.accent,
     required this.onJoin,
+    required this.text,
   });
 
   final Map<String, dynamic> session;
@@ -685,12 +692,13 @@ class _SessionCard extends StatelessWidget {
   final Color textSecondary;
   final Color accent;
   final VoidCallback onJoin;
+  final AppText text;
 
   @override
   Widget build(BuildContext context) {
     final host = session['host'] as Map<String, dynamic>? ?? {};
     final status = session['status'] as String? ?? 'waiting';
-    final hostName = host['username'] as String? ?? 'Unknown';
+    final hostName = host['username'] as String? ?? text.tr('coopHostLabel');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -716,20 +724,25 @@ class _SessionCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Host: $hostName',
+                  '${text.tr('coopHostLabel')}: $hostName',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: textPrimary,
                   ),
                 ),
                 Text(
-                  status == 'waiting' ? 'Waiting for partner' : 'Active',
+                  status == 'waiting'
+                      ? text.tr('coopWaitingPartner')
+                      : text.tr('coopActiveSession'),
                   style: TextStyle(fontSize: 12, color: textSecondary),
                 ),
               ],
             ),
           ),
-          FilledButton.tonal(onPressed: onJoin, child: const Text('Enter')),
+          FilledButton.tonal(
+            onPressed: onJoin,
+            child: Text(text.tr('coopEnterSession')),
+          ),
         ],
       ),
     );

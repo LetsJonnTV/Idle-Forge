@@ -342,8 +342,8 @@ class _BattleCard extends StatelessWidget {
                 ),
                 Text('vs $opponentName', style: TextStyle(color: textPrimary)),
                 Text(
-                  '${isChallenged ? text.tr('you') : opponentName} hat herausgefordert · '
-                  'Str: ${battle['challenger_strength']} vs ${battle['defender_strength']}',
+                  '${isChallenged ? text.tr('you') : opponentName} ${text.tr('pvpChallengedLabel')} · '
+                  '${text.tr('pvpStrLabel')}: ${battle['challenger_strength']} vs ${battle['defender_strength']}',
                   style: TextStyle(fontSize: 12, color: textSecondary),
                 ),
               ],
