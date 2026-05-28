@@ -3,26 +3,31 @@ import bcrypt from 'bcryptjs';
 import { supabase } from '@/lib/supabaseClient';
 import { signJwt } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { optionsResponse, withCors } from '@/lib/cors';
+
+export async function OPTIONS(request: NextRequest) {
+  return optionsResponse(request.headers.get('origin'));
+}
 
 export async function POST(request: NextRequest) {
   // Rate limit
   const ip = getClientIp(request);
   const { allowed } = checkRateLimit(ip);
   if (!allowed) {
-    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    return withCors(NextResponse.json({ error: 'Too many requests' }, { status: 429 }), request.headers.get('origin'));
   }
 
   let body: { username?: string; password?: string };
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    return withCors(NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }), request.headers.get('origin'));
   }
 
   const { username, password } = body;
 
   if (!username || !password) {
-    return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
+    return withCors(NextResponse.json({ error: 'Username and password required' }, { status: 400 }), request.headers.get('origin'));
   }
 
   const cleanUsername = username.trim().toLowerCase();
@@ -36,13 +41,13 @@ export async function POST(request: NextRequest) {
 
   if (error || !player) {
     console.error('Login fetch error:', error);
-    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    return withCors(NextResponse.json({ error: 'Invalid credentials' }, { status: 401 }), request.headers.get('origin'));
   }
 
   // Verify password — constant-time comparison
   const valid = await bcrypt.compare(password, player.password_hash);
   if (!valid) {
-    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    return withCors(NextResponse.json({ error: 'Invalid credentials' }, { status: 401 }), request.headers.get('origin'));
   }
 
   // Fetch admin/blocked flags separately (columns may not exist yet in older DB)
@@ -61,10 +66,13 @@ export async function POST(request: NextRequest) {
   }
 
   if (isBlocked) {
-    return NextResponse.json({ error: 'Account blocked' }, { status: 403 });
+    return withCors(NextResponse.json({ error: 'Account blocked' }, { status: 403 }), request.headers.get('origin'));
   }
 
   const token = signJwt({ playerId: player.id, username: player.username, isAdmin });
 
-  return NextResponse.json({ token, playerId: player.id, username: player.username, isAdmin });
+  return withCors(
+    NextResponse.json({ token, playerId: player.id, username: player.username, isAdmin }),
+    request.headers.get('origin')
+  );
 }
