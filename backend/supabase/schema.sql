@@ -26,7 +26,9 @@ CREATE TABLE IF NOT EXISTS players (
   total_strength INT DEFAULT 0,
   prestige_level INT DEFAULT 0,
   chapter INT DEFAULT 1,
-  clan_id UUID REFERENCES clans(id) ON DELETE SET NULL
+  clan_id UUID REFERENCES clans(id) ON DELETE SET NULL,
+  is_admin BOOLEAN DEFAULT false,
+  is_blocked BOOLEAN DEFAULT false
 );
 
 -- Add FK on clans.leader_id now that players exists (idempotent)
@@ -168,8 +170,31 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ============================================================
--- CLAN CHAT
+-- PENDING REWARDS (Admin → Player real-time gifts)
 -- ============================================================
+CREATE TABLE IF NOT EXISTS pending_rewards (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  player_id UUID REFERENCES players(id) ON DELETE CASCADE,
+  reward_type TEXT CHECK (reward_type IN ('gold', 'item')) NOT NULL,
+  amount INT,
+  item_id TEXT,
+  given_by UUID REFERENCES players(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_pending_rewards_player ON pending_rewards(player_id);
+
+ALTER TABLE pending_rewards ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY "Allow all pending_rewards" ON pending_rewards FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Migration: add is_admin / is_blocked to existing players table (idempotent)
+DO $$ BEGIN
+  ALTER TABLE players ADD COLUMN is_admin BOOLEAN DEFAULT false;
+EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+DO $$ BEGIN
+  ALTER TABLE players ADD COLUMN is_blocked BOOLEAN DEFAULT false;
+EXCEPTION WHEN duplicate_column THEN NULL; END $$;
 CREATE TABLE IF NOT EXISTS clan_chat (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   clan_id UUID REFERENCES clans(id) ON DELETE CASCADE,

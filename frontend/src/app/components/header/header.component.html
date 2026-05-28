@@ -1,0 +1,44 @@
+<header class="site-header" role="banner">
+  <div class="header-inner">
+
+    <!-- Brand / Logo -->
+    <a routerLink="/" class="brand" aria-label="Idle Forge – Startseite">
+      ⚒️ <span>Idle Forge</span>
+    </a>
+
+    <!-- Navigation / Auth Controls -->
+    <nav class="header-nav" aria-label="Hauptnavigation">
+
+      <!-- Logged-out state -->
+      <ng-container *ngIf="!isLoggedIn">
+        <button class="btn btn-secondary btn-sm" (click)="openLogin()" aria-label="Einloggen">
+          Einloggen
+        </button>
+        <button class="btn btn-primary btn-sm" (click)="openRegister()" aria-label="Registrieren">
+          Registrieren
+        </button>
+      </ng-container>
+
+      <!-- Logged-in state -->
+      <ng-container *ngIf="isLoggedIn">
+        <span class="user-chip" [attr.aria-label]="'Angemeldeter Benutzer: ' + username">
+          <span class="user-icon">👤</span>
+          <span class="username-text">{{ username }}</span>
+        </span>
+
+        <a routerLink="/dashboard" routerLinkActive="active" class="btn btn-secondary btn-sm">
+          Dashboard
+        </a>
+
+        <a *ngIf="isAdmin" routerLink="/admin" routerLinkActive="active" class="btn btn-secondary btn-sm">
+          Admin
+        </a>
+
+        <button class="btn btn-danger btn-sm" (click)="logout()" aria-label="Abmelden">
+          Abmelden
+        </button>
+      </ng-container>
+
+    </nav>
+  </div>
+</header>

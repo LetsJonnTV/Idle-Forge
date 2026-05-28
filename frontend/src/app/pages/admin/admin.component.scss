@@ -1,0 +1,235 @@
+/* ── Page wrapper ────────────────────────────────────── */
+.admin-page {
+  min-height: calc(100vh - 56px);
+  background: var(--bg);
+  padding: 2rem 1.5rem 4rem;
+}
+
+.admin-container {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ── Header ──────────────────────────────────────────── */
+.admin-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.admin-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.admin-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #f0a840, #e8922a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.admin-badge {
+  font-size: 0.72rem;
+  padding: 0.25rem 0.65rem;
+}
+
+.admin-subtitle {
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── Search ──────────────────────────────────────────── */
+.search-wrapper {
+  .input {
+    max-width: 420px;
+    font-size: 0.95rem;
+  }
+}
+
+/* ── Table wrapper ───────────────────────────────────── */
+.table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+/* ── Player table ────────────────────────────────────── */
+.player-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+
+  thead tr {
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    padding: 0.8rem 1rem;
+    text-align: left;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+  }
+}
+
+.num-col {
+  text-align: right;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ── Row states ──────────────────────────────────────── */
+.row-admin {
+  background: rgba(232, 146, 42, 0.03);
+}
+
+.row-blocked td {
+  opacity: 0.6;
+}
+
+/* ── Username cell ───────────────────────────────────── */
+.username-cell {
+  min-width: 150px;
+}
+
+.player-name {
+  font-weight: 700;
+  color: var(--text);
+  display: block;
+}
+
+.joined-date {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+}
+
+.ml-xs {
+  margin-left: 0.35rem;
+}
+
+/* ── Actions cell ────────────────────────────────────── */
+.actions-th {
+  text-align: left;
+  min-width: 260px;
+}
+
+.actions-cell {
+  vertical-align: top;
+  min-width: 260px;
+}
+
+.row-msg {
+  font-size: 0.8rem;
+  color: var(--accent);
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+
+.action-btns {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+/* Highlight when inline form is open */
+.btn-active {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+
+/* ── Inline forms ────────────────────────────────────── */
+.inline-form {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  animation: fade-in 0.15s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.inline-form-row {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.give-row {
+  gap: 0.35rem;
+}
+
+.give-select {
+  width: 100px;
+  flex-shrink: 0;
+}
+
+.give-amount {
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.inline-msg {
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: block;
+}
+
+.inline-msg--ok  { color: #2ecc71; }
+.inline-msg--err { color: #e74c3c; }
+
+/* ── Table footer ────────────────────────────────────── */
+.table-footer {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: right;
+  padding-top: 0.25rem;
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 700px) {
+  .admin-page {
+    padding: 1.25rem 0.75rem 3rem;
+  }
+
+  .player-table th,
+  .player-table td {
+    padding: 0.65rem 0.75rem;
+  }
+
+  .num-col {
+    display: none;
+  }
+}

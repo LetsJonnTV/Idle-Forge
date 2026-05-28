@@ -192,34 +192,38 @@ class _ClanScreenState extends State<ClanScreen>
         backgroundColor: _cardBg,
         title: Text(t.tr('clanCreate'),
             style: TextStyle(color: _textPrimary, fontWeight: FontWeight.bold)),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(t.tr('clanCreateCost'),
-                  style: TextStyle(color: _accent, fontSize: 13)),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  hintText: t.tr('clanNameHint'),
-                  border: const OutlineInputBorder(),
+        content: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(t.tr('clanCreateCost'),
+                    style: TextStyle(color: _accent, fontSize: 13)),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    hintText: t.tr('clanNameHint'),
+                    border: const OutlineInputBorder(),
+                  ),
+                  validator: (v) => (v?.trim().length ?? 0) < 2
+                      ? t.tr('validationMin3')
+                      : null,
+                  textInputAction: TextInputAction.next,
                 ),
-                validator: (v) => (v?.trim().length ?? 0) < 2
-                    ? t.tr('validationMin3')
-                    : null,
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: descController,
-                decoration: InputDecoration(
-                  hintText: t.tr('clanDescHint'),
-                  border: const OutlineInputBorder(),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: descController,
+                  decoration: InputDecoration(
+                    hintText: t.tr('clanDescHint'),
+                    border: const OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                  textInputAction: TextInputAction.done,
                 ),
-                maxLines: 2,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         actions: [

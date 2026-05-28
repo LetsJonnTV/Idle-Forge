@@ -117,6 +117,7 @@ Future<void> main() async {
   //   url: String.fromEnvironment('SUPABASE_URL', defaultValue: ''),
   //   anonKey: String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: ''),
   // );
+  await ApiService.instance.loadStoredCredentials();
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   }
@@ -768,6 +769,8 @@ class _TopBar extends StatelessWidget {
     final packageInfo = await PackageInfo.fromPlatform();
     if (!context.mounted) return;
 
+    const fpsOptions = [30, 45, 60, 90, 120];
+
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -775,90 +778,156 @@ class _TopBar extends StatelessWidget {
       builder: (ctx) {
         return SafeArea(
           child: SizedBox(
-            height: _adaptiveSheetHeight(ctx, factor: 0.4, min: 260, max: 480),
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                Text(
-                  controller.text.tr('settings'),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: context.cardBg,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: context.cardBorder),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: context.iconColor,
-                        size: 20,
+            height: _adaptiveSheetHeight(ctx, factor: 0.65, min: 420, max: 680),
+            child: StatefulBuilder(
+              builder: (ctx, setModalState) {
+                return ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    Text(
+                      controller.text.tr('settings'),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(width: 10),
-                      Text(
-                        '${controller.text.tr('appVersion')}: ${packageInfo.version}',
-                        style: TextStyle(
-                          color: context.textPrimary,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: () async {
-                    final uri = Uri.parse(
-                      'https://github.com/LetsJonnTV/Idle-Forge/issues/new',
-                    );
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(
-                        uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: context.cardBg,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: context.cardBorder),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.bug_report_outlined,
-                          color: context.iconColor,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          controller.text.tr('reportBug'),
-                          style: TextStyle(
-                            color: context.textPrimary,
-                            fontSize: 14,
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: ctx.cardBg,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: ctx.cardBorder),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: ctx.iconColor,
+                            size: 20,
                           ),
+                          const SizedBox(width: 10),
+                          Text(
+                            '${controller.text.tr('appVersion')}: ${packageInfo.version}',
+                            style: TextStyle(
+                              color: ctx.textPrimary,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () async {
+                        final uri = Uri.parse(
+                          'https://github.com/LetsJonnTV/Idle-Forge/issues/new',
+                        );
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: ctx.cardBg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: ctx.cardBorder),
                         ),
-                        const Spacer(),
-                        Icon(
-                          Icons.open_in_new,
-                          color: context.textTertiary,
-                          size: 16,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.bug_report_outlined,
+                              color: ctx.iconColor,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              controller.text.tr('reportBug'),
+                              style: TextStyle(
+                                color: ctx.textPrimary,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const Spacer(),
+                            Icon(
+                              Icons.open_in_new,
+                              color: ctx.textTertiary,
+                              size: 16,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'App Einstellungen',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Expanded(child: Text('Max FPS')),
+                        const SizedBox(width: 10),
+                        SizedBox(
+                          width: 130,
+                          child: DropdownButton<int>(
+                            value: controller.targetFps,
+                            isExpanded: true,
+                            items: fpsOptions
+                                .map(
+                                  (fps) => DropdownMenuItem<int>(
+                                    value: fps,
+                                    child: Text('$fps'),
+                                  ),
+                                )
+                                .toList(growable: false),
+                            onChanged: (value) {
+                              if (value == null) return;
+                              controller.setTargetFps(value);
+                              setModalState(() {});
+                            },
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-              ],
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Dark Mode'),
+                      value: controller.darkModeEnabled,
+                      onChanged: (value) {
+                        controller.setDarkModeEnabled(value);
+                        setModalState(() {});
+                      },
+                    ),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Kampf-Log anzeigen'),
+                      value: controller.showCombatLog,
+                      onChanged: (value) {
+                        controller.setShowCombatLog(value);
+                        setModalState(() {});
+                      },
+                    ),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Reduzierte Effekte'),
+                      value: controller.reducedEffects,
+                      onChanged: (value) {
+                        controller.setReducedEffects(value);
+                        setModalState(() {});
+                      },
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         );
@@ -873,7 +942,6 @@ class _TopBar extends StatelessWidget {
       controller.setPlayerName(loginName);
     }
     final nameController = TextEditingController(text: controller.playerName);
-    const fpsOptions = [30, 45, 60, 90, 120];
 
     await showModalBottomSheet<void>(
       context: context,
@@ -890,9 +958,9 @@ class _TopBar extends StatelessWidget {
             child: SizedBox(
               height: _adaptiveSheetHeight(
                 context,
-                factor: 0.62,
-                min: 420,
-                max: 820,
+                factor: 0.5,
+                min: 320,
+                max: 560,
               ),
               child: StatefulBuilder(
                 builder: (context, setModalState) {
@@ -1018,70 +1086,7 @@ class _TopBar extends StatelessWidget {
                                   ],
                                 ),
                               ],
-                              const SizedBox(height: 14),
-                              const Text(
-                                'App Einstellungen',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  const Expanded(child: Text('Max FPS')),
-                                  const SizedBox(width: 10),
-                                  SizedBox(
-                                    width: 130,
-                                    child: DropdownButton<int>(
-                                      value: controller.targetFps,
-                                      isExpanded: true,
-                                      items: fpsOptions
-                                          .map(
-                                            (fps) => DropdownMenuItem<int>(
-                                              value: fps,
-                                              child: Text('$fps'),
-                                            ),
-                                          )
-                                          .toList(growable: false),
-                                      onChanged: (value) {
-                                        if (value == null) {
-                                          return;
-                                        }
-                                        controller.setTargetFps(value);
-                                        setModalState(() {});
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SwitchListTile.adaptive(
-                                contentPadding: EdgeInsets.zero,
-                                title: const Text('Dark Mode'),
-                                value: controller.darkModeEnabled,
-                                onChanged: (value) {
-                                  controller.setDarkModeEnabled(value);
-                                  setModalState(() {});
-                                },
-                              ),
-                              SwitchListTile.adaptive(
-                                contentPadding: EdgeInsets.zero,
-                                title: const Text('Kampf-Log anzeigen'),
-                                value: controller.showCombatLog,
-                                onChanged: (value) {
-                                  controller.setShowCombatLog(value);
-                                  setModalState(() {});
-                                },
-                              ),
-                              SwitchListTile.adaptive(
-                                contentPadding: EdgeInsets.zero,
-                                title: const Text('Reduzierte Effekte'),
-                                value: controller.reducedEffects,
-                                onChanged: (value) {
-                                  controller.setReducedEffects(value);
-                                  setModalState(() {});
-                                },
-                              ),
+
                             ],
                           ),
                         ),
@@ -6045,18 +6050,43 @@ Future<void> _showSocialPanel(
                     ? (ApiService.instance.currentUsername ??
                           text.tr('loginButton'))
                     : text.tr('loginButton'),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(ctx);
-                  Navigator.push<void>(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AuthScreen(
-                        onLoggedIn: () => Navigator.pop(context),
-                        onSkip: () => Navigator.pop(context),
-                        text: text,
+                  if (ApiService.instance.isLoggedIn) {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogCtx) => AlertDialog(
+                        title: Text(text.tr('logoutConfirmTitle')),
+                        content: Text(text.tr('logoutConfirmMessage')),
+                        actions: [
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.pop(dialogCtx, false),
+                            child: Text(text.tr('cancel')),
+                          ),
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.pop(dialogCtx, true),
+                            child: Text(text.tr('logoutButton')),
+                          ),
+                        ],
                       ),
-                    ),
-                  );
+                    );
+                    if (confirmed == true) {
+                      await ApiService.instance.logout();
+                    }
+                  } else {
+                    Navigator.push<void>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AuthScreen(
+                          onLoggedIn: () => Navigator.pop(context),
+                          onSkip: () => Navigator.pop(context),
+                          text: text,
+                        ),
+                      ),
+                    );
+                  }
                 },
               ),
               _SocialTile(
