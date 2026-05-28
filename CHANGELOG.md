@@ -2,6 +2,15 @@
 
 All notable changes to Idle Forge are documented here.
 
+## [2.0.1] - 2026-05-28
+
+### Fixed
+- Social-Panel (Online-Button) ist jetzt durch Login-Gating gesichert — Zugriff ohne Account wird sofort zur Auth-Seite geleitet
+- Neue Panels (Dungeon, Expedition, Ascension, Rezepte, Haustier) haben jetzt einen sichtbaren Drag-Handle und können nach unten gewischt werden
+- SVG-Icons für alle neuen Menü-Buttons (Dungeon, Haustier, Expedition, Rezepte, Aufstieg, Online)
+- Supabase-Backend nutzt nun `SUPABASE_SERVICE_ROLE_KEY` — alle Schreiboperationen (PVP, Koop, Freunde) funktionieren zuverlässig
+- Fehlende deutsche Übersetzungen in Koop- und PVP-Bildschirm ergänzt
+
 ## [2.0.0] - 2026-05-27
 
 ### Added

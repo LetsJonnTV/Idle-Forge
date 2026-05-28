@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="20" fill="#1e3a2f"/>
+  <!-- Paw pads -->
+  <circle cx="64" cy="76" r="22" fill="#ffc87a"/>
+  <!-- Top toe pads -->
+  <circle cx="40" cy="52" r="10" fill="#ffc87a"/>
+  <circle cx="56" cy="44" r="10" fill="#ffc87a"/>
+  <circle cx="72" cy="44" r="10" fill="#ffc87a"/>
+  <circle cx="88" cy="52" r="10" fill="#ffc87a"/>
+  <!-- Inner paw detail -->
+  <circle cx="64" cy="76" r="10" fill="#e8a84a"/>
+  <circle cx="52" cy="68" r="7" fill="#e8a84a"/>
+  <circle cx="76" cy="68" r="7" fill="#e8a84a"/>
+  <circle cx="54" cy="86" r="7" fill="#e8a84a"/>
+  <circle cx="74" cy="86" r="7" fill="#e8a84a"/>
+</svg>

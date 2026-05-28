@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="20" fill="#1a3040"/>
+  <!-- Compass outer ring -->
+  <circle cx="64" cy="64" r="38" fill="#254a62" stroke="#4a9aba" stroke-width="4"/>
+  <!-- Compass inner -->
+  <circle cx="64" cy="64" r="26" fill="#1a3040"/>
+  <!-- N/S needle (red/white) -->
+  <polygon points="64,30 70,64 64,58 58,64" fill="#e84a4a"/>
+  <polygon points="64,98 70,64 64,70 58,64" fill="#c8c8d8"/>
+  <!-- E/W needle (white smaller) -->
+  <polygon points="30,64 64,70 58,64 64,58" fill="#c8c8d8"/>
+  <polygon points="98,64 64,70 70,64 64,58" fill="#c8c8d8"/>
+  <!-- Center dot -->
+  <circle cx="64" cy="64" r="5" fill="#4a9aba"/>
+  <!-- Cardinal letters -->
+  <text x="61" y="26" font-size="10" fill="#c8c8d8" font-family="sans-serif" font-weight="bold">N</text>
+  <text x="61" y="108" font-size="10" fill="#c8c8d8" font-family="sans-serif">S</text>
+</svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="20" fill="#3a2518"/>
+  <!-- Scroll body -->
+  <rect x="28" y="30" width="72" height="78" rx="6" fill="#f5dba0"/>
+  <!-- Scroll top curl -->
+  <ellipse cx="64" cy="30" rx="36" ry="10" fill="#e8c870"/>
+  <ellipse cx="64" cy="30" rx="26" ry="6" fill="#f5dba0"/>
+  <!-- Scroll bottom curl -->
+  <ellipse cx="64" cy="108" rx="36" ry="10" fill="#e8c870"/>
+  <ellipse cx="64" cy="108" rx="26" ry="6" fill="#f5dba0"/>
+  <!-- Recipe lines (text imitation) -->
+  <rect x="40" y="46" width="48" height="4" rx="2" fill="#8a6a40"/>
+  <rect x="40" y="56" width="38" height="3" rx="2" fill="#a08050"/>
+  <rect x="40" y="64" width="44" height="3" rx="2" fill="#a08050"/>
+  <rect x="40" y="72" width="36" height="3" rx="2" fill="#a08050"/>
+  <!-- Small star icon -->
+  <polygon points="64,82 67,90 76,90 69,95 72,104 64,99 56,104 59,95 52,90 61,90" fill="#e8a020"/>
+</svg>

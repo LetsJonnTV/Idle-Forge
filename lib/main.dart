@@ -2525,37 +2525,37 @@ class _BottomMenu extends StatelessWidget {
               onTap: () => _showInventory(context, controller),
             ),
             _MenuButton(
-              icon: Icons.castle_outlined,
+              iconPath: 'assets/icons/menu_dungeon.svg',
               label: text.tr('menuDungeon'),
               dense: dense,
               onTap: () => _showDungeonPanel(context, controller),
             ),
             _MenuButton(
-              icon: Icons.pets_outlined,
+              iconPath: 'assets/icons/menu_pet.svg',
               label: text.tr('menuPet'),
               dense: dense,
               onTap: () => _showPetPanel(context, controller),
             ),
             _MenuButton(
-              icon: Icons.explore_outlined,
+              iconPath: 'assets/icons/menu_expedition.svg',
               label: text.tr('menuExpedition'),
               dense: dense,
               onTap: () => _showExpeditionPanel(context, controller),
             ),
             _MenuButton(
-              icon: Icons.menu_book_outlined,
+              iconPath: 'assets/icons/menu_recipes.svg',
               label: text.tr('menuRecipes'),
               dense: dense,
               onTap: () => _showRecipePanel(context, controller),
             ),
             _MenuButton(
-              icon: Icons.account_tree_outlined,
+              iconPath: 'assets/icons/menu_ascension.svg',
               label: text.tr('menuAscension'),
               dense: dense,
               onTap: () => _showAscensionPanel(context, controller),
             ),
             _MenuButton(
-              icon: Icons.people_outline,
+              iconPath: 'assets/icons/menu_online.svg',
               label: text.tr('socialTitle'),
               dense: dense,
               onTap: () => _showSocialPanel(context, controller),
@@ -5348,6 +5348,7 @@ class _BottomMenu extends StatelessWidget {
       context: context,
       backgroundColor: context.sheetBg,
       isScrollControlled: true,
+      showDragHandle: true,
       builder: (context) {
         return SafeArea(
           child: SizedBox(
@@ -5562,6 +5563,7 @@ class _BottomMenu extends StatelessWidget {
       context: context,
       backgroundColor: context.sheetBg,
       isScrollControlled: true,
+      showDragHandle: true,
       builder: (ctx) {
         return SafeArea(
           child: SizedBox(
@@ -5619,6 +5621,7 @@ class _BottomMenu extends StatelessWidget {
       context: context,
       backgroundColor: context.sheetBg,
       isScrollControlled: true,
+      showDragHandle: true,
       builder: (ctx) {
         return SafeArea(
           child: SizedBox(
@@ -5705,6 +5708,7 @@ class _BottomMenu extends StatelessWidget {
       context: context,
       backgroundColor: context.sheetBg,
       isScrollControlled: true,
+      showDragHandle: true,
       builder: (ctx) {
         return SafeArea(
           child: SizedBox(
@@ -5915,6 +5919,21 @@ Future<void> _showSocialPanel(
 ) async {
   final text = controller.text;
 
+  // Require login before showing any social features
+  if (!ApiService.instance.isLoggedIn) {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AuthScreen(
+          onLoggedIn: () => Navigator.pop(context),
+          onSkip: () => Navigator.pop(context),
+          text: text,
+        ),
+      ),
+    );
+    if (!context.mounted || !ApiService.instance.isLoggedIn) return;
+  }
+
   // Helper: require login before pushing a screen
   void requireAuth(BuildContext ctx, Widget screen) {
     Navigator.pop(ctx);
@@ -6018,6 +6037,7 @@ Future<void> _showPetPanel(
     context: context,
     backgroundColor: context.sheetBg,
     isScrollControlled: true,
+    showDragHandle: true,
     builder: (ctx) {
       return SafeArea(
         child: Padding(
