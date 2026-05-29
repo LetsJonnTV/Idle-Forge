@@ -19,11 +19,11 @@ function cleanupExpiredEntries(now: number) {
   if (now - lastSweepAt < SWEEP_INTERVAL_MS) return;
   lastSweepAt = now;
 
-  for (const [ip, entry] of store.entries()) {
+  store.forEach((entry, ip) => {
     if (now > entry.resetAt) {
       store.delete(ip);
     }
-  }
+  });
 }
 
 export function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
@@ -68,7 +68,5 @@ export function getClientIp(request: Request): string {
     if (value) return value;
   }
 
-  return (
-    'unknown'
-  );
+  return 'unknown';
 }

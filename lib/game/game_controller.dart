@@ -3749,13 +3749,13 @@ class GameController extends ChangeNotifier {
     equippedBySlot
       ..clear()
       ..addEntries(
-        equippedJson.entries
-            .map((entry) {
-              final slot = ItemSlot.values.where((value) => value.name == entry.key);
-              if (slot.isEmpty || entry.value is! String) return null;
-              return MapEntry(slot.first, entry.value as String);
-            })
-            .whereType<MapEntry<ItemSlot, String>>(),
+        equippedJson.entries.map((entry) {
+          final slot = ItemSlot.values.where(
+            (value) => value.name == entry.key,
+          );
+          if (slot.isEmpty || entry.value is! String) return null;
+          return MapEntry(slot.first, entry.value as String);
+        }).whereType<MapEntry<ItemSlot, String>>(),
       );
 
     loadoutPresets.clear();
