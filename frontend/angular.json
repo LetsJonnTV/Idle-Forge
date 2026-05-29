@@ -43,6 +43,7 @@
             "assets": [
               "src/favicon.ico",
               "src/assets",
+              "src/404.html",
               { "glob": "CNAME", "input": "src", "output": "/" }
             ],
             "styles": [

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Idle Forge</title>
+  <script>
+    // GitHub Pages SPA fix: encode the path into sessionStorage and redirect to /
+    var l = window.location;
+    sessionStorage.redirect = l.href;
+    l.replace(l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + '/');
+  </script>
+</head>
+<body></body>
+</html>

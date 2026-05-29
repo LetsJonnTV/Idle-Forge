@@ -5,6 +5,16 @@
   <title>Idle Forge</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    // GitHub Pages SPA fix: restore the redirect path stored by 404.html
+    (function () {
+      var redirect = sessionStorage.redirect;
+      delete sessionStorage.redirect;
+      if (redirect && redirect !== location.href) {
+        history.replaceState(null, null, redirect);
+      }
+    })();
+  </script>
   <meta name="description" content="Idle Forge — Schmiede legendäre Ausrüstung. Besiege Bosse. Werde zur Legende — auch im Schlaf.">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
