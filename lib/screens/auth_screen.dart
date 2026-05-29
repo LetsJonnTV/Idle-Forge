@@ -128,8 +128,8 @@ class _AuthScreenState extends State<AuthScreen>
                           fontWeight: FontWeight.bold,
                           letterSpacing: 4,
                           color: _isDark
-                          ? const Color(0xFFDED0B0)
-                          : const Color(0xFF2A1E08),
+                              ? const Color(0xFFDED0B0)
+                              : const Color(0xFF2A1E08),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -138,8 +138,8 @@ class _AuthScreenState extends State<AuthScreen>
                         style: TextStyle(
                           fontSize: 13,
                           color: _isDark
-                          ? const Color(0xFF9A8860)
-                          : const Color(0xFF6A5028),
+                              ? const Color(0xFF9A8860)
+                              : const Color(0xFF6A5028),
                         ),
                       ),
                     ],
@@ -168,8 +168,8 @@ class _AuthScreenState extends State<AuthScreen>
                           indicatorColor: _accent,
                           labelColor: _accent,
                           unselectedLabelColor: _isDark
-                          ? const Color(0xFF9A8860)
-                          : const Color(0xFF6A5028),
+                              ? const Color(0xFF9A8860)
+                              : const Color(0xFF6A5028),
                           tabs: [
                             Tab(text: widget.text.tr('loginButton')),
                             Tab(text: widget.text.tr('registerButton')),

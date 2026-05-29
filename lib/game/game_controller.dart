@@ -4130,11 +4130,13 @@ class GameController extends ChangeNotifier {
           now.difference(_lastCloudSaveAt!) >= const Duration(minutes: 5)) {
         _lastCloudSaveAt = now;
         ApiService.instance.uploadSave(map).ignore();
-        ApiService.instance.uploadStats(
-          totalStrength: totalStrength,
-          prestigeLevel: prestigeLevel,
-          chapter: chapter,
-        ).ignore();
+        ApiService.instance
+            .uploadStats(
+              totalStrength: totalStrength,
+              prestigeLevel: prestigeLevel,
+              chapter: chapter,
+            )
+            .ignore();
       }
     }
   }

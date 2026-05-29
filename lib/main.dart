@@ -6314,10 +6314,7 @@ class _MenuButton extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                context.cardBg,
-                context.cardBgAlt,
-              ],
+              colors: [context.cardBg, context.cardBgAlt],
             ),
             borderRadius: BorderRadius.circular(_rs(context, 10, min: 7)),
             border: Border.all(color: context.borderGoldBright, width: 1.5),
