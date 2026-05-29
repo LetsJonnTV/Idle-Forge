@@ -11,25 +11,38 @@ export function middleware(request: NextRequest) {
   const origin = request.headers.get('origin') ?? '';
   const isAllowed = ALLOWED_ORIGINS.includes(origin);
 
+  const corsHeaders = {
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
+  };
+
   // Handle CORS preflight
   if (request.method === 'OPTIONS') {
+    if (!isAllowed) {
+      return new NextResponse(null, {
+        status: 403,
+        headers: corsHeaders,
+      });
+    }
+
     return new NextResponse(null, {
       status: 204,
       headers: {
-        'Access-Control-Allow-Origin': isAllowed ? origin : '',
-        'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-        'Access-Control-Max-Age': '86400',
+        ...corsHeaders,
+        'Access-Control-Allow-Origin': origin,
       },
     });
   }
 
   const response = NextResponse.next();
+  response.headers.set('Vary', 'Origin');
 
   if (isAllowed) {
     response.headers.set('Access-Control-Allow-Origin', origin);
-    response.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+    response.headers.set('Access-Control-Allow-Methods', corsHeaders['Access-Control-Allow-Methods']);
+    response.headers.set('Access-Control-Allow-Headers', corsHeaders['Access-Control-Allow-Headers']);
   }
 
   return response;

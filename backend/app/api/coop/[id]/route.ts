@@ -82,10 +82,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       .from('coop_sessions')
       .update({ guest_id: auth.playerId, status: 'active' })
       .eq('id', params.id)
+      .eq('status', 'waiting')
+      .is('guest_id', null)
       .select()
       .single();
 
-    if (updateError || !updated) {
+    if (!updated) {
+      return NextResponse.json(
+        { error: 'Session is not open for joining' },
+        { status: 409 },
+      );
+    }
+
+    if (updateError) {
       return NextResponse.json({ error: 'Failed to join session' }, { status: 500 });
     }
 

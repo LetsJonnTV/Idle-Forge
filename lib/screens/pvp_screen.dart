@@ -374,8 +374,8 @@ class _BattleResultOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final battleResult = result['result'] as Map<String, dynamic>? ?? {};
     final won = battleResult['challengerWon'] as bool? ?? false;
-    final cStr = battleResult['challengerStrength'] as int? ?? 0;
-    final dStr = battleResult['defenderStrength'] as int? ?? 0;
+    final cStr = (battleResult['challengerStrength'] as num?)?.toInt() ?? 0;
+    final dStr = (battleResult['defenderStrength'] as num?)?.toInt() ?? 0;
 
     final goldReward = won ? (cStr ~/ 10 + 50) : 10;
 

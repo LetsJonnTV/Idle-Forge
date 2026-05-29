@@ -351,17 +351,36 @@ class GameItem {
 
   factory GameItem.fromJson(Map<String, dynamic> json) {
     final enchantmentsRaw = json['enchantments'] as List<dynamic>? ?? [];
+
+    final rawSlot = json['slot'] as String?;
+    final rawTier = json['tier'] as String?;
+    final slot = ItemSlot.values.firstWhere(
+      (value) => value.name == rawSlot,
+      orElse: () => ItemSlot.weapon,
+    );
+    final tier = ItemTier.values.firstWhere(
+      (value) => value.name == rawTier,
+      orElse: () => ItemTier.common,
+    );
+
+    int parseInt(dynamic value, int fallback) {
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? fallback;
+      return fallback;
+    }
+
     return GameItem(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      slot: ItemSlot.values.firstWhere((slot) => slot.name == json['slot']),
-      tier: ItemTier.values.firstWhere((tier) => tier.name == json['tier']),
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? 'Unknown Item',
+      slot: slot,
+      tier: tier,
       setId: ItemSet.values.firstWhere(
         (setId) =>
             setId.name == (json['setId'] as String? ?? ItemSet.ember.name),
       ),
-      power: json['power'] as int,
-      sellValue: json['sellValue'] as int,
+      power: parseInt(json['power'], 0),
+      sellValue: parseInt(json['sellValue'], 0),
       iconPath: json['iconPath'] as String? ?? 'assets/icons/forge.svg',
       isLocked: json['isLocked'] as bool? ?? false,
       enchantments: enchantmentsRaw

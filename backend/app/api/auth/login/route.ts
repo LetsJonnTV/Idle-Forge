@@ -55,27 +55,40 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
-  let isAdmin = false;
-  let isBlocked = false;
-  try {
-    const { data: flags } = await supabase
-      .from('players')
-      .select('is_admin, is_blocked')
-      .eq('id', player.id)
-      .maybeSingle();
-    isAdmin = flags?.is_admin ?? false;
-    isBlocked = flags?.is_blocked ?? false;
-    logger.debug('login', `Flags for ${cleanUsername}: isAdmin=${isAdmin}, isBlocked=${isBlocked}`);
-  } catch (e) {
-    logger.warn('login', 'Could not fetch is_admin/is_blocked flags (columns may not exist)', e);
+  const { data: flags, error: flagsError } = await supabase
+    .from('players')
+    .select('is_admin, is_blocked')
+    .eq('id', player.id)
+    .maybeSingle();
+
+  if (flagsError || !flags) {
+    logger.error(
+      'login',
+      `Failed to fetch account flags for ${cleanUsername}`,
+      flagsError,
+    );
+    return NextResponse.json(
+      { error: 'Failed to verify account status' },
+      { status: 500 },
+    );
   }
+
+  const isAdmin = flags.is_admin ?? false;
+  const isBlocked = flags.is_blocked ?? false;
+  logger.debug('login', `Flags for ${cleanUsername}: isAdmin=${isAdmin}, isBlocked=${isBlocked}`);
 
   if (isBlocked) {
     logger.warn('login', `Blocked account attempted login: ${cleanUsername}`);
     return NextResponse.json({ error: 'Account blocked' }, { status: 403 });
   }
 
-  const token = signJwt({ playerId: player.id, username: player.username, isAdmin });
+  let token: string;
+  try {
+    token = signJwt({ playerId: player.id, username: player.username, isAdmin });
+  } catch (e) {
+    logger.error('login', 'JWT signing failed', e);
+    return NextResponse.json({ error: 'Authentication temporarily unavailable' }, { status: 500 });
+  }
   logger.info('login', `Login successful for ${cleanUsername} (id: ${player.id})`);
 
   return NextResponse.json({ token, playerId: player.id, username: player.username, isAdmin });

@@ -8,14 +8,22 @@ export interface JwtPayload {
   exp?: number;
 }
 
+function getJwtSecret(): string | null {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.trim().length === 0) {
+    console.error('JWT_SECRET is not configured');
+    return null;
+  }
+  return secret;
+}
+
 /**
  * Verifies a JWT Bearer token from the Authorization header.
  * Returns the decoded payload or null if invalid/expired.
  */
 export async function verifyJwt(token: string): Promise<JwtPayload | null> {
-  const secret = process.env.JWT_SECRET;
+  const secret = getJwtSecret();
   if (!secret) {
-    console.error('JWT_SECRET is not configured');
     return null;
   }
   try {
@@ -30,7 +38,10 @@ export async function verifyJwt(token: string): Promise<JwtPayload | null> {
  * Signs a new JWT for the given player.
  */
 export function signJwt(payload: Omit<JwtPayload, 'iat' | 'exp'>): string {
-  const secret = process.env.JWT_SECRET!;
+  const secret = getJwtSecret();
+  if (!secret) {
+    throw new Error('JWT signing unavailable: missing JWT_SECRET');
+  }
   return jwt.sign(payload, secret, { expiresIn: '30d' });
 }
 

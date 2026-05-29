@@ -560,7 +560,7 @@ class _ClanScreenState extends State<ClanScreen>
 
   Widget _buildClanCard(Map<String, dynamic> clan) {
     final name = clan['name'] as String? ?? '';
-    final level = clan['level'] as int? ?? 1;
+    final level = (clan['level'] as num?)?.toInt() ?? 1;
     final description = clan['description'] as String? ?? '';
     final clanId = clan['id'] as String? ?? '';
     final leader = clan['leader'] as Map<String, dynamic>?;
@@ -648,7 +648,7 @@ class _ClanScreenState extends State<ClanScreen>
     final inviter = invite['inviter'] as Map<String, dynamic>? ?? {};
     final clanName = clan['name'] as String? ?? '';
     final inviterName = inviter['username'] as String? ?? '';
-    final clanLevel = clan['level'] as int? ?? 1;
+    final clanLevel = (clan['level'] as num?)?.toInt() ?? 1;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -710,7 +710,7 @@ class _ClanScreenState extends State<ClanScreen>
 
   Widget _buildMembersTab() {
     final clanName = _clanData?['name'] as String? ?? '';
-    final clanLevel = _clanData?['level'] as int? ?? 1;
+    final clanLevel = (_clanData?['level'] as num?)?.toInt() ?? 1;
     final description = _clanData?['description'] as String? ?? '';
     final leader = _clanData?['leader'] as Map<String, dynamic>?;
     final leaderId = leader?['id'] as String?;
@@ -817,8 +817,8 @@ class _ClanScreenState extends State<ClanScreen>
   Widget _buildMemberCard(Map<String, dynamic> member, String? leaderId) {
     final playerId = member['player_id'] as String? ?? '';
     final username = member['username'] as String? ?? 'Unbekannt';
-    final strength = member['total_strength'] as int? ?? 0;
-    final prestige = member['prestige_level'] as int? ?? 0;
+    final strength = (member['total_strength'] as num?)?.toInt() ?? 0;
+    final prestige = (member['prestige_level'] as num?)?.toInt() ?? 0;
     final isLeader = leaderId == playerId;
     final isMe = api.currentPlayerId == playerId;
 

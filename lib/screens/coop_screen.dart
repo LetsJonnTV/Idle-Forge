@@ -140,7 +140,7 @@ class _CoopScreenState extends State<CoopScreen> {
   Future<void> _enterSession(Map<String, dynamic> session) async {
     setState(() {
       _activeSession = session;
-      _bossHp = (session['boss_hp'] as int?) ?? _bossMaxHp;
+      _bossHp = (session['boss_hp'] as num?)?.toInt() ?? _bossMaxHp;
       _myDamage = 0;
       _partnerDamage = 0;
     });

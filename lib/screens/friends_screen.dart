@@ -381,8 +381,8 @@ class _FriendCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final username = friend['username'] as String? ?? 'Unbekannt';
-    final strength = friend['total_strength'] as int? ?? 0;
-    final prestige = friend['prestige_level'] as int? ?? 0;
+    final strength = (friend['total_strength'] as num?)?.toInt() ?? 0;
+    final prestige = (friend['prestige_level'] as num?)?.toInt() ?? 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),

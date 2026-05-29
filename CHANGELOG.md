@@ -3,6 +3,37 @@
 All notable changes to Idle Forge are documented here.
 
 
+## [2.1.2] - 2026-05-29
+
+### Fixed
+- **Login/Auth-Härtung (Backend)**
+  - JWT-Signing schlägt bei fehlendem `JWT_SECRET` jetzt kontrolliert fehl (kein unkontrollierter Runtime-Crash mehr)
+  - Login/Register geben bei JWT-Signing-Problemen eine saubere 500-Antwort zurück
+  - Login prüft `is_admin` / `is_blocked` jetzt strikt; bei Fehlern in der Flag-Abfrage wird der Login sicher abgebrochen
+  - Register prüft Username-Verfügbarkeit jetzt mit Fehlerbehandlung und behandelt DB-Unique-Races (`duplicate key`) als sauberen `409 Username already taken`
+- **Coop-Session Join Race Condition behoben (Backend)**
+  - `PUT /api/coop/[id]` verwendet jetzt atomare Join-Bedingungen (`status=waiting` und `guest_id IS NULL`) im Update
+  - Gleichzeitige Join-Requests führen jetzt deterministisch zu `409` statt inkonsistenter Session-Zustände
+- **Rate-Limiter robuster gemacht (Backend)**
+  - In-Memory-Store wird periodisch bereinigt, um unbegrenztes Wachstum zu vermeiden
+  - Client-IP-Erkennung erweitert (mehr Header + robustes Parsing)
+- **CORS-Verhalten verbessert (Backend)**
+  - Preflight-Requests aus nicht erlaubten Origins liefern jetzt `403` statt leerem `Access-Control-Allow-Origin`
+  - `Vary: Origin` gesetzt, um Caching-/Proxy-Nebenwirkungen zu vermeiden
+- **Savegame-/API-Parsing stabilisiert (Flutter)**
+  - Harte Casts in `GameItem.fromJson` durch sichere Fallback-Konvertierung ersetzt (Slot/Tier/Power/SellValue)
+  - Laden von `equippedBySlot` / Loadout-Slots toleriert ungültige oder alte Daten robust
+  - Numerische API-Felder in Friends/Clan/PVP/Coop-Screens sind jetzt `num`-sicher geparst
+- **Login-Zieladresse stabilisiert (Flutter)**
+  - Fallback `API_BASE_URL` zeigt nicht mehr auf Platzhalter-Domain, sondern auf produktive Domain
+
+### Changed
+- Release-Vorbereitung auf **Version 2.1.2** in allen Modulen:
+  - Flutter App-Version auf `2.1.2+4`
+  - Backend `package.json`/`package-lock.json` auf `2.1.2`
+  - Frontend `package.json`/`package-lock.json` auf `2.1.2`
+
+
 ## [2.1.0] - 2026-05-28
 
 ### Added

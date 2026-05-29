@@ -58,7 +58,7 @@ class ApiService {
 
   static const String _baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://your-app.vercel.app',
+    defaultValue: 'https://idle-forge.jonn2008.me',
   );
 
   static const String _tokenKey = 'idle_forge_jwt';
@@ -143,6 +143,8 @@ class ApiService {
           .post(_uri(path), headers: _headers, body: jsonEncode(body))
           .timeout(const Duration(seconds: 15));
       return _handleResponse(response);
+    } on ApiException {
+      rethrow;
     } on SocketException {
       throw const ApiException(
         message: 'No internet connection',
@@ -165,6 +167,8 @@ class ApiService {
           .get(_uri(path), headers: _headers)
           .timeout(const Duration(seconds: 15));
       return _handleResponse(response);
+    } on ApiException {
+      rethrow;
     } on SocketException {
       throw const ApiException(
         message: 'No internet connection',
@@ -190,6 +194,8 @@ class ApiService {
           .put(_uri(path), headers: _headers, body: jsonEncode(body))
           .timeout(const Duration(seconds: 15));
       return _handleResponse(response);
+    } on ApiException {
+      rethrow;
     } on SocketException {
       throw const ApiException(
         message: 'No internet connection',
@@ -206,22 +212,51 @@ class ApiService {
   }
 
   Map<String, dynamic> _handleResponse(http.Response response) {
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final body = _decodeResponseBody(response);
     if (response.statusCode == 401) {
       // Token expired or invalid — clear credentials
       logout();
       throw ApiException(
-        message: body['error'] as String? ?? 'Unauthorized',
+        message: _extractErrorMessage(body, 'Unauthorized'),
         statusCode: 401,
       );
     }
     if (response.statusCode >= 400) {
       throw ApiException(
-        message: body['error'] as String? ?? 'Request failed',
+        message: _extractErrorMessage(body, 'Request failed'),
         statusCode: response.statusCode,
       );
     }
     return body;
+  }
+
+  Map<String, dynamic> _decodeResponseBody(http.Response response) {
+    if (response.body.trim().isEmpty) {
+      return <String, dynamic>{};
+    }
+
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(response.body);
+    } on FormatException {
+      throw ApiException(
+        message: 'Server returned an invalid response',
+        statusCode: response.statusCode,
+      );
+    }
+
+    if (decoded is Map<String, dynamic>) return decoded;
+
+    throw ApiException(
+      message: 'Server returned an unexpected response format',
+      statusCode: response.statusCode,
+    );
+  }
+
+  String _extractErrorMessage(Map<String, dynamic> body, String fallback) {
+    final error = body['error'] ?? body['message'];
+    if (error is String && error.trim().isNotEmpty) return error;
+    return fallback;
   }
 
   // ------------------------------------------------------------------ //

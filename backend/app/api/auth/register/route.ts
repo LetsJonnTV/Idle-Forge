@@ -37,11 +37,16 @@ export async function POST(request: NextRequest) {
   const cleanUsername = username.trim().toLowerCase();
   logger.debug('register', `Checking availability for username: ${cleanUsername}`);
 
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('players')
     .select('id')
     .eq('username', cleanUsername)
     .maybeSingle();
+
+  if (existingError) {
+    logger.error('register', `Failed to check username availability for "${cleanUsername}"`, existingError);
+    return NextResponse.json({ error: 'Registration temporarily unavailable' }, { status: 500 });
+  }
 
   if (existing) {
     logger.warn('register', `Username already taken: ${cleanUsername}`);
@@ -57,11 +62,26 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error || !player) {
+    const isUniqueViolation =
+      error?.code === '23505' ||
+      (typeof error?.message === 'string' &&
+        error.message.toLowerCase().includes('duplicate key'));
+    if (isUniqueViolation) {
+      logger.warn('register', `Username already taken (race): ${cleanUsername}`);
+      return NextResponse.json({ error: 'Username already taken' }, { status: 409 });
+    }
+
     logger.error('register', `Failed to create account for "${cleanUsername}"`, error);
     return NextResponse.json({ error: 'Failed to create account' }, { status: 500 });
   }
 
-  const token = signJwt({ playerId: player.id, username: player.username, isAdmin: false });
+  let token: string;
+  try {
+    token = signJwt({ playerId: player.id, username: player.username, isAdmin: false });
+  } catch (e) {
+    logger.error('register', 'JWT signing failed', e);
+    return NextResponse.json({ error: 'Authentication temporarily unavailable' }, { status: 500 });
+  }
   logger.info('register', `Account created successfully: ${cleanUsername} (id: ${player.id})`);
 
   return NextResponse.json({ token, playerId: player.id, username: player.username, isAdmin: false }, { status: 201 });
