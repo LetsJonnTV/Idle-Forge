@@ -58,7 +58,7 @@ class ApiService {
 
   static const String _baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://idle-forge.jonn2008.me',
+    defaultValue: 'https://api.idle-forge.jonn2008.me',
   );
 
   static const String _tokenKey = 'idle_forge_jwt';

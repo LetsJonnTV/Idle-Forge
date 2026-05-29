@@ -3,6 +3,24 @@
 All notable changes to Idle Forge are documented here.
 
 
+## [2.1.3] - 2026-05-29
+
+### Fixed
+- **APK Login / API Response**
+  - Flutter-Default `API_BASE_URL` auf `https://api.idle-forge.jonn2008.me` gesetzt, damit Clients standardmäßig gegen den korrekten API-Host laufen
+  - Fehlerbild `Server returned an invalid response` beim Login durch falsche Host-Default-Adresse beseitigt
+- **CI Stabilität**
+  - `dart format --output=none --set-exit-if-changed .` wieder grün (Format in `game_controller.dart` korrigiert)
+  - Backend-Buildfehler im Rate-Limiter-Loop beseitigt (TS-Iteration kompatibel gemacht)
+  - Backend-Build entkoppelt von hartem Supabase-Env-Throw während Build-Time-Imports
+
+### Changed
+- Release-Vorbereitung auf **Version 2.1.3** in allen Modulen:
+  - Flutter App-Version auf `2.1.3+5`
+  - Backend `package.json`/`package-lock.json` auf `2.1.3`
+  - Frontend `package.json`/`package-lock.json` auf `2.1.3`
+
+
 ## [2.1.2] - 2026-05-29
 
 ### Fixed
