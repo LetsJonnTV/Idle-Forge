@@ -3,11 +3,15 @@ import bcrypt from 'bcryptjs';
 import { supabase } from '@/lib/supabaseClient';
 import { signJwt } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
+  logger.info('register', `POST /api/auth/register from IP ${ip}`);
+
   const { allowed } = checkRateLimit(ip);
   if (!allowed) {
+    logger.warn('register', `Rate limit exceeded for IP ${ip}`);
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
@@ -15,19 +19,23 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
+    logger.warn('register', 'Invalid JSON body');
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
   const { username, password } = body;
 
   if (!username || typeof username !== 'string' || username.trim().length < 3) {
+    logger.warn('register', `Invalid username: "${username}"`);
     return NextResponse.json({ error: 'Username must be at least 3 characters' }, { status: 400 });
   }
   if (!password || typeof password !== 'string' || password.length < 6) {
+    logger.warn('register', 'Password too short');
     return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
   }
 
   const cleanUsername = username.trim().toLowerCase();
+  logger.debug('register', `Checking availability for username: ${cleanUsername}`);
 
   const { data: existing } = await supabase
     .from('players')
@@ -36,6 +44,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (existing) {
+    logger.warn('register', `Username already taken: ${cleanUsername}`);
     return NextResponse.json({ error: 'Username already taken' }, { status: 409 });
   }
 
@@ -48,11 +57,13 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error || !player) {
-    console.error('Register error:', error);
+    logger.error('register', `Failed to create account for "${cleanUsername}"`, error);
     return NextResponse.json({ error: 'Failed to create account' }, { status: 500 });
   }
 
   const token = signJwt({ playerId: player.id, username: player.username, isAdmin: false });
+  logger.info('register', `Account created successfully: ${cleanUsername} (id: ${player.id})`);
 
   return NextResponse.json({ token, playerId: player.id, username: player.username, isAdmin: false }, { status: 201 });
 }
+
