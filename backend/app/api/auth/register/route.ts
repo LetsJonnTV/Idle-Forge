@@ -3,34 +3,28 @@ import bcrypt from 'bcryptjs';
 import { supabase } from '@/lib/supabaseClient';
 import { signJwt } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
-import { optionsResponse, withCors } from '@/lib/cors';
-
-export async function OPTIONS(request: NextRequest) {
-  return optionsResponse(request.headers.get('origin'));
-}
 
 export async function POST(request: NextRequest) {
-  const origin = request.headers.get('origin');
   const ip = getClientIp(request);
   const { allowed } = checkRateLimit(ip);
   if (!allowed) {
-    return withCors(NextResponse.json({ error: 'Too many requests' }, { status: 429 }), origin);
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
   let body: { username?: string; password?: string };
   try {
     body = await request.json();
   } catch {
-    return withCors(NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }), origin);
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
   const { username, password } = body;
 
   if (!username || typeof username !== 'string' || username.trim().length < 3) {
-    return withCors(NextResponse.json({ error: 'Username must be at least 3 characters' }, { status: 400 }), origin);
+    return NextResponse.json({ error: 'Username must be at least 3 characters' }, { status: 400 });
   }
   if (!password || typeof password !== 'string' || password.length < 6) {
-    return withCors(NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 }), origin);
+    return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
   }
 
   const cleanUsername = username.trim().toLowerCase();
@@ -42,7 +36,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (existing) {
-    return withCors(NextResponse.json({ error: 'Username already taken' }, { status: 409 }), origin);
+    return NextResponse.json({ error: 'Username already taken' }, { status: 409 });
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
@@ -55,13 +49,10 @@ export async function POST(request: NextRequest) {
 
   if (error || !player) {
     console.error('Register error:', error);
-    return withCors(NextResponse.json({ error: 'Failed to create account' }, { status: 500 }), origin);
+    return NextResponse.json({ error: 'Failed to create account' }, { status: 500 });
   }
 
   const token = signJwt({ playerId: player.id, username: player.username, isAdmin: false });
 
-  return withCors(
-    NextResponse.json({ token, playerId: player.id, username: player.username, isAdmin: false }, { status: 201 }),
-    origin
-  );
+  return NextResponse.json({ token, playerId: player.id, username: player.username, isAdmin: false }, { status: 201 });
 }
