@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { Client } from 'pg';
 
 let migrated = false;
@@ -13,8 +13,30 @@ export async function runMigration(): Promise<void> {
     return;
   }
 
-  const schemaPath = join(process.cwd(), 'supabase', 'schema.sql');
-  const sql = readFileSync(schemaPath, 'utf-8');
+  // Try multiple paths to find schema.sql (handles local dev, Next.js build output, and Vercel serverless)
+  const candidates = [
+    join(process.cwd(), 'supabase', 'schema.sql'),
+    join(process.cwd(), 'backend', 'supabase', 'schema.sql'),
+    resolve(__dirname, '../../supabase/schema.sql'),
+    resolve(__dirname, '../../../supabase/schema.sql'),
+  ];
+
+  let sql: string | null = null;
+  for (const candidate of candidates) {
+    try {
+      sql = readFileSync(candidate, 'utf-8');
+      console.log(`[migrate] Found schema.sql at: ${candidate}`);
+      break;
+    } catch {
+      // try next candidate
+    }
+  }
+
+  if (!sql) {
+    console.error('[migrate] Could not find schema.sql in any of:', candidates);
+    console.warn('[migrate] Skipping migration — database schema may need to be applied manually.');
+    return;
+  }
 
   const client = new Client({ connectionString: databaseUrl });
   try {
