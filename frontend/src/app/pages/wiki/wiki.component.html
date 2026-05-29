@@ -1,0 +1,69 @@
+<div class="wiki-page">
+  <div class="wiki-container">
+
+    <!-- Header -->
+    <div class="wiki-header">
+      <h1 class="wiki-title">⚒️ Item Wiki</h1>
+      <p class="wiki-subtitle">Alle verfügbaren Item-Blueprints im Spiel</p>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <input
+        class="input"
+        type="search"
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearch()"
+        placeholder="🔍 Item suchen (Name oder ID)…"
+        aria-label="Items suchen"
+      />
+
+      <select class="input select-slot" [(ngModel)]="selectedSlot" (ngModelChange)="onSlotChange()" aria-label="Slot filtern">
+        <option value="">Alle Slots</option>
+        <option *ngFor="let s of slots" [value]="s">{{ slotLabel(s) }}</option>
+      </select>
+
+      <button class="btn btn-secondary btn-sm" (click)="clearFilters()" *ngIf="searchQuery || selectedSlot">
+        ✕ Filter
+      </button>
+
+      <button class="btn btn-secondary btn-sm" (click)="loadItems()">🔄</button>
+    </div>
+
+    <!-- State messages -->
+    <div class="loading" *ngIf="loading">Lade Items…</div>
+    <div class="error-card" *ngIf="error" role="alert">{{ error }}</div>
+
+    <!-- Count -->
+    <div class="result-count" *ngIf="!loading && !error">
+      {{ filtered.length }} von {{ items.length }} Items
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrapper" *ngIf="!loading && !error">
+      <div class="empty-state" *ngIf="filtered.length === 0">
+        Keine Items gefunden.
+      </div>
+
+      <table class="item-table" *ngIf="filtered.length > 0" aria-label="Item Wiki">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Slot</th>
+            <th class="num-col">Basis-Stärke</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of filtered">
+            <td class="id-cell"><code class="item-id">{{ item.id }}</code></td>
+            <td class="name-cell">{{ item.name }}</td>
+            <td><span class="slot-badge slot-{{ item.slot }}">{{ slotLabel(item.slot) }}</span></td>
+            <td class="num-col"><span class="power-badge" [ngClass]="powerClass(item.base_power)">{{ item.base_power }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>

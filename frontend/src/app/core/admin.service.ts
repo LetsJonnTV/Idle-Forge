@@ -17,6 +17,20 @@ export interface AdminPlayersResponse {
   players: AdminPlayer[];
 }
 
+export interface ItemBlueprint {
+  id: string;
+  slot: string;
+  name: string;
+  base_power: number;
+  icon_path: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface AdminItemsResponse {
+  items: ItemBlueprint[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   constructor(private api: ApiService) {}
@@ -48,5 +62,25 @@ export class AdminService {
     if (type === 'gold' && amount !== undefined) body['amount'] = amount;
     if (type === 'item' && itemId)             body['itemId'] = itemId;
     return this.api.put<{ success: boolean }>(`/api/admin/players/${id}`, body);
+  }
+
+  getItems(search?: string, slot?: string): Observable<AdminItemsResponse> {
+    const params = new URLSearchParams();
+    if (search) params.set('q', search);
+    if (slot) params.set('slot', slot);
+    const query = params.toString() ? `?${params}` : '';
+    return this.api.get<AdminItemsResponse>(`/api/admin/items${query}`);
+  }
+
+  createItem(item: { id: string; slot: string; name: string; base_power: number; icon_path?: string }): Observable<{ item: ItemBlueprint }> {
+    return this.api.post<{ item: ItemBlueprint }>('/api/admin/items', item);
+  }
+
+  updateItem(id: string, updates: Partial<ItemBlueprint>): Observable<{ item: ItemBlueprint }> {
+    return this.api.patch<{ item: ItemBlueprint }>(`/api/admin/items/${id}`, updates);
+  }
+
+  deactivateItem(id: string): Observable<{ success: boolean }> {
+    return this.api.delete<{ success: boolean }>(`/api/admin/items/${id}`);
   }
 }

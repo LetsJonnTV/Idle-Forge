@@ -49,12 +49,15 @@ class _AuthScreenState extends State<AuthScreen>
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
-  Color get _bg => _isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
+  Color get _bg => _isDark ? const Color(0xFF0C0F16) : const Color(0xFFF0E8D8);
 
   Color get _cardBg =>
-      _isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFFFFFF);
+      _isDark ? const Color(0xFF191E2C) : const Color(0xFFFFF8EC);
 
   Color get _accent => const Color(0xFFD4A84B);
+
+  Color get _border =>
+      _isDark ? const Color(0xFF7A5818) : const Color(0xFF9A7420);
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -125,8 +128,8 @@ class _AuthScreenState extends State<AuthScreen>
                           fontWeight: FontWeight.bold,
                           letterSpacing: 4,
                           color: _isDark
-                              ? const Color(0xFFE2E2E2)
-                              : const Color(0xFF1A1A1A),
+                          ? const Color(0xFFDED0B0)
+                          : const Color(0xFF2A1E08),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -135,8 +138,8 @@ class _AuthScreenState extends State<AuthScreen>
                         style: TextStyle(
                           fontSize: 13,
                           color: _isDark
-                              ? const Color(0xFF888888)
-                              : const Color(0xFF666666),
+                          ? const Color(0xFF9A8860)
+                          : const Color(0xFF6A5028),
                         ),
                       ),
                     ],
@@ -148,11 +151,14 @@ class _AuthScreenState extends State<AuthScreen>
                     decoration: BoxDecoration(
                       color: _cardBg,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: _isDark
-                            ? const Color(0xFF3B3B3B)
-                            : const Color(0xFFDDDDDD),
-                      ),
+                      border: Border.all(color: _border, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _accent.withValues(alpha: 0.12),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Column(
                       children: [
@@ -162,8 +168,8 @@ class _AuthScreenState extends State<AuthScreen>
                           indicatorColor: _accent,
                           labelColor: _accent,
                           unselectedLabelColor: _isDark
-                              ? const Color(0xFF888888)
-                              : const Color(0xFF666666),
+                          ? const Color(0xFF9A8860)
+                          : const Color(0xFF6A5028),
                           tabs: [
                             Tab(text: widget.text.tr('loginButton')),
                             Tab(text: widget.text.tr('registerButton')),
@@ -187,8 +193,8 @@ class _AuthScreenState extends State<AuthScreen>
                                     ),
                                     filled: true,
                                     fillColor: _isDark
-                                        ? const Color(0xFF252525)
-                                        : const Color(0xFFF0F0F0),
+                                        ? const Color(0xFF0E1220)
+                                        : const Color(0xFFE8DCC8),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(10),
                                       borderSide: BorderSide.none,
@@ -225,8 +231,8 @@ class _AuthScreenState extends State<AuthScreen>
                                     ),
                                     filled: true,
                                     fillColor: _isDark
-                                        ? const Color(0xFF252525)
-                                        : const Color(0xFFF0F0F0),
+                                        ? const Color(0xFF0E1220)
+                                        : const Color(0xFFE8DCC8),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(10),
                                       borderSide: BorderSide.none,
@@ -308,8 +314,8 @@ class _AuthScreenState extends State<AuthScreen>
                     label: Text(widget.text.tr('loginSkip')),
                     style: TextButton.styleFrom(
                       foregroundColor: _isDark
-                          ? const Color(0xFF888888)
-                          : const Color(0xFF666666),
+                          ? const Color(0xFF9A8860)
+                          : const Color(0xFF6A5028),
                     ),
                   ),
                   const SizedBox(height: 8),

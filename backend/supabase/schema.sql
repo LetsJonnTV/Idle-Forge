@@ -219,6 +219,29 @@ CREATE TABLE IF NOT EXISTS clan_invites (
 );
 
 -- ============================================================
+-- ITEM BLUEPRINTS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS item_blueprints (
+  id TEXT PRIMARY KEY,
+  slot TEXT NOT NULL,
+  name TEXT NOT NULL,
+  base_power INT NOT NULL,
+  icon_path TEXT,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_item_blueprints_slot ON item_blueprints(slot);
+CREATE INDEX IF NOT EXISTS idx_item_blueprints_active ON item_blueprints(is_active);
+
+ALTER TABLE item_blueprints ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY "Public read item_blueprints" ON item_blueprints FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Allow all item_blueprints" ON item_blueprints FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ============================================================
 -- RLS for new tables
 -- ============================================================
 ALTER TABLE clan_chat ENABLE ROW LEVEL SECURITY;

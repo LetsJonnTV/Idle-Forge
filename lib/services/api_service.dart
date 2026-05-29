@@ -294,6 +294,33 @@ class ApiService {
     }
   }
 
+  /// Fetch and atomically consume all pending admin rewards for the current player.
+  /// Returns a list of reward maps: [{ 'reward_type': 'gold', 'amount': 100 }, ...]
+  Future<List<Map<String, dynamic>>> claimPendingRewards() async {
+    if (!isLoggedIn) return [];
+    try {
+      final data = await _post('/api/players/me/rewards', {});
+      return List<Map<String, dynamic>>.from(data['rewards'] as List? ?? []);
+    } on ApiException {
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Fetch all active item blueprints from the API.
+  /// Returns a list of blueprint maps or empty list on error.
+  Future<List<Map<String, dynamic>>> fetchItemBlueprints() async {
+    try {
+      final data = await _get('/api/items');
+      return List<Map<String, dynamic>>.from(data['items'] as List? ?? []);
+    } on ApiException {
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
   // ------------------------------------------------------------------ //
   //  Leaderboard
   // ------------------------------------------------------------------ //

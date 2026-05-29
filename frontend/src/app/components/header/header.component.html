@@ -11,6 +11,9 @@
 
       <!-- Logged-out state -->
       <ng-container *ngIf="!isLoggedIn">
+        <a routerLink="/wiki" routerLinkActive="active" class="btn btn-secondary btn-sm">
+          Wiki
+        </a>
         <button class="btn btn-secondary btn-sm" (click)="openLogin()" aria-label="Einloggen">
           Einloggen
         </button>
@@ -25,6 +28,10 @@
           <span class="user-icon">👤</span>
           <span class="username-text">{{ username }}</span>
         </span>
+
+        <a routerLink="/wiki" routerLinkActive="active" class="btn btn-secondary btn-sm">
+          Wiki
+        </a>
 
         <a routerLink="/dashboard" routerLinkActive="active" class="btn btn-secondary btn-sm">
           Dashboard

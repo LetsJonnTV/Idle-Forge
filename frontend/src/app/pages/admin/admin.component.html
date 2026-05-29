@@ -10,6 +10,203 @@
       <p class="admin-subtitle">Spielerverwaltung — Passwörter zurücksetzen, sperren, Belohnungen vergeben</p>
     </div>
 
+    <!-- Tab navigation -->
+    <div class="tab-nav">
+      <button class="tab-btn" [class.active]="activeTab === 'players'" (click)="setTab('players')">👥 Spieler</button>
+      <button class="tab-btn" [class.active]="activeTab === 'items'"   (click)="setTab('items')">⚔️ Items</button>
+    </div>
+
+    <!-- ═══════════════════════════════ PLAYERS TAB ═══════════════════════════════ -->
+    <ng-container *ngIf="activeTab === 'players'">
+
+      <!-- Search -->
+      <div class="search-wrapper">
+        <input
+          class="input"
+          type="search"
+          [(ngModel)]="searchQuery"
+          (ngModelChange)="onSearchChange($event)"
+          placeholder="🔍 Spieler suchen (Benutzername)…"
+          aria-label="Spieler suchen"
+        />
+      </div>
+
+      <!-- Feedback -->
+      <div class="loading" *ngIf="loading">Lade Spieler…</div>
+      <div class="error-card" *ngIf="error" role="alert">{{ error }}</div>
+
+      <!-- Table -->
+      <div class="table-wrapper" *ngIf="!loading">
+        <div class="empty-state" *ngIf="players.length === 0 && !error">
+          Keine Spieler gefunden{{ searchQuery ? ' für "' + searchQuery + '"' : '' }}.
+        </div>
+
+        <table class="player-table" *ngIf="players.length > 0" aria-label="Spielerliste">
+          <thead>
+            <tr>
+              <th>Benutzername</th>
+              <th class="num-col">Stärke</th>
+              <th class="num-col">Prestige</th>
+              <th class="num-col">Kapitel</th>
+              <th>Status</th>
+              <th class="actions-th">Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let p of players"
+              [class.row-admin]="p.is_admin"
+              [class.row-blocked]="p.is_blocked"
+            >
+              <td class="username-cell">
+                <span class="player-name">{{ p.username }}</span>
+                <span class="badge badge-gold ml-xs" *ngIf="p.is_admin">Admin</span>
+                <span class="joined-date">Beitritt: {{ formatDate(p.created_at) }}</span>
+              </td>
+              <td class="num-col">{{ p.total_strength | number:'1.0-0' }}</td>
+              <td class="num-col">{{ p.prestige_level }}</td>
+              <td class="num-col">{{ p.chapter }}</td>
+              <td>
+                <span class="badge" [class.badge-green]="!p.is_blocked" [class.badge-red]="p.is_blocked">
+                  {{ p.is_blocked ? 'Gesperrt' : 'Aktiv' }}
+                </span>
+              </td>
+              <td class="actions-cell">
+                <div class="row-msg" *ngIf="rowMessages[p.id]">{{ rowMessages[p.id] }}</div>
+                <div class="action-btns">
+                  <button class="btn btn-secondary btn-sm" (click)="toggleResetPw(p.id)" [class.btn-active]="getResetState(p.id).visible" title="Passwort zurücksetzen">🔑</button>
+                  <button class="btn btn-sm" [class.btn-warning]="!p.is_blocked" [class.btn-success]="p.is_blocked" [disabled]="p.is_admin" (click)="toggleBlock(p)" [title]="p.is_blocked ? 'Entsperren' : 'Sperren'">{{ p.is_blocked ? '✅' : '🚫' }}</button>
+                  <button class="btn btn-secondary btn-sm" (click)="toggleGive(p.id)" [class.btn-active]="getGiveState(p.id).visible" title="Belohnung vergeben">🎁</button>
+                  <button class="btn btn-danger btn-sm" [disabled]="p.is_admin" (click)="deletePlayer(p)" title="Spieler löschen">🗑️</button>
+                </div>
+
+                <div class="inline-form" *ngIf="getResetState(p.id).visible">
+                  <div class="inline-form-row">
+                    <input class="input input-sm" type="password" [(ngModel)]="resetPwMap[p.id].pw" [attr.name]="'rpw-' + p.id" placeholder="Neues Passwort" (keydown.enter)="doResetPw(p)" />
+                    <button class="btn btn-primary btn-sm" (click)="doResetPw(p)" [disabled]="resetPwMap[p.id].loading">{{ resetPwMap[p.id].loading ? '…' : 'Setzen' }}</button>
+                  </div>
+                  <span class="inline-msg" *ngIf="resetPwMap[p.id].msg" [class.inline-msg--ok]="resetPwMap[p.id].msg.startsWith('✓')" [class.inline-msg--err]="resetPwMap[p.id].msg.startsWith('✗')">{{ resetPwMap[p.id].msg }}</span>
+                </div>
+
+                <div class="inline-form" *ngIf="getGiveState(p.id).visible">
+                  <div class="inline-form-row give-row">
+                    <select class="input input-sm give-select" [(ngModel)]="giveMap[p.id].type" [attr.name]="'gtype-' + p.id">
+                      <option value="gold">💰 Gold</option>
+                      <option value="item">📦 Item</option>
+                    </select>
+                    <input *ngIf="giveMap[p.id].type === 'gold'" class="input input-sm give-amount" type="number" [(ngModel)]="giveMap[p.id].amount" [attr.name]="'gamount-' + p.id" placeholder="Menge" min="1" />
+                    <input *ngIf="giveMap[p.id].type === 'item'" class="input input-sm give-amount" type="text" [(ngModel)]="giveMap[p.id].itemId" [attr.name]="'gitemid-' + p.id" placeholder="Item-ID" />
+                    <button class="btn btn-primary btn-sm" (click)="doGive(p)" [disabled]="giveMap[p.id].loading">{{ giveMap[p.id].loading ? '…' : 'Geben' }}</button>
+                  </div>
+                  <span class="inline-msg" *ngIf="giveMap[p.id].msg" [class.inline-msg--ok]="giveMap[p.id].msg.startsWith('✓')" [class.inline-msg--err]="giveMap[p.id].msg.startsWith('✗')">{{ giveMap[p.id].msg }}</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-footer" *ngIf="players.length > 0">{{ players.length }} Spieler angezeigt</div>
+    </ng-container>
+
+    <!-- ═══════════════════════════════ ITEMS TAB ════════════════════════════════ -->
+    <ng-container *ngIf="activeTab === 'items'">
+
+      <!-- Create item form -->
+      <div class="item-create-form">
+        <h3 class="section-title">✨ Neues Item erstellen</h3>
+        <div class="create-form-row">
+          <input class="input input-sm" type="text" [(ngModel)]="newItem.id" placeholder="ID (z.B. custom_001)" />
+          <select class="input input-sm" [(ngModel)]="newItem.slot">
+            <option *ngFor="let s of slots" [value]="s">{{ slotLabel(s) }}</option>
+          </select>
+          <input class="input input-sm" type="text" [(ngModel)]="newItem.name" placeholder="Name" />
+          <input class="input input-sm" type="number" [(ngModel)]="newItem.base_power" placeholder="Stärke" min="1" style="width:90px" />
+          <input class="input input-sm" type="text" [(ngModel)]="newItem.icon_path" placeholder="Icon-Pfad (optional)" />
+          <button class="btn btn-primary btn-sm" (click)="createItem()" [disabled]="newItemLoading">{{ newItemLoading ? '…' : '+ Erstellen' }}</button>
+        </div>
+        <span class="inline-msg" *ngIf="newItemMsg" [class.inline-msg--ok]="newItemMsg.startsWith('✓')" [class.inline-msg--err]="newItemMsg.startsWith('✗')">{{ newItemMsg }}</span>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <input class="input" type="search" [(ngModel)]="itemSearch" placeholder="🔍 Item suchen…" (keydown.enter)="loadItems()" />
+        <select class="input" style="max-width:200px" [(ngModel)]="itemSlotFilter">
+          <option value="">Alle Slots</option>
+          <option *ngFor="let s of slots" [value]="s">{{ slotLabel(s) }}</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" (click)="loadItems()">Suchen</button>
+      </div>
+
+      <div class="loading" *ngIf="itemsLoading">Lade Items…</div>
+      <div class="error-card" *ngIf="itemsError" role="alert">{{ itemsError }}</div>
+      <div class="info-msg" *ngIf="itemMsg">{{ itemMsg }}</div>
+
+      <!-- Edit modal overlay -->
+      <div class="edit-overlay" *ngIf="editingItem" (click)="cancelEditItem()">
+        <div class="edit-modal" (click)="$event.stopPropagation()">
+          <h3>Item bearbeiten: {{ editingItem.id }}</h3>
+          <div class="edit-fields">
+            <label>Name<input class="input" type="text" [(ngModel)]="editingItem.name" /></label>
+            <label>Slot
+              <select class="input" [(ngModel)]="editingItem.slot">
+                <option *ngFor="let s of slots" [value]="s">{{ slotLabel(s) }}</option>
+              </select>
+            </label>
+            <label>Basis-Stärke<input class="input" type="number" [(ngModel)]="editingItem.base_power" min="1" /></label>
+            <label>Icon-Pfad<input class="input" type="text" [(ngModel)]="editingItem.icon_path" /></label>
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="editingItem.is_active" /> Aktiv
+            </label>
+          </div>
+          <div class="edit-actions">
+            <button class="btn btn-primary" (click)="saveEditItem()" [disabled]="editItemLoading">{{ editItemLoading ? '…' : 'Speichern' }}</button>
+            <button class="btn btn-secondary" (click)="cancelEditItem()">Abbrechen</button>
+          </div>
+          <span class="inline-msg" *ngIf="editItemMsg" [class.inline-msg--err]="editItemMsg.startsWith('✗')">{{ editItemMsg }}</span>
+        </div>
+      </div>
+
+      <!-- Items table -->
+      <div class="table-wrapper" *ngIf="!itemsLoading">
+        <div class="result-count" *ngIf="items.length > 0">{{ items.length }} Items</div>
+        <div class="empty-state" *ngIf="items.length === 0 && !itemsError">Keine Items gefunden.</div>
+
+        <table class="player-table" *ngIf="items.length > 0" aria-label="Item-Liste">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Slot</th>
+              <th class="num-col">Stärke</th>
+              <th>Status</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of items" [class.row-blocked]="!item.is_active">
+              <td><code style="font-size:0.8rem;color:#999">{{ item.id }}</code></td>
+              <td>{{ item.name }}</td>
+              <td><span class="badge">{{ slotLabel(item.slot) }}</span></td>
+              <td class="num-col">{{ item.base_power }}</td>
+              <td><span class="badge" [class.badge-green]="item.is_active" [class.badge-red]="!item.is_active">{{ item.is_active ? 'Aktiv' : 'Inaktiv' }}</span></td>
+              <td class="actions-cell">
+                <div class="action-btns">
+                  <button class="btn btn-secondary btn-sm" (click)="startEditItem(item)" title="Bearbeiten">✏️</button>
+                  <button class="btn btn-warning btn-sm" *ngIf="item.is_active" (click)="deactivateItem(item)" title="Deaktivieren">🚫</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </ng-container>
+
+  </div><!-- /.admin-container -->
+</div><!-- /.admin-page -->
+
+
     <!-- Search -->
     <div class="search-wrapper">
       <input

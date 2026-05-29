@@ -14,6 +14,7 @@ import { AuthModalComponent } from './components/auth-modal/auth-modal.component
 import { LandingComponent }   from './pages/landing/landing.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { AdminComponent }     from './pages/admin/admin.component';
+import { WikiComponent }      from './pages/wiki/wiki.component';
 
 @NgModule({
   declarations: [
@@ -22,7 +23,8 @@ import { AdminComponent }     from './pages/admin/admin.component';
     AuthModalComponent,
     LandingComponent,
     DashboardComponent,
-    AdminComponent
+    AdminComponent,
+    WikiComponent
   ],
   imports: [
     BrowserModule,

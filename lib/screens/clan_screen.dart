@@ -41,16 +41,16 @@ class _ClanScreenState extends State<ClanScreen>
   // ------------------------------------------------------------------ //
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
-  Color get _bg => _isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
+  Color get _bg => _isDark ? const Color(0xFF0C0F16) : const Color(0xFFF0E8D8);
   Color get _cardBg =>
-      _isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFFFFFF);
+      _isDark ? const Color(0xFF191E2C) : const Color(0xFFFFF8EC);
   Color get _accent => const Color(0xFFD4A84B);
   Color get _textPrimary =>
-      _isDark ? const Color(0xFFE2E2E2) : const Color(0xFF1A1A1A);
+      _isDark ? const Color(0xFFDED0B0) : const Color(0xFF2A1E08);
   Color get _textSecondary =>
-      _isDark ? const Color(0xFFB5B5B5) : const Color(0xFF555555);
+      _isDark ? const Color(0xFF9A8860) : const Color(0xFF6A5028);
   Color get _border =>
-      _isDark ? const Color(0xFF3B3B3B) : const Color(0xFFDDDDDD);
+      _isDark ? const Color(0xFF7A5818) : const Color(0xFF9A7420);
 
   AppText get t => widget.text;
   ApiService get api => ApiService.instance;

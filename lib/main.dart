@@ -68,46 +68,63 @@ double _adaptiveSheetHeight(
 extension _AppColors on BuildContext {
   bool get _isDark => Theme.of(this).brightness == Brightness.dark;
 
+  // Deep forge atmosphere — near-black with a blue-coal tint in dark mode,
+  // warm aged-parchment in light mode.
   Color get bodyBg =>
-      _isDark ? const Color(0xFF191919) : const Color(0xFFF4F4F4);
+      _isDark ? const Color(0xFF0C0F16) : const Color(0xFFF0E8D8);
 
   Color get sheetBg =>
-      _isDark ? const Color(0xFF1F1F1F) : const Color(0xFFFFFFFF);
+      _isDark ? const Color(0xFF12161F) : const Color(0xFFEDE0C8);
 
   Color get cardBg =>
-      _isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFFFFFF);
+      _isDark ? const Color(0xFF191E2C) : const Color(0xFFFFF8EC);
 
   Color get cardBgAlt =>
-      _isDark ? const Color(0xFF242424) : const Color(0xFFF8F8F8);
+      _isDark ? const Color(0xFF121828) : const Color(0xFFF5EDDB);
 
   Color get inputBg =>
-      _isDark ? const Color(0xFF252525) : const Color(0xFFF0F0F0);
+      _isDark ? const Color(0xFF0E1220) : const Color(0xFFE8DCC8);
 
+  // Subtle dark border — used where gold would be too loud.
   Color get cardBorder =>
-      _isDark ? const Color(0xFF3B3B3B) : const Color(0xFFD0D0D0);
+      _isDark ? const Color(0xFF2A3048) : const Color(0xFFBEA870);
 
+  // Standard heavier border.
   Color get borderHeavy =>
-      _isDark ? const Color(0xFF474747) : const Color(0xFFBBBBBB);
+      _isDark ? const Color(0xFF3C4560) : const Color(0xFF9A7840);
+
+  // Gold border — the signature game accent.
+  Color get borderGold =>
+      _isDark ? const Color(0xFF7A5818) : const Color(0xFF9A7420);
+
+  // Bright gold border for highlighted / interactive containers.
+  Color get borderGoldBright => const Color(0xFFC09028);
 
   Color get divider =>
-      _isDark ? const Color(0xFF3A3A3A) : const Color(0xFFDDDDDD);
+      _isDark ? const Color(0xFF262C40) : const Color(0xFFD0B878);
 
   Color get textPrimary =>
-      _isDark ? const Color(0xFFE2E2E2) : const Color(0xFF1A1A1A);
+      _isDark ? const Color(0xFFDED0B0) : const Color(0xFF2A1E08);
 
   Color get textSecondary =>
-      _isDark ? const Color(0xFFB5B5B5) : const Color(0xFF555555);
+      _isDark ? const Color(0xFF9A8860) : const Color(0xFF6A5028);
 
   Color get textTertiary =>
-      _isDark ? const Color(0xFFA9A9A9) : const Color(0xFF777777);
+      _isDark ? const Color(0xFF706048) : const Color(0xFF9A8058);
 
-  Color get textBright => _isDark ? Colors.white : const Color(0xFF111111);
+  Color get textBright =>
+      _isDark ? const Color(0xFFF0E4C0) : const Color(0xFF1A0E00);
 
+  // Gold icon tint — icons glow with forge-fire hue.
   Color get iconColor =>
-      _isDark ? const Color(0xFFD0D0D0) : const Color(0xFF444444);
+      _isDark ? const Color(0xFFD4A84B) : const Color(0xFF7A5A18);
 
   Color get overlayBg =>
-      _isDark ? const Color(0xB0202020) : const Color(0xB0F0F0F0);
+      _isDark ? const Color(0xCC0C0F18) : const Color(0xCCF0E4C8);
+
+  // Named semantic accents available throughout the file.
+  Color get goldAccent => const Color(0xFFD4A84B);
+  Color get goldAccentBright => const Color(0xFFF0C050);
 }
 
 Future<void> main() async {
@@ -219,26 +236,48 @@ class _IdleForgeAppState extends State<IdleForgeApp> {
             brightness: Brightness.light,
             fontFamily: 'monospace',
             visualDensity: VisualDensity.adaptivePlatformDensity,
-            scaffoldBackgroundColor: const Color(0xFFF4F4F4),
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF3A3A3A),
-              secondary: Color(0xFF666666),
-              surface: Color(0xFFFFFFFF),
+            scaffoldBackgroundColor: const Color(0xFFF0E8D8),
+            colorScheme: ColorScheme.light(
+              primary: const Color(0xFF7A5818),
+              secondary: const Color(0xFF9A7820),
+              surface: const Color(0xFFFFF8EC),
+              onSurface: const Color(0xFF2A1E08),
+              surfaceContainerHighest: const Color(0xFFF5EDDB),
+            ),
+            dialogTheme: const DialogThemeData(
+              backgroundColor: Color(0xFFF5EDDB),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(14)),
+                side: BorderSide(color: Color(0xFF9A7820), width: 1.5),
+              ),
+            ),
+            snackBarTheme: const SnackBarThemeData(
+              backgroundColor: Color(0xFFE8D8A8),
+              contentTextStyle: TextStyle(color: Color(0xFF2A1E08)),
             ),
           ),
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             fontFamily: 'monospace',
             visualDensity: VisualDensity.adaptivePlatformDensity,
-            scaffoldBackgroundColor: const Color(0xFF171717),
+            scaffoldBackgroundColor: const Color(0xFF0C0F16),
             colorScheme: const ColorScheme.dark(
-              primary: Color(0xFFD4D4D4),
-              secondary: Color(0xFFB8B8B8),
-              surface: Color(0xFF232323),
+              primary: Color(0xFFD4A84B),
+              secondary: Color(0xFFC09028),
+              surface: Color(0xFF191E2C),
+              onSurface: Color(0xFFDED0B0),
+              surfaceContainerHighest: Color(0xFF121828),
+            ),
+            dialogTheme: const DialogThemeData(
+              backgroundColor: Color(0xFF191E2C),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(14)),
+                side: BorderSide(color: Color(0xFF7A5818), width: 1.5),
+              ),
             ),
             snackBarTheme: const SnackBarThemeData(
-              backgroundColor: Color(0xFF2B2B2B),
-              contentTextStyle: TextStyle(color: Colors.white),
+              backgroundColor: Color(0xFF252C40),
+              contentTextStyle: TextStyle(color: Color(0xFFDED0B0)),
             ),
           ),
           builder: (context, child) {
@@ -348,9 +387,16 @@ class _TopBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: context.cardBgAlt,
             borderRadius: BorderRadius.circular(_rs(context, 12, min: 8)),
-            border: Border.all(color: context.cardBorder),
+            border: Border.all(color: context.borderGold, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: context.goldAccent.withValues(alpha: 0.12),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          child: Icon(icon, color: context.iconColor, size: iconSize),
+          child: Icon(icon, color: context.goldAccent, size: iconSize),
         ),
       );
     }
@@ -365,7 +411,14 @@ class _TopBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: context.cardBgAlt,
             borderRadius: BorderRadius.circular(_rs(context, 12, min: 8)),
-            border: Border.all(color: context.cardBorder),
+            border: Border.all(color: context.borderGold, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: context.goldAccent.withValues(alpha: 0.10),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -432,7 +485,14 @@ class _TopBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.cardBgAlt,
         borderRadius: BorderRadius.circular(_rs(context, 12, min: 8)),
-        border: Border.all(color: context.cardBorder),
+        border: Border.all(color: context.borderGoldBright, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: context.goldAccentBright.withValues(alpha: 0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -447,7 +507,7 @@ class _TopBar extends StatelessWidget {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: _rs(context, dense ? 14 : 15, min: 11),
-              color: context.textPrimary,
+              color: context.goldAccentBright,
             ),
           ),
         ],
@@ -1404,8 +1464,19 @@ class _CombatArea extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(_rs(context, 16, min: 12)),
-              border: Border.all(color: context.cardBorder),
-              color: context.cardBg,
+              border: Border.all(color: context.borderGold, width: 1.5),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [context.cardBg, context.cardBgAlt],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: context.goldAccent.withValues(alpha: 0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               children: [
@@ -1485,9 +1556,9 @@ class _CombatArea extends StatelessWidget {
                                       minHeight: _rs(context, 5, min: 4),
                                       valueColor:
                                           const AlwaysStoppedAnimation<Color>(
-                                            Color(0xFF8FBCE3),
+                                            Color(0xFF4EC878),
                                           ),
-                                      backgroundColor: context.borderHeavy,
+                                      backgroundColor: const Color(0xFF0D2010),
                                     ),
                                   ),
                                 ),
@@ -1631,19 +1702,34 @@ class _CombatArea extends StatelessWidget {
                                     max: 72,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: available
-                                        ? context.cardBg
-                                        : context.inputBg,
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: available
+                                          ? [context.cardBg, context.cardBgAlt]
+                                          : [context.inputBg, context.inputBg],
+                                    ),
                                     borderRadius: BorderRadius.circular(
                                       _rs(context, 10, min: 7),
                                     ),
                                     border: Border.all(
                                       color: autoEnabled
-                                          ? const Color(0xFF8BAF85)
+                                          ? const Color(0xFF5AAF58)
                                           : available
-                                          ? context.borderHeavy
+                                          ? context.borderGoldBright
                                           : context.borderHeavy,
+                                      width: available ? 1.5 : 1.0,
                                     ),
+                                    boxShadow: available
+                                        ? [
+                                            BoxShadow(
+                                              color: context.goldAccent
+                                                  .withValues(alpha: 0.10),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 1),
+                                            ),
+                                          ]
+                                        : null,
                                   ),
                                   child: Stack(
                                     children: [
@@ -2618,7 +2704,14 @@ class _BottomMenuState extends State<_BottomMenu> {
       decoration: BoxDecoration(
         color: context.cardBgAlt,
         borderRadius: BorderRadius.circular(_rs(context, 14, min: 9)),
-        border: Border.all(color: context.cardBorder),
+        border: Border.all(color: context.borderGold, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: context.goldAccent.withValues(alpha: 0.12),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -6218,9 +6311,23 @@ class _MenuButton extends StatelessWidget {
         child: Container(
           height: _rs(context, dense ? 54 : 64, min: 48, max: 82),
           decoration: BoxDecoration(
-            color: context.cardBg,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                context.cardBg,
+                context.cardBgAlt,
+              ],
+            ),
             borderRadius: BorderRadius.circular(_rs(context, 10, min: 7)),
-            border: Border.all(color: context.borderHeavy),
+            border: Border.all(color: context.borderGoldBright, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: context.goldAccent.withValues(alpha: 0.14),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -6234,7 +6341,7 @@ class _MenuButton extends StatelessWidget {
                 Icon(
                   icon,
                   size: _rs(context, dense ? 17 : 20, min: 14, max: 26),
-                  color: context.textPrimary,
+                  color: context.goldAccent,
                 ),
               SizedBox(height: _rs(context, 4, min: 2)),
               Padding(
@@ -6248,6 +6355,8 @@ class _MenuButton extends StatelessWidget {
                     style: TextStyle(
                       fontSize: _rs(context, dense ? 9 : 10, min: 8, max: 12),
                       color: context.textPrimary,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

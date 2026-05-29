@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const ALLOWED_ORIGIN = 'https://idle-forge.jonn2008.me';
+const ALLOWED_ORIGINS = [
+  'https://idle-forge.jonn2008.me',
+  'https://wiki.idle-forge.jonn2008.me',
+  'http://localhost:4200',
+  'http://localhost:3001', // local wiki dev
+];
 
 export function middleware(request: NextRequest) {
   const origin = request.headers.get('origin') ?? '';
-  const isAllowed = origin === ALLOWED_ORIGIN || origin === 'http://localhost:4200';
+  const isAllowed = ALLOWED_ORIGINS.includes(origin);
 
   // Handle CORS preflight
   if (request.method === 'OPTIONS') {

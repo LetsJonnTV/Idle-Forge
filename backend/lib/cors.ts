@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 
 const ORIGINS = [
   'https://idle-forge.jonn2008.me',
+  'https://wiki.idle-forge.jonn2008.me',
   'http://localhost:4200',
+  'http://localhost:3001',
 ];
 
 export function corsHeaders(origin: string | null) {

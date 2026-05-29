@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_text.dart';
 import '../services/api_service.dart';
+import '../services/item_catalog_service.dart';
 import '../services/notification_service.dart';
 import 'dungeon_controller.dart';
 import 'models.dart';
@@ -1799,6 +1800,14 @@ class GameController extends ChangeNotifier {
     playerHp = playerHp.clamp(1.0, maxPlayerHp).toDouble();
     _isLoaded = true;
     _startTickLoop();
+    // Claim any pending admin rewards (non-blocking, runs after first load)
+    if (ApiService.instance.isLoggedIn) {
+      _claimPendingRewards();
+    }
+    // Sync item blueprints from API in background (non-blocking)
+    ItemCatalogService.instance.loadFromCache().then((_) {
+      ItemCatalogService.instance.syncBlueprints().ignore();
+    });
     notifyListeners();
   }
 
@@ -4121,6 +4130,11 @@ class GameController extends ChangeNotifier {
           now.difference(_lastCloudSaveAt!) >= const Duration(minutes: 5)) {
         _lastCloudSaveAt = now;
         ApiService.instance.uploadSave(map).ignore();
+        ApiService.instance.uploadStats(
+          totalStrength: totalStrength,
+          prestigeLevel: prestigeLevel,
+          chapter: chapter,
+        ).ignore();
       }
     }
   }
@@ -4175,6 +4189,34 @@ class GameController extends ChangeNotifier {
       cloudSyncStatus = 'error';
     }
     notifyListeners();
+  }
+
+  /// Fetch and apply pending admin rewards from the server.
+  /// Runs silently in the background — never throws.
+  Future<void> _claimPendingRewards() async {
+    try {
+      final rewards = await ApiService.instance.claimPendingRewards();
+      if (rewards.isEmpty) return;
+      var changed = false;
+      for (final r in rewards) {
+        final type = r['reward_type'] as String? ?? '';
+        if (type == 'gold') {
+          final amount = (r['amount'] as num?)?.toInt() ?? 0;
+          if (amount > 0) {
+            gold += amount;
+            changed = true;
+          }
+        }
+        // item rewards: find blueprint in catalog and create a game item
+        // (currently not implemented — blueprint-based items need crafting logic)
+      }
+      if (changed) {
+        _save();
+        notifyListeners();
+      }
+    } catch (_) {
+      // silently fail
+    }
   }
 
   /// Called once on startup to auto-load cloud save if it is newer.
