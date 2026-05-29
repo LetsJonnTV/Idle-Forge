@@ -1076,8 +1076,9 @@ class _TopBar extends StatelessWidget {
                                             : () async {
                                                 setModalState(() {});
                                                 await controller.cloudSave();
-                                                if (context.mounted)
+                                                if (context.mounted) {
                                                   setModalState(() {});
+                                                }
                                               },
                                       ),
                                     ),
@@ -1112,8 +1113,9 @@ class _TopBar extends StatelessWidget {
                                             : () async {
                                                 setModalState(() {});
                                                 await controller.cloudLoad();
-                                                if (context.mounted)
+                                                if (context.mounted) {
                                                   setModalState(() {});
+                                                }
                                               },
                                       ),
                                     ),
