@@ -1,0 +1,51 @@
+name: Protect Dev Branch
+
+on:
+  delete:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  restore-dev-on-delete:
+    name: Restore dev branch after deletion
+    if: ${{ github.event_name == 'delete' && github.event.ref_type == 'branch' && github.event.ref == 'dev' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Recreate dev from main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git push origin HEAD:refs/heads/dev
+
+  ensure-dev-exists-manual:
+    name: Ensure dev exists (manual run)
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Create dev if missing
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin dev >/dev/null 2>&1; then
+            echo "dev branch already exists."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git push origin HEAD:refs/heads/dev
+          echo "dev branch was missing and has been recreated from main."
