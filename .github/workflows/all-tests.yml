@@ -96,10 +96,10 @@ jobs:
       - name: UI tests (integration or widget fallback)
         shell: bash
         run: |
-          if [ -d integration_test ]; then
+          if [ -d integration_test ] && flutter devices | grep -Eiq 'android|ios'; then
             flutter test integration_test
           else
-            echo "No integration_test directory found - running widget smoke test instead."
+            echo "No supported mobile device found - running widget smoke test instead."
             flutter test test/widget_test.dart
           fi
 
