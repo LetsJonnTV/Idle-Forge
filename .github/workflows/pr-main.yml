@@ -16,6 +16,6 @@ permissions:
 
 jobs:
   full-validation:
-    name: Run full validation matrix
+    name: Analyze and Test
     if: ${{ github.event.action != 'closed' }}
     uses: ./.github/workflows/all-tests.yml
