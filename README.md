@@ -46,6 +46,35 @@ flutter build apk --release        # release APK
 
 Please [open an issue](https://github.com/LetsJonnTV/Idle-Forge/issues/new) on GitHub.
 
+## 🌿 Branch Rules
+
+Branch model:
+1. `main` only accepts pull requests from `dev`.
+2. Direct pushes to `dev` are not allowed.
+3. New working branches must follow:
+	`task|fix|feat/issue_<number>/<short-description>`
+
+Examples:
+1. `feat/issue_128/new-forge-ui`
+2. `fix/issue_274/null-check-save`
+3. `task/issue_310/update-docs`
+
+Automation in this repository:
+1. [`.github/workflows/branch-rules.yml`](.github/workflows/branch-rules.yml) enforces:
+	- PRs to `main` must come from `dev`
+	- Branch naming format on PR and push
+
+Required GitHub settings (one-time):
+1. Branch protection for `main`:
+	- Require a pull request before merging
+	- Require status checks and select `Branch Rules / Enforce main PR source branch`
+2. Branch protection for `dev`:
+	- Require a pull request before merging
+	- Restrict who can push to matching branches (nobody or only admins/bot)
+	- Require status checks and select:
+	  - `Branch Rules / Enforce branch naming on PR`
+	  - `Branch Rules / Enforce branch naming on push`
+
 ## 📄 License
 
 MIT — see [LICENSE](LICENSE)
