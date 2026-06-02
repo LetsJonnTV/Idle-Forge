@@ -1,0 +1,151 @@
+name: Manual Operations
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Select operation'
+        required: true
+        type: choice
+        options:
+          - smoke_test
+          - unit_test
+          - deploy_frontend_pages
+          - ui_test
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  smoke-test:
+    name: Smoke test
+    if: ${{ inputs.operation == 'smoke_test' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Backend smoke (lint and build)
+        working-directory: backend
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+
+      - name: Frontend smoke (build)
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build -- --configuration production
+
+      - name: App smoke (analyze)
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: stable
+
+      - name: Flutter analyze
+        run: |
+          flutter pub get
+          flutter analyze
+
+  unit-test:
+    name: Unit test
+    if: ${{ inputs.operation == 'unit_test' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Backend tests
+        working-directory: backend
+        run: |
+          npm ci
+          npm run test
+
+      - name: Frontend tests
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run test
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: stable
+
+      - name: App tests
+        run: |
+          flutter pub get
+          flutter test
+
+  deploy-frontend-pages:
+    name: Manual frontend deployment
+    if: ${{ inputs.operation == 'deploy_frontend_pages' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npx ng build --configuration production
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+
+  ui-test:
+    name: Manual UI test
+    if: ${{ inputs.operation == 'ui_test' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run UI tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          target: google_apis
+          disable-animations: true
+          script: flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart --dart-define=DISABLE_UPDATE_CHECK=true

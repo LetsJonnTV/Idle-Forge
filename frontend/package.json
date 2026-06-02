@@ -5,8 +5,9 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "lint": "tsc --noEmit -p tsconfig.app.json",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test --watch=false --browsers=ChromeHeadless --no-progress"
   },
   "private": true,
   "dependencies": {

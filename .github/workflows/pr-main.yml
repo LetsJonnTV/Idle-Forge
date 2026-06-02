@@ -1,0 +1,21 @@
+name: PR Main Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - closed
+
+permissions:
+  contents: read
+
+jobs:
+  full-validation:
+    name: Run full validation matrix
+    if: ${{ github.event.action != 'closed' }}
+    uses: ./.github/workflows/all-tests.yml
