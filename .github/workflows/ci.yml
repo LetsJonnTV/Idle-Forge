@@ -177,7 +177,18 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      - name: Detect KVM availability
+        id: kvm
+        shell: bash
+        run: |
+          if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Run Android UI Smoke Test
+        if: steps.kvm.outputs.available == 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -186,6 +197,12 @@ jobs:
           target: google_apis
           disable-animations: true
           script: flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart --dart-define=DISABLE_UPDATE_CHECK=true
+
+      - name: KVM unavailable fallback UI test
+        if: steps.kvm.outputs.available != 'true'
+        run: |
+          echo "KVM not available on runner; skipping Android emulator UI test."
+          flutter test test/widget_test.dart
 
   sql-validation:
     name: SQL validation
