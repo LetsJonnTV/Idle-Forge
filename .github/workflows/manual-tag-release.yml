@@ -10,11 +10,10 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   tag-and-release:
-    name: Create release bump PR
+    name: Bump version on main
     runs-on: ubuntu-latest
 
     steps:
@@ -41,43 +40,11 @@ jobs:
 
           sed -E -i "s/^version: .*/version: ${VERSION_RAW}+0/" pubspec.yaml
 
-      - name: Commit and push release branch
+      - name: Commit and push release bump to main
         run: |
           VERSION_TAG="${{ inputs.version }}"
-          RELEASE_BRANCH="chore/release-${VERSION_TAG}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add backend/package.json frontend/package.json backend/package-lock.json frontend/package-lock.json pubspec.yaml
           git commit -m "chore(release): bump version to ${VERSION_TAG}" || echo "No changes to commit"
-          git switch -c "${RELEASE_BRANCH}"
-          git push origin "${RELEASE_BRANCH}" --force-with-lease
-
-      - name: Create PR to main
-        env:
-          GH_TOKEN: ${{ secrets.BOT_GH_PAT != '' && secrets.BOT_GH_PAT || github.token }}
-        run: |
-          VERSION_TAG="${{ inputs.version }}"
-          RELEASE_BRANCH="chore/release-${VERSION_TAG}"
-
-          if [ "${{ secrets.BOT_GH_PAT }}" = "" ]; then
-            echo "This repository currently blocks PR creation with the default github.token."
-            echo "Add a PAT as secret BOT_GH_PAT (repo scope) or enable 'Allow GitHub Actions to create and approve pull requests'."
-          fi
-
-          existing_pr=$(gh pr list \
-            --base main \
-            --head "${RELEASE_BRANCH}" \
-            --state open \
-            --json number \
-            --jq '.[0].number // ""')
-
-          if [ -n "${existing_pr}" ]; then
-            echo "PR already exists: #${existing_pr}"
-            exit 0
-          fi
-
-          gh pr create \
-            --base main \
-            --head "${RELEASE_BRANCH}" \
-            --title "chore(release): bump version to ${VERSION_TAG}" \
-            --body "Automated release bump for ${VERSION_TAG}. Merge this PR to main to trigger automatic tag creation and release pipeline."
+          git push origin HEAD:main
