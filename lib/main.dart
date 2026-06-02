@@ -21,6 +21,10 @@ import 'services/update_checker.dart';
 import 'services/update_installer.dart';
 
 const bool devMode = bool.fromEnvironment('DEV_MODE', defaultValue: false);
+const bool disableUpdateCheck = bool.fromEnvironment(
+  'DISABLE_UPDATE_CHECK',
+  defaultValue: false,
+);
 
 enum InventorySortMode { powerDesc, tierDesc, sellValueDesc, nameAsc }
 
@@ -199,19 +203,21 @@ class _IdleForgeAppState extends State<IdleForgeApp> {
       });
     }
 
-    // Version check
-    final updateChecker = UpdateChecker();
-    final updateInfo = await updateChecker.checkForUpdate();
-    if (updateInfo != null && mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        showDialog<void>(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) =>
-              _UpdateDialog(updateInfo: updateInfo, controller: controller),
-        );
-      });
+    if (!disableUpdateCheck) {
+      // Version check
+      final updateChecker = UpdateChecker();
+      final updateInfo = await updateChecker.checkForUpdate();
+      if (updateInfo != null && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          showDialog<void>(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) =>
+                _UpdateDialog(updateInfo: updateInfo, controller: controller),
+          );
+        });
+      }
     }
   }
 
