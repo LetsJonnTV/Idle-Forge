@@ -16,6 +16,12 @@ on:
       - 'pubspec.lock'
       - '.github/workflows/**'
   workflow_dispatch:
+    inputs:
+      deploy_backend:
+        description: 'Deploy backend to Vercel preview'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -47,7 +53,7 @@ jobs:
     name: Deploy backend to Vercel dev environment
     runs-on: ubuntu-latest
     needs: backend-build-dev
-    if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID_BACKEND != '' }}
+    if: ${{ (vars.ENABLE_DEV_VERCEL_DEPLOY == 'true' || inputs.deploy_backend == 'true' || inputs.deploy_backend == true) && secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID_BACKEND != '' }}
     defaults:
       run:
         working-directory: backend
@@ -84,13 +90,13 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_BACKEND }}
 
   backend-deploy-dev-skipped:
-    name: Backend dev deploy skipped (missing Vercel secrets)
+    name: Backend dev deploy skipped
     runs-on: ubuntu-latest
     needs: backend-build-dev
-    if: ${{ !(secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID_BACKEND != '') }}
+    if: ${{ !((vars.ENABLE_DEV_VERCEL_DEPLOY == 'true' || inputs.deploy_backend == 'true' || inputs.deploy_backend == true) && secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID_BACKEND != '') }}
     steps:
       - name: Notice
-        run: echo "Skipping Vercel dev deploy. Configure VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID_BACKEND."
+        run: echo "Skipping Vercel dev deploy. Set repo variable ENABLE_DEV_VERCEL_DEPLOY=true or run workflow_dispatch with deploy_backend=true, and configure VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID_BACKEND."
 
   flutter-dev-api-build:
     name: Build Android APK with DEV API
