@@ -51,13 +51,23 @@ jobs:
 
   enforce-branch-naming-push:
     name: Enforce branch naming on push
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Validate pushed branch name
+      - name: Validate branch name (push/PR)
         shell: bash
         run: |
-          branch="${GITHUB_REF#refs/heads/}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            branch="${{ github.head_ref }}"
+          else
+            branch="${GITHUB_REF#refs/heads/}"
+          fi
+
+          # Allow long-lived integration branches
+          if [[ "$branch" == "main" || "$branch" == "dev" ]]; then
+            exit 0
+          fi
+
           pattern='^(task|fix|feat)/issue_[0-9]+/[a-z0-9-]+$'
 
           if [[ ! "$branch" =~ $pattern ]]; then
