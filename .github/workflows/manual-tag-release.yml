@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   tag-and-release:
-    name: Bump version on main
+    name: Create release tag on main
     runs-on: ubuntu-latest
 
     steps:
@@ -30,21 +30,21 @@ jobs:
             exit 1
           fi
 
-      - name: Set version in package and pubspec files
-        run: |
-          VERSION_TAG="${{ inputs.version }}"
-          VERSION_RAW="${VERSION_TAG#v}"
-          export VERSION_RAW
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
 
-          node -e "const fs=require('fs'); const paths=['backend/package.json','frontend/package.json','backend/package-lock.json','frontend/package-lock.json']; const v=process.env.VERSION_RAW; for (const p of paths) { const data=JSON.parse(fs.readFileSync(p,'utf8')); data.version=v; fs.writeFileSync(p, JSON.stringify(data,null,2)+'\\n'); }" 
-
-          sed -E -i "s/^version: .*/version: ${VERSION_RAW}+0/" pubspec.yaml
-
-      - name: Commit and push release bump to main
+      - name: Create and push release tag
         run: |
           VERSION_TAG="${{ inputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add backend/package.json frontend/package.json backend/package-lock.json frontend/package-lock.json pubspec.yaml
-          git commit -m "chore(release): bump version to ${VERSION_TAG}" || echo "No changes to commit"
-          git push origin HEAD:main --force
+          if git ls-remote --exit-code --tags origin "refs/tags/${VERSION_TAG}" >/dev/null 2>&1; then
+            echo "Tag ${VERSION_TAG} already exists. Skipping."
+            exit 0
+          fi
+
+          git tag -a "${VERSION_TAG}" -m "Release ${VERSION_TAG}"
+          git push origin "${VERSION_TAG}"
