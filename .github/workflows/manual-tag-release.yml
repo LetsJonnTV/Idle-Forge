@@ -54,10 +54,15 @@ jobs:
 
       - name: Create PR to main
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.BOT_GH_PAT != '' && secrets.BOT_GH_PAT || github.token }}
         run: |
           VERSION_TAG="${{ inputs.version }}"
           RELEASE_BRANCH="chore/release-${VERSION_TAG}"
+
+          if [ "${{ secrets.BOT_GH_PAT }}" = "" ]; then
+            echo "This repository currently blocks PR creation with the default github.token."
+            echo "Add a PAT as secret BOT_GH_PAT (repo scope) or enable 'Allow GitHub Actions to create and approve pull requests'."
+          fi
 
           existing_pr=$(gh pr list \
             --base main \
