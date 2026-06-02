@@ -19,3 +19,18 @@ jobs:
     name: Run full validation matrix
     if: ${{ github.event.action != 'closed' }}
     uses: ./.github/workflows/all-tests.yml
+
+  analyze-and-test:
+    name: Analyze and Test
+    if: ${{ always() && github.event.action != 'closed' }}
+    needs:
+      - full-validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify reusable workflow result
+        shell: bash
+        run: |
+          if [[ "${{ needs.full-validation.result }}" != "success" ]]; then
+            echo "Full validation result: ${{ needs.full-validation.result }}"
+            exit 1
+          fi

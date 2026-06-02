@@ -1,0 +1,54 @@
+name: Tag On Main Release Bump
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  create-tag:
+    name: Create tag from release bump commit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect release bump commit message
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+          msg="${{ github.event.head_commit.message }}"
+          if [[ "$msg" =~ bump\ version\ to\ (v[0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            version="${BASH_REMATCH[1]}"
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+            echo "should_tag=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_tag=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip non-release commits
+        if: ${{ steps.detect.outputs.should_tag != 'true' }}
+        run: echo "Head commit is not a release bump commit. Nothing to tag."
+
+      - name: Create and push tag
+        if: ${{ steps.detect.outputs.should_tag == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ steps.detect.outputs.version }}"
+
+          if git ls-remote --exit-code --tags origin "refs/tags/${version}" >/dev/null 2>&1; then
+            echo "Tag ${version} already exists. Skipping."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$version" -m "Release $version"
+          git push origin "$version"

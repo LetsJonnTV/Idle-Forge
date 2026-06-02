@@ -10,16 +10,18 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   tag-and-release:
-    name: Update versions, push main and create tag
+    name: Create release bump PR
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Validate version format
@@ -39,20 +41,38 @@ jobs:
 
           sed -E -i "s/^version: .*/version: ${VERSION_RAW}+0/" pubspec.yaml
 
-      - name: Commit and push to main
+      - name: Commit and push release branch
         run: |
           VERSION_TAG="${{ inputs.version }}"
+          RELEASE_BRANCH="chore/release-${VERSION_TAG}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add backend/package.json frontend/package.json backend/package-lock.json frontend/package-lock.json pubspec.yaml
           git commit -m "chore(release): bump version to ${VERSION_TAG}" || echo "No changes to commit"
-          git push origin HEAD:main
+          git switch -c "${RELEASE_BRANCH}"
+          git push origin "${RELEASE_BRANCH}" --force-with-lease
 
-      - name: Create and push tag
+      - name: Create PR to main
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           VERSION_TAG="${{ inputs.version }}"
-          git tag -a "${VERSION_TAG}" -m "Release ${VERSION_TAG}" || {
-            echo "Tag ${VERSION_TAG} already exists";
-            exit 1;
-          }
-          git push origin "${VERSION_TAG}"
+          RELEASE_BRANCH="chore/release-${VERSION_TAG}"
+
+          existing_pr=$(gh pr list \
+            --base main \
+            --head "${RELEASE_BRANCH}" \
+            --state open \
+            --json number \
+            --jq '.[0].number // ""')
+
+          if [ -n "${existing_pr}" ]; then
+            echo "PR already exists: #${existing_pr}"
+            exit 0
+          fi
+
+          gh pr create \
+            --base main \
+            --head "${RELEASE_BRANCH}" \
+            --title "chore(release): bump version to ${VERSION_TAG}" \
+            --body "Automated release bump for ${VERSION_TAG}. Merge this PR to main to trigger automatic tag creation and release pipeline."

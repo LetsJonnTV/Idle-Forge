@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_driver/driver_extension.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -132,6 +133,9 @@ extension _AppColors on BuildContext {
 }
 
 Future<void> main() async {
+  // Enable Flutter Driver extension for integration tests.
+  enableFlutterDriverExtension();
+
   WidgetsFlutterBinding.ensureInitialized();
   // TODO: Supabase initialisieren wenn SUPABASE_URL und SUPABASE_ANON_KEY als --dart-define übergeben werden
   // await Supabase.initialize(
