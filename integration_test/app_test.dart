@@ -28,7 +28,8 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
     final deadline = DateTime.now().add(const Duration(seconds: 5));
-    while (DateTime.now().isBefore(deadline) && find.text('Rookie').evaluate().isEmpty) {
+    while (DateTime.now().isBefore(deadline) &&
+        find.text('Rookie').evaluate().isEmpty) {
       await tester.pump(const Duration(milliseconds: 200));
     }
 

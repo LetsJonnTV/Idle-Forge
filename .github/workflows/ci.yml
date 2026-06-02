@@ -245,7 +245,7 @@ jobs:
           fi
 
           for endpoint in "${endpoints[@]}"; do
-            normalized=$(echo "$endpoint" | sed -E 's#/\$\{[^}]+\}##g; s#/$##')
+            normalized=$(echo "$endpoint" | sed -E 's#\$\{[^}]+\}##g; s#/$##')
             route_path="${normalized#/api/}"
 
             if [ -f "backend/app/api/${route_path}/route.ts" ] || [ -f "backend/app/api/${route_path}/route.js" ] || [ -d "backend/app/api/${route_path}" ]; then
