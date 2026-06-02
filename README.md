@@ -63,6 +63,9 @@ Automation in this repository:
 1. [`.github/workflows/branch-rules.yml`](.github/workflows/branch-rules.yml) enforces:
 	- PRs to `main` must come from `dev`
 	- Branch naming format on PR and push
+2. [`.github/workflows/protect-dev-branch.yml`](.github/workflows/protect-dev-branch.yml):
+	- Recreates `dev` automatically if it gets deleted
+	- Can be run manually to ensure `dev` exists
 
 Required GitHub settings (one-time):
 1. Branch protection for `main`:
@@ -71,6 +74,7 @@ Required GitHub settings (one-time):
 2. Branch protection for `dev`:
 	- Require a pull request before merging
 	- Restrict who can push to matching branches (nobody or only admins/bot)
+	- Disable branch deletions (`Allow deletions` must be off)
 	- Require status checks and select:
 	  - `Branch Rules / Enforce branch naming on PR`
 	  - `Branch Rules / Enforce branch naming on push`
