@@ -45,6 +45,20 @@ class BulkSellPreview {
   final int estimatedGold;
 }
 
+class BulkCraftResult {
+  const BulkCraftResult({
+    required this.crafted,
+    required this.addedToInventory,
+    required this.autoSold,
+    required this.goldFromAutoSell,
+  });
+
+  final int crafted;
+  final int addedToInventory;
+  final int autoSold;
+  final int goldFromAutoSell;
+}
+
 class BalanceTuning {
   const BalanceTuning({
     this.autoAttackIntervalSec = 1,
@@ -2427,11 +2441,8 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  GameItem? craftItem() {
-    if (hammers <= 0) {
-      return null;
-    }
-
+  // Returns the crafted item. Calls onAutoSold(soldFor) if auto-sell triggered.
+  GameItem _craftItemRaw({required void Function(int soldFor) onAutoSold}) {
     hammers -= 1;
     craftedItems += 1;
     final tier = _rollTier();
@@ -2481,9 +2492,6 @@ class GameController extends ChangeNotifier {
 
     discoveredSetSlots.add(_collectionKey(setId, slot));
 
-    _lastCraftAutoSold = false;
-    _lastCraftAutoSoldText = '';
-
     if (autoSellEnabled && item.tier.index < autoSellKeepFromTier.index) {
       final soldFor = max(
         1,
@@ -2491,18 +2499,64 @@ class GameController extends ChangeNotifier {
             .round(),
       );
       gold += soldFor;
-      _lastCraftAutoSold = true;
-      _lastCraftAutoSoldText =
-          '${item.name} automatisch verkauft (+$soldFor Gold)';
-      _save();
-      notifyListeners();
-      return item;
+      onAutoSold(soldFor);
+    } else {
+      inventory.add(item);
     }
 
-    inventory.add(item);
+    return item;
+  }
+
+  GameItem? craftItem() {
+    if (hammers <= 0) return null;
+
+    _lastCraftAutoSold = false;
+    _lastCraftAutoSoldText = '';
+    int autoSoldGold = 0;
+
+    final item = _craftItemRaw(
+      onAutoSold: (soldFor) {
+        _lastCraftAutoSold = true;
+        autoSoldGold = soldFor;
+      },
+    );
+
+    if (_lastCraftAutoSold) {
+      _lastCraftAutoSoldText =
+          '${item.name} automatisch verkauft (+$autoSoldGold Gold)';
+    }
+
     _save();
     notifyListeners();
     return item;
+  }
+
+  BulkCraftResult craftMultiple(int count) {
+    int crafted = 0;
+    int addedToInventory = 0;
+    int autoSold = 0;
+    int goldFromAutoSell = 0;
+
+    for (int i = 0; i < count; i++) {
+      if (hammers <= 0) break;
+      _craftItemRaw(
+        onAutoSold: (soldFor) {
+          autoSold += 1;
+          goldFromAutoSell += soldFor;
+        },
+      );
+      crafted += 1;
+    }
+
+    addedToInventory = crafted - autoSold;
+    _save();
+    notifyListeners();
+    return BulkCraftResult(
+      crafted: crafted,
+      addedToInventory: addedToInventory,
+      autoSold: autoSold,
+      goldFromAutoSell: goldFromAutoSell,
+    );
   }
 
   bool consumeLastCraftAutoSoldFlag() {
