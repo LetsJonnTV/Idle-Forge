@@ -36,6 +36,65 @@ interface SelectRelation {
 
 type ParsedSelect = SelectColumn | SelectRelation;
 
+<<<<<<< HEAD
+let pool: Pool;
+
+export async function initializePool(): Promise<Pool> {
+  if (pool) {
+    return pool;
+  }
+
+  // Cloud Run with Cloud SQL Connector
+  if (process.env.CLOUD_SQL_CONNECTION_NAME) {
+    try {
+      const { Connector } = await import('@google-cloud/sql-connector');
+      const connector = new Connector();
+      const clientOpts = await connector.getConnection({
+        instanceConnectionString: process.env.CLOUD_SQL_CONNECTION_NAME,
+      });
+
+      pool = new Pool({
+        ...clientOpts,
+        user: process.env.DB_USER || 'idle_forge_app',
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME || 'idle_forge',
+        max: 20,
+        idleTimeoutMillis: 30_000,
+        connectionTimeoutMillis: 10_000,
+      });
+
+      console.log(`[dbClient] Connected via Cloud SQL Connector to ${process.env.CLOUD_SQL_CONNECTION_NAME}`);
+      return pool;
+    } catch (error) {
+      console.error('[dbClient] Cloud SQL Connector failed:', error);
+      throw error;
+    }
+  }
+
+  // Local development with DATABASE_URL
+  const DATABASE_URL = process.env.DATABASE_URL;
+  if (!DATABASE_URL) {
+    throw new Error('Neither CLOUD_SQL_CONNECTION_NAME nor DATABASE_URL is configured');
+  }
+
+  pool = new Pool({
+    connectionString: DATABASE_URL,
+    max: 20,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 10_000,
+  });
+
+  console.log('[dbClient] Connected via DATABASE_URL');
+  return pool;
+}
+
+export function getPool(): Pool {
+  if (!pool) {
+    throw new Error('Database pool not initialized. Call initializePool() first.');
+  }
+  return pool;
+}
+=======
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
@@ -48,6 +107,7 @@ const pool = new Pool({
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 10_000,
 });
+>>>>>>> c74c4876a1f43ff0ed2c426087b772c82eb2698c
 
 const PLAYER_FK_COLUMNS = new Set([
   'challenger_id',
@@ -450,7 +510,12 @@ class QueryBuilder<T = any>
     }
 
     try {
+<<<<<<< HEAD
+      const currentPool = getPool();
+      const result = await currentPool.query(sql, this.values);
+=======
       const result = await pool.query(sql, this.values);
+>>>>>>> c74c4876a1f43ff0ed2c426087b772c82eb2698c
       const rows = result.rows as any[];
 
       if (this.expectSingle) {
