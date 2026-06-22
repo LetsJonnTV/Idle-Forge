@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const auth = await getAuthPayload(request);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data: session, error } = await supabase
+  const { data: session, error } = await db
     .from('coop_sessions')
     .select(
       `id, status, boss_hp, created_at,
@@ -52,7 +52,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   const auth = await getAuthPayload(request);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data: session } = await supabase
+  const { data: session } = await db
     .from('coop_sessions')
     .select('id, host_id, guest_id, status')
     .eq('id', params.id)
@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Session already has a guest' }, { status: 409 });
     }
 
-    const { data: updated, error: updateError } = await supabase
+    const { data: updated, error: updateError } = await db
       .from('coop_sessions')
       .update({ guest_id: auth.playerId, status: 'active' })
       .eq('id', params.id)
@@ -106,7 +106,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       session.host_id === auth.playerId || session.guest_id === auth.playerId;
     if (!isParticipant) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const { data: updated } = await supabase
+    const { data: updated } = await db
       .from('coop_sessions')
       .update({ status: 'completed' })
       .eq('id', params.id)

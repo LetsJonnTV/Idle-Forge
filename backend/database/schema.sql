@@ -1,6 +1,6 @@
--- Idle Forge — Supabase Schema
--- Run this in Supabase SQL Editor (Dashboard > SQL Editor)
--- Enable RLS on all tables after creation.
+-- Idle Forge PostgreSQL schema
+-- Apply this schema to your PostgreSQL database.
+-- RLS statements remain for compatibility and can be enabled where needed.
 
 -- ============================================================
 -- CLANS (must be created before PLAYERS due to FK)
@@ -195,6 +195,15 @@ EXCEPTION WHEN duplicate_column THEN NULL; END $$;
 DO $$ BEGIN
   ALTER TABLE players ADD COLUMN is_blocked BOOLEAN DEFAULT false;
 EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+DO $$ BEGIN
+  ALTER TABLE players ADD COLUMN google_id VARCHAR(255) UNIQUE;
+EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+DO $$ BEGIN
+  ALTER TABLE players ADD COLUMN email VARCHAR(255) UNIQUE;
+EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS idx_players_google_id ON players(google_id);
+CREATE INDEX IF NOT EXISTS idx_players_email ON players(email);
+
 CREATE TABLE IF NOT EXISTS clan_chat (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   clan_id UUID REFERENCES clans(id) ON DELETE CASCADE,

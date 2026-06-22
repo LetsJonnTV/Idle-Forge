@@ -11,6 +11,3 @@ out/
 
 # Node dependencies
 node_modules/
-
-# Vercel
-.vercel

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const auth = await getAuthPayload(request);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('friends')
     .select(
       `id, status, created_at,
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Resolve target player
-  const { data: target, error: targetError } = await supabase
+  const { data: target, error: targetError } = await db
     .from('players')
     .select('id, username')
     .eq('username', targetUsername.trim().toLowerCase())
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Check for existing relationship
-  const { data: existing } = await supabase
+  const { data: existing } = await db
     .from('friends')
     .select('id, status')
     .or(
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { data: request_, error: insertError } = await supabase
+  const { data: request_, error: insertError } = await db
     .from('friends')
     .insert({ requester_id: auth.playerId, addressee_id: target.id })
     .select()

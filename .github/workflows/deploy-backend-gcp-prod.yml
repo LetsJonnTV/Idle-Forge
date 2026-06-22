@@ -1,0 +1,69 @@
+name: Deploy Backend GCP PROD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend-gcp-prod.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy-backend-prod:
+    name: Deploy backend to Cloud Run PROD
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      GCP_ARTIFACT_REPO: ${{ vars.GCP_ARTIFACT_REPO }}
+      GCP_PROD_SERVICE: ${{ vars.GCP_PROD_SERVICE }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve defaults
+        id: defaults
+        run: |
+          echo "project=${GCP_PROJECT_ID:-astral-theory-449511-c1}" >> "$GITHUB_OUTPUT"
+          echo "region=${GCP_REGION:-europe-west3}" >> "$GITHUB_OUTPUT"
+          echo "repo=${GCP_ARTIFACT_REPO:-idle-forge}" >> "$GITHUB_OUTPUT"
+          echo "service=${GCP_PROD_SERVICE:-idle-forge-api}" >> "$GITHUB_OUTPUT"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOYER_SA }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${{ steps.defaults.outputs.region }}-docker.pkg.dev" --quiet
+
+      - name: Build and push backend image
+        id: image
+        working-directory: backend
+        run: |
+          IMAGE="${{ steps.defaults.outputs.region }}-docker.pkg.dev/${{ steps.defaults.outputs.project }}/${{ steps.defaults.outputs.repo }}/idle-forge-backend:${GITHUB_SHA}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy backend to Cloud Run PROD
+        run: |
+          gcloud run deploy "${{ steps.defaults.outputs.service }}" \
+            --project "${{ steps.defaults.outputs.project }}" \
+            --region "${{ steps.defaults.outputs.region }}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080 \
+            --image "${{ steps.image.outputs.image }}" \
+            --set-env-vars "DEBUG=false" \
+            --set-secrets "JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,DATABASE_URL=database-url:latest"

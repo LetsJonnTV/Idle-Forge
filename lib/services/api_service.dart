@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 
 /// Exception thrown by ApiService on network or server errors.
@@ -300,6 +302,57 @@ class ApiService {
       rethrow;
     } catch (_) {
       return false;
+    }
+  }
+
+  /// Login with Google account. Returns true on success.
+  /// Shows Google sign-in dialog to user.
+  Future<bool> loginWithGoogle() async {
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        scopes: <String>['email'],
+      );
+
+      final account = await googleSignIn.signIn();
+      if (account == null) {
+        // User cancelled
+        return false;
+      }
+
+      final authentication = await account.authentication;
+      final idToken = authentication.idToken;
+
+      if (idToken == null) {
+        debugPrint('loginWithGoogle: No ID token received');
+        return false;
+      }
+
+      // Send idToken to backend
+      final data = await _post('/api/auth/google', {
+        'idToken': idToken,
+      });
+
+      await _persistCredentials(
+        data['token'] as String,
+        data['playerId'] as String,
+        data['username'] as String,
+      );
+
+      debugPrint('loginWithGoogle: Success - playerId ${data['playerId']}');
+      return true;
+    } catch (e) {
+      debugPrint('loginWithGoogle error: $e');
+      return false;
+    }
+  }
+
+  /// Logout from Google
+  Future<void> logoutGoogle() async {
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut();
+    } catch (e) {
+      debugPrint('logoutGoogle error: $e');
     }
   }
 
@@ -704,11 +757,18 @@ class ApiService {
     try {
       final data = await _get('/api/saves');
       final save = data['save'];
-      if (save == null) return null;
-      return Map<String, dynamic>.from(save as Map);
-    } on ApiException {
+      if (save == null) {
+        debugPrint('downloadSave: no save on server');
+        return null;
+      }
+      final saveMap = Map<String, dynamic>.from(save as Map);
+      debugPrint('downloadSave: loaded ${saveMap.length} fields');
+      return saveMap;
+    } on ApiException catch (e) {
+      debugPrint('downloadSave ApiException: ${e.message}');
       return null;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('downloadSave error: $e');
       return null;
     }
   }

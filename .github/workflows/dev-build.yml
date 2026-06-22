@@ -18,13 +18,14 @@ on:
   workflow_dispatch:
     inputs:
       deploy_backend:
-        description: 'Deploy backend to Vercel preview'
+        description: 'Deploy backend to Cloud Run DEV'
         required: false
         type: boolean
         default: false
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   backend-build-dev:
@@ -49,15 +50,16 @@ jobs:
         working-directory: backend
         run: npm run build
 
-  backend-deploy-dev-vercel:
-    name: Deploy backend to Vercel dev environment
+  backend-deploy-dev-gcp:
+    name: Deploy backend to Cloud Run dev environment
     runs-on: ubuntu-latest
     needs: backend-build-dev
-    if: ${{ vars.ENABLE_DEV_VERCEL_DEPLOY == 'true' || inputs.deploy_backend == 'true' || inputs.deploy_backend == true }}
+    if: ${{ vars.ENABLE_DEV_GCP_DEPLOY == 'true' || inputs.deploy_backend == 'true' || inputs.deploy_backend == true }}
     env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID_BACKEND: ${{ secrets.VERCEL_PROJECT_ID_BACKEND }}
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      GCP_ARTIFACT_REPO: ${{ vars.GCP_ARTIFACT_REPO }}
+      GCP_DEV_SERVICE: ${{ vars.GCP_DEV_SERVICE }}
     defaults:
       run:
         working-directory: backend
@@ -65,60 +67,72 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Check Vercel secrets
-        id: vercel-config
+      - name: Resolve defaults
+        id: defaults
         run: |
-          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID_BACKEND" ]; then
+          echo "project=${GCP_PROJECT_ID:-astral-theory-449511-c1}" >> "$GITHUB_OUTPUT"
+          echo "region=${GCP_REGION:-europe-west3}" >> "$GITHUB_OUTPUT"
+          echo "repo=${GCP_ARTIFACT_REPO:-idle-forge}" >> "$GITHUB_OUTPUT"
+          echo "service=${GCP_DEV_SERVICE:-idle-forge-api-dev}" >> "$GITHUB_OUTPUT"
+
+      - name: Check GCP auth secrets
+        id: gcp-config
+        run: |
+          if [ -n "${{ secrets.GCP_WIF_PROVIDER }}" ] && [ -n "${{ secrets.GCP_DEPLOYER_SA }}" ]; then
             echo "can_deploy=true" >> "$GITHUB_OUTPUT"
           else
             echo "can_deploy=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Skip deploy because secrets are missing
-        if: ${{ steps.vercel-config.outputs.can_deploy != 'true' }}
-        run: echo "Skipping Vercel dev deploy. Missing one or more secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID_BACKEND."
+        if: ${{ steps.gcp-config.outputs.can_deploy != 'true' }}
+        run: echo "Skipping GCP dev deploy. Missing secrets GCP_WIF_PROVIDER and/or GCP_DEPLOYER_SA."
 
-      - name: Setup Node.js
-        if: ${{ steps.vercel-config.outputs.can_deploy == 'true' }}
-        uses: actions/setup-node@v4
+      - name: Authenticate to Google Cloud
+        if: ${{ steps.gcp-config.outputs.can_deploy == 'true' }}
+        uses: google-github-actions/auth@v2
         with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOYER_SA }}
 
-      - name: Install dependencies
-        if: ${{ steps.vercel-config.outputs.can_deploy == 'true' }}
-        run: npm ci
+      - name: Setup gcloud
+        if: ${{ steps.gcp-config.outputs.can_deploy == 'true' }}
+        uses: google-github-actions/setup-gcloud@v2
 
-      - name: Pull Vercel preview environment
-        if: ${{ steps.vercel-config.outputs.can_deploy == 'true' }}
-        run: npx vercel pull --yes --environment=preview --token=${{ env.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ env.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ env.VERCEL_PROJECT_ID_BACKEND }}
+      - name: Configure Docker for Artifact Registry
+        if: ${{ steps.gcp-config.outputs.can_deploy == 'true' }}
+        run: gcloud auth configure-docker "${{ steps.defaults.outputs.region }}-docker.pkg.dev" --quiet
 
-      - name: Build backend for Vercel preview
-        if: ${{ steps.vercel-config.outputs.can_deploy == 'true' }}
-        run: npx vercel build --token=${{ env.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ env.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ env.VERCEL_PROJECT_ID_BACKEND }}
+      - name: Build and push backend image
+        if: ${{ steps.gcp-config.outputs.can_deploy == 'true' }}
+        run: |
+          IMAGE="${{ steps.defaults.outputs.region }}-docker.pkg.dev/${{ steps.defaults.outputs.project }}/${{ steps.defaults.outputs.repo }}/idle-forge-backend:${GITHUB_SHA}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+        id: image
 
-      - name: Deploy backend preview
-        if: ${{ steps.vercel-config.outputs.can_deploy == 'true' }}
-        run: npx vercel deploy --prebuilt --token=${{ env.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ env.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ env.VERCEL_PROJECT_ID_BACKEND }}
+      - name: Deploy backend to Cloud Run DEV
+        if: ${{ steps.gcp-config.outputs.can_deploy == 'true' }}
+        run: |
+          gcloud run deploy "${{ steps.defaults.outputs.service }}" \
+            --project "${{ steps.defaults.outputs.project }}" \
+            --region "${{ steps.defaults.outputs.region }}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080 \
+            --image "${{ steps.image.outputs.image }}" \
+            --set-env-vars "DEBUG=false" \
+            --set-secrets "JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,DATABASE_URL=database-url:latest"
 
   backend-deploy-dev-skipped:
     name: Backend dev deploy skipped
     runs-on: ubuntu-latest
     needs: backend-build-dev
-    if: ${{ !(vars.ENABLE_DEV_VERCEL_DEPLOY == 'true' || inputs.deploy_backend == 'true' || inputs.deploy_backend == true) }}
+    if: ${{ !(vars.ENABLE_DEV_GCP_DEPLOY == 'true' || inputs.deploy_backend == 'true' || inputs.deploy_backend == true) }}
     steps:
       - name: Notice
-        run: echo "Skipping Vercel dev deploy. Set repo variable ENABLE_DEV_VERCEL_DEPLOY=true or run workflow_dispatch with deploy_backend=true, and configure VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID_BACKEND."
+        run: echo "Skipping Cloud Run dev deploy. Set repo variable ENABLE_DEV_GCP_DEPLOY=true or run workflow_dispatch with deploy_backend=true, and configure GCP_WIF_PROVIDER + GCP_DEPLOYER_SA secrets."
 
   flutter-dev-api-build:
     name: Build Android APK with DEV API

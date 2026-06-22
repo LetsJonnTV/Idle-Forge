@@ -2,6 +2,16 @@
 
 All notable changes to Idle Forge are documented here.
 
+## [2.1.11] - 2026-06-22
+
+### Changed
+- Backend vollständig von Supabase SDK auf PostgreSQL (`pg`) migriert; alle API-Routen unter `backend/app/api/**` nutzen jetzt die neue `db`-Abstraktion.
+- Legacy-Reste entfernt: `backend/lib/supabaseClient.ts`, `backend/vercel.json`, Vercel-Header-Fallback im Rate-Limiter.
+- Cloud-Run-Deploy-Workflows (`dev-build.yml`, `deploy-backend-gcp-prod.yml`) auf reine Secrets `DATABASE_URL`, `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` reduziert.
+- Backend-Env-Template auf PostgreSQL-only aktualisiert (`backend/.env.example`).
+- Google OAuth Setup-Dokumentation auf Cloud Run + PostgreSQL aktualisiert (`GOOGLE_OAUTH_SETUP.md`).
+- Schema-Header entbrandet und Google-OAuth-Spalten (google_id, email) + Indizes idempotent in backend/database/schema.sql ergänzt.
+
 ## [2.1.10] - 2026-06-22
 
 ### Fixed

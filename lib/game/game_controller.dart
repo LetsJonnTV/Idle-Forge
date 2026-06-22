@@ -4233,7 +4233,7 @@ class GameController extends ChangeNotifier {
     notifyListeners();
     try {
       final cloudData = await ApiService.instance.downloadSave();
-      if (cloudData == null) {
+      if (cloudData == null || cloudData.isEmpty) {
         cloudSyncStatus = 'error';
         notifyListeners();
         return;
@@ -4243,8 +4243,10 @@ class GameController extends ChangeNotifier {
       await _load();
       _spawnEnemy();
       playerHp = playerHp.clamp(1.0, maxPlayerHp).toDouble();
+      _save();
       cloudSyncStatus = 'loaded';
-    } catch (_) {
+    } catch (e) {
+      debugPrint('cloudLoad error: $e');
       cloudSyncStatus = 'error';
     }
     notifyListeners();
@@ -4282,7 +4284,10 @@ class GameController extends ChangeNotifier {
   Future<void> _syncCloudOnStartup() async {
     try {
       final cloudData = await ApiService.instance.downloadSave();
-      if (cloudData == null) return;
+      if (cloudData == null || cloudData.isEmpty) {
+        debugPrint('_syncCloudOnStartup: no cloud data');
+        return;
+      }
 
       final cloudMillis = cloudData['lastActiveMillis'] as int? ?? 0;
       final prefs = await SharedPreferences.getInstance();
@@ -4293,12 +4298,16 @@ class GameController extends ChangeNotifier {
         localMillis = localMap['lastActiveMillis'] as int? ?? 0;
       }
 
+      debugPrint(
+          '_syncCloudOnStartup: cloud=$cloudMillis, local=$localMillis');
       if (cloudMillis > localMillis) {
+        debugPrint('_syncCloudOnStartup: loading cloud save');
         await prefs.setString(_saveKey, jsonEncode(cloudData));
         await _load();
+        debugPrint('_syncCloudOnStartup: cloud save loaded');
       }
-    } catch (_) {
-      // Silently ignore startup cloud sync errors.
+    } catch (e) {
+      debugPrint('_syncCloudOnStartup error: $e');
     }
   }
 }

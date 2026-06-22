@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   // Fetch all pending rewards for this player
-  const { data: rewards, error: fetchError } = await supabase
+  const { data: rewards, error: fetchError } = await db
     .from('pending_rewards')
     .select('id, reward_type, amount, item_id')
     .eq('player_id', auth.playerId);
@@ -28,9 +28,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ rewards: [] });
   }
 
+  type PendingReward = {
+    id: string;
+    reward_type: string;
+    amount: number | null;
+    item_id: string | null;
+  };
+
+  const rewardRows = rewards as PendingReward[];
+
   // Delete all fetched rewards atomically
-  const ids = rewards.map((r) => r.id);
-  const { error: deleteError } = await supabase
+  const ids = rewardRows.map((r: PendingReward) => r.id);
+  const { error: deleteError } = await db
     .from('pending_rewards')
     .delete()
     .in('id', ids);

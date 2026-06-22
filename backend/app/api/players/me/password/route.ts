@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -28,7 +28,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'New password must be at least 6 characters' }, { status: 400 });
   }
 
-  const { data: player, error } = await supabase
+  const { data: player, error } = await db
     .from('players')
     .select('password_hash')
     .eq('id', auth.playerId)
@@ -44,7 +44,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   const newHash = await bcrypt.hash(newPassword, 12);
-  const { error: updateError } = await supabase
+  const { error: updateError } = await db
     .from('players')
     .update({ password_hash: newHash })
     .eq('id', auth.playerId);

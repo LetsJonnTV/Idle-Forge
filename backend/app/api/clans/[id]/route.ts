@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const { allowed } = checkRateLimit(ip);
   if (!allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
-  const { data: clan, error } = await supabase
+  const { data: clan, error } = await db
     .from('clans')
     .select('id, name, level, xp, description, created_at, leader:leader_id(id, username)')
     .eq('id', params.id)
@@ -36,7 +36,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   // Verify leadership
-  const { data: clan } = await supabase
+  const { data: clan } = await db
     .from('clans')
     .select('id, leader_id')
     .eq('id', params.id)
@@ -63,7 +63,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
   }
 
-  const { data: updated, error: updateError } = await supabase
+  const { data: updated, error: updateError } = await db
     .from('clans')
     .update(updates)
     .eq('id', params.id)

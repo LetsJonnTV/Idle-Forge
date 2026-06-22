@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const auth = await getAuthPayload(request);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data: player, error } = await supabase
+  const { data: player, error } = await db
     .from('players')
     .select('id, username, clan_id, total_strength, prestige_level, chapter')
     .eq('id', auth.playerId)
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
   let clanName: string | null = null;
   if (player.clan_id) {
-    const { data: clan } = await supabase
+    const { data: clan } = await db
       .from('clans')
       .select('name')
       .eq('id', player.clan_id)
