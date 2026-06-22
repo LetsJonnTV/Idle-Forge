@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../l10n/app_text.dart';
 import '../services/api_service.dart';
 
@@ -26,7 +25,6 @@ class _CoopScreenState extends State<CoopScreen> {
 
   // Active session state
   Map<String, dynamic>? _activeSession;
-  RealtimeChannel? _channel;
   int _bossHp = 1000;
   final int _bossMaxHp = 1000;
   int _myDamage = 0;
@@ -40,14 +38,8 @@ class _CoopScreenState extends State<CoopScreen> {
 
   @override
   void dispose() {
-    _leaveChannel();
     _sessionCodeController.dispose();
     super.dispose();
-  }
-
-  void _leaveChannel() {
-    _channel?.unsubscribe();
-    _channel = null;
   }
 
   Future<void> _loadSessions() async {
@@ -144,64 +136,21 @@ class _CoopScreenState extends State<CoopScreen> {
       _myDamage = 0;
       _partnerDamage = 0;
     });
-
-    // Subscribe to Supabase Realtime for damage events
-    try {
-      final supabase = Supabase.instance.client;
-      final sessionId = session['id'] as String;
-      _channel = supabase.channel('coop_session_$sessionId')
-        ..onBroadcast(
-          event: 'damage',
-          callback: (payload) {
-            if (!mounted) return;
-            final damage = (payload['damage'] as num?)?.toInt() ?? 0;
-            final senderId = payload['sender_id'] as String?;
-            final myId = ApiService.instance.currentPlayerId;
-            setState(() {
-              _bossHp = (_bossHp - damage).clamp(0, _bossMaxHp);
-              if (senderId == myId) {
-                _myDamage += damage;
-              } else {
-                _partnerDamage += damage;
-              }
-            });
-          },
-        );
-      _channel!.subscribe();
-    } catch (_) {
-      // Realtime not available — fall back to polling only
-    }
   }
 
   Future<void> _dealDamage() async {
     if (_activeSession == null || _bossHp <= 0) return;
     final damage = 50 + (DateTime.now().millisecond % 50); // 50-99
-    final myId = ApiService.instance.currentPlayerId ?? '';
 
-    try {
-      await _channel?.sendBroadcastMessage(
-        event: 'damage',
-        payload: {'damage': damage, 'sender_id': myId},
-      );
-      if (mounted) {
-        setState(() {
-          _bossHp = (_bossHp - damage).clamp(0, _bossMaxHp);
-          _myDamage += damage;
-        });
-      }
-    } catch (_) {
-      // Fallback: apply locally
-      if (mounted) {
-        setState(() {
-          _bossHp = (_bossHp - damage).clamp(0, _bossMaxHp);
-          _myDamage += damage;
-        });
-      }
+    if (mounted) {
+      setState(() {
+        _bossHp = (_bossHp - damage).clamp(0, _bossMaxHp);
+        _myDamage += damage;
+      });
     }
   }
 
   void _leaveSession() {
-    _leaveChannel();
     setState(() {
       _activeSession = null;
       _bossHp = _bossMaxHp;

@@ -133,11 +133,6 @@ extension _AppColors on BuildContext {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // TODO: Supabase initialisieren wenn SUPABASE_URL und SUPABASE_ANON_KEY als --dart-define übergeben werden
-  // await Supabase.initialize(
-  //   url: String.fromEnvironment('SUPABASE_URL', defaultValue: ''),
-  //   anonKey: String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: ''),
-  // );
   await ApiService.instance.loadStoredCredentials();
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
