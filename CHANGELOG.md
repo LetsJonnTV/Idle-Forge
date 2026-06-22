@@ -3,6 +3,53 @@
 All notable changes to Idle Forge are documented here.
 
 
+## [2.1.7] - 2026-06-22
+
+### Fixed
+- **Android-Tastatur auf älteren Geräten (Samsung Galaxy A12, Android 11)**
+  - `android:windowSoftInputMode` von `adjustResize` auf `adjustNothing` umgestellt
+  - Auf Geräten mit Android 11 / kleineren Displays öffnete sich die Soft-Tastatur in Textfeldern (Login/Register) nicht zuverlässig
+  - Root cause: `adjustResize` ließ das Fenster schrumpfen, sodass `MediaQuery.viewInsets.bottom` auf 0 fiel; `AnimatedPadding` im Profil-Sheet hatte damit keinen Effekt
+  - Mit `adjustNothing` übernimmt Flutter die komplette Inset-Verwaltung — `viewInsets.bottom` liefert die korrekte Tastaturhöhe und `SingleChildScrollView` im Auth-Screen scrollt automatisch zum aktiven Textfeld
+
+### Added
+- **Regressions-Tests Tastatur-Fix**
+  - `test/android_manifest_test.dart`: statischer Unit-Test prüft, dass `adjustNothing` gesetzt und `adjustResize` nicht vorhanden ist
+  - `test/auth_screen_keyboard_test.dart`: 5 Widget-Tests für `AuthScreen` (TextFormField-Präsenz, `SingleChildScrollView`, `resizeToAvoidBottomInset`, Tastatur öffnet sich bei Username- und Passwort-Feld)
+- **CI-Matrix für Android-Emulator-Tests**
+  - `android-ui-test`-Job in `ci.yml` und `all-tests.yml` läuft jetzt auf zwei API-Levels parallel:
+    - API 30 (Android 11, Pixel 4 Profil) — deckt das A12-Szenario ab
+    - API 34 (Android 14, Pixel 6 Profil) — bisheriger Basis-Smoke-Test
+
+
+## [2.1.6] - 2026-06-15
+
+### Changed
+- **`manual-tag-release.yml`** leicht robuster gemacht (kein inhaltlicher Funktions-Unterschied)
+
+
+## [2.1.5] - 2026-06-10
+
+### Added
+- **Auto-Tag-Workflow** (`tag-on-main-release-bump.yml`): Erstellt automatisch einen Git-Tag, wenn `pubspec.yaml` auf `main` mit einer neuen Version und Build-Nummer `+0` gepusht wird
+- **Dev-Branch-Protection** (`protect-dev-branch.yml`): Verhindert direkte Pushes auf `dev` ohne CI-Grün
+- ESLint-Konfiguration für das Backend aktualisiert und vereinheitlicht
+
+### Changed
+- Alle CI-Workflows (`ci.yml`, `all-tests.yml`, `pr-main.yml`, `release.yml`) überarbeitet und stabilisiert
+- Integrations-Test-Setup verbessert: Treiber-Skript und `app_test.dart` robuster gemacht
+
+
+## [2.1.4] - 2026-06-02
+
+### Added
+- **Integrations-Test-Infrastruktur**: `integration_test/app_test.dart` und `test_driver/integration_test.dart` eingeführt
+- **`android-ui-test`-Job** in der CI-Pipeline: Führt Flutter-Integrations-Tests auf einem Android-Emulator (API 34) aus, wenn KVM verfügbar ist; fällt auf Widget-Smoke-Test zurück wenn nicht
+
+### Fixed
+- Diverse Korrekturen in `lib/main.dart` (Layout-Stabilität)
+
+
 ## [2.1.3] - 2026-05-29
 
 ### Fixed
