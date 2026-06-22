@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { requireAdmin } from '@/lib/adminAuth';
 
@@ -30,7 +30,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
   }
 
-  const { data: item, error } = await supabase
+  const { data: item, error } = await db
     .from('item_blueprints')
     .update(updates)
     .eq('id', params.id)
@@ -54,7 +54,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   const { error: authError, auth } = await requireAdmin(request);
   if (authError || !auth) return authError!;
 
-  const { error } = await supabase
+  const { error } = await db
     .from('item_blueprints')
     .update({ is_active: false })
     .eq('id', params.id);

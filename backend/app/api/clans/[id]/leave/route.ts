@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -20,7 +20,7 @@ export async function POST(
   const { id: clanId } = params;
 
   // Verify membership
-  const { data: membership } = await supabase
+  const { data: membership } = await db
     .from('clan_members')
     .select('player_id')
     .eq('clan_id', clanId)
@@ -32,7 +32,7 @@ export async function POST(
   }
 
   // Fetch clan to check leadership
-  const { data: clan } = await supabase
+  const { data: clan } = await db
     .from('clans')
     .select('id, leader_id')
     .eq('id', clanId)
@@ -46,7 +46,7 @@ export async function POST(
 
   if (isLeader) {
     // Fetch other members
-    const { data: otherMembers } = await supabase
+    const { data: otherMembers } = await db
       .from('clan_members')
       .select('player_id, joined_at')
       .eq('clan_id', clanId)
@@ -56,28 +56,28 @@ export async function POST(
 
     if (!otherMembers || otherMembers.length === 0) {
       // No other members — delete the clan entirely
-      await supabase.from('players').update({ clan_id: null }).eq('id', auth.playerId);
-      await supabase.from('clans').delete().eq('id', clanId);
+      await db.from('players').update({ clan_id: null }).eq('id', auth.playerId);
+      await db.from('clans').delete().eq('id', clanId);
       return NextResponse.json({ message: 'Clan deleted' });
     }
 
     // Transfer leadership to oldest remaining member
     const newLeaderId = otherMembers[0].player_id;
-    await supabase
+    await db
       .from('clans')
       .update({ leader_id: newLeaderId })
       .eq('id', clanId);
   }
 
   // Remove player from clan_members
-  await supabase
+  await db
     .from('clan_members')
     .delete()
     .eq('clan_id', clanId)
     .eq('player_id', auth.playerId);
 
   // Clear player's clan_id
-  await supabase
+  await db
     .from('players')
     .update({ clan_id: null })
     .eq('id', auth.playerId);

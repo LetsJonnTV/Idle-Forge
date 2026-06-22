@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { signJwt } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
@@ -33,14 +33,14 @@ export async function POST(request: NextRequest) {
   const cleanUsername = username.trim().toLowerCase();
   logger.debug('login', `Attempting login for username: ${cleanUsername}`);
 
-  const { data: player, error } = await supabase
+  const { data: player, error } = await db
     .from('players')
     .select('id, username, password_hash')
     .eq('username', cleanUsername)
     .maybeSingle();
 
   if (error) {
-    logger.error('login', `Supabase error fetching player "${cleanUsername}"`, error);
+    logger.error('login', `db error fetching player "${cleanUsername}"`, error);
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
   if (!player) {
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
-  const { data: flags, error: flagsError } = await supabase
+  const { data: flags, error: flagsError } = await db
     .from('players')
     .select('is_admin, is_blocked')
     .eq('id', player.id)

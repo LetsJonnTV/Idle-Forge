@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 interface RouteParams {
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const { allowed } = checkRateLimit(ip);
   if (!allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('clan_members')
     .select(
       'joined_at, player:player_id(id, username, total_strength, prestige_level, chapter)'

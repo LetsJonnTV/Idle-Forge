@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { signJwt } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   const cleanUsername = username.trim().toLowerCase();
   logger.debug('register', `Checking availability for username: ${cleanUsername}`);
 
-  const { data: existing, error: existingError } = await supabase
+  const { data: existing, error: existingError } = await db
     .from('players')
     .select('id')
     .eq('username', cleanUsername)
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  const { data: player, error } = await supabase
+  const { data: player, error } = await db
     .from('players')
     .insert({ username: cleanUsername, password_hash: passwordHash })
     .select('id, username')

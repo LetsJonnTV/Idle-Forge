@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { requireAdmin } from '@/lib/adminAuth';
 
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   const { allowed } = checkRateLimit(ip);
   if (!allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
-  const { data: items, error } = await supabase
+  const { data: items, error } = await db
     .from('item_blueprints')
     .select('id, slot, name, base_power, icon_path, created_at')
     .eq('is_active', true)
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `slot must be one of: ${validSlots.join(', ')}` }, { status: 400 });
   }
 
-  const { data: item, error } = await supabase
+  const { data: item, error } = await db
     .from('item_blueprints')
     .insert({ id, slot, name, base_power, icon_path: icon_path ?? null })
     .select()

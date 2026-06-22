@@ -60,7 +60,6 @@ export function getClientIp(request: Request): string {
     'x-client-ip',
     'x-forwarded',
     'x-cluster-client-ip',
-    'x-vercel-forwarded-for',
   ];
 
   for (const header of fallbackHeaders) {

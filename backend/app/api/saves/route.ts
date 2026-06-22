@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('game_saves')
     .select('save_data, updated_at')
     .eq('player_id', auth.playerId)
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Fetch and consume pending rewards
-  const { data: rewards } = await supabase
+  const { data: rewards } = await db
     .from('pending_rewards')
     .select('id, reward_type, amount, item_id, given_by, created_at')
     .eq('player_id', auth.playerId)
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
   if (rewards && rewards.length > 0) {
     const ids = rewards.map((r: { id: string }) => r.id);
-    await supabase.from('pending_rewards').delete().in('id', ids);
+    await db.from('pending_rewards').delete().in('id', ids);
   }
 
   return NextResponse.json({
@@ -77,7 +77,7 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  const { error } = await supabase.from('game_saves').upsert(
+  const { error } = await db.from('game_saves').upsert(
     {
       player_id: auth.playerId,
       save_data: body.save_data,

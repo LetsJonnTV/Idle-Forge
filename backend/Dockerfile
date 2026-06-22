@@ -17,6 +17,6 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/next.config.js ./next.config.js
-COPY --from=build /app/supabase ./supabase
+COPY --from=build /app/database ./database
 EXPOSE 8080
 CMD ["npm", "start"]

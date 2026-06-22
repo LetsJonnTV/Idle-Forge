@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const auth = await getAuthPayload(request);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data: battle, error } = await supabase
+  const { data: battle, error } = await db
     .from('pvp_battles')
     .select(
       `id, status, created_at, challenger_strength, defender_strength, winner_id,

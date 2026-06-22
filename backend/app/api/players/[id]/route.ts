@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const { allowed } = checkRateLimit(ip);
   if (!allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
-  const { data: player, error } = await supabase
+  const { data: player, error } = await db
     .from('players')
     .select('id, username, total_strength, prestige_level, chapter, clan_id')
     .eq('id', params.id)
@@ -64,7 +64,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('players')
     .update(updates)
     .eq('id', params.id)

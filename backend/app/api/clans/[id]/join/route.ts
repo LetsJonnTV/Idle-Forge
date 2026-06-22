@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   // Check clan exists
-  const { data: clan } = await supabase
+  const { data: clan } = await db
     .from('clans')
     .select('id, name')
     .eq('id', params.id)
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   if (!clan) return NextResponse.json({ error: 'Clan not found' }, { status: 404 });
 
   // Check if already a member
-  const { data: existing } = await supabase
+  const { data: existing } = await db
     .from('clan_members')
     .select('clan_id')
     .eq('clan_id', params.id)
@@ -38,14 +38,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 
   // Remove from any previous clan
-  const { data: player } = await supabase
+  const { data: player } = await db
     .from('players')
     .select('clan_id')
     .eq('id', auth.playerId)
     .maybeSingle();
 
   if (player?.clan_id) {
-    await supabase
+    await db
       .from('clan_members')
       .delete()
       .eq('clan_id', player.clan_id)
@@ -53,8 +53,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 
   // Join new clan
-  await supabase.from('clan_members').insert({ clan_id: params.id, player_id: auth.playerId });
-  await supabase.from('players').update({ clan_id: params.id }).eq('id', auth.playerId);
+  await db.from('clan_members').insert({ clan_id: params.id, player_id: auth.playerId });
+  await db.from('players').update({ clan_id: params.id }).eq('id', auth.playerId);
 
   return NextResponse.json({ message: `Joined clan ${clan.name}`, clanId: clan.id });
 }

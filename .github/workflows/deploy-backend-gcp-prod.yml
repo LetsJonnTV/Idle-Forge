@@ -66,4 +66,4 @@ jobs:
             --port 8080 \
             --image "${{ steps.image.outputs.image }}" \
             --set-env-vars "DEBUG=false" \
-            --set-secrets "JWT_SECRET=jwt-secret:latest,SUPABASE_URL=supabase-url:latest,SUPABASE_ANON_KEY=supabase-anon-key:latest,SUPABASE_SERVICE_ROLE_KEY=supabase-service-role-key:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,DATABASE_URL=database-url:latest"
+            --set-secrets "JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,DATABASE_URL=database-url:latest"

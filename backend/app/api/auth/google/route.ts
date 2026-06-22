@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OAuth2Client } from 'google-auth-library';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { signJwt } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { email, name, sub: googleId } = payload;
+    const { email, sub: googleId } = payload;
 
     if (!email || !googleId) {
       logger.warn('google-auth', 'Missing email or googleId in payload');
@@ -57,14 +57,14 @@ export async function POST(request: NextRequest) {
     logger.debug('google-auth', `Verified Google ID: ${googleId}, email: ${email}`);
 
     // Check if player already exists
-    let player = await supabase
+    let player = await db
       .from('players')
       .select('id, username, email')
       .eq('google_id', googleId)
       .maybeSingle();
 
     if (player.error && player.error.code !== 'PGRST116') {
-      logger.error('google-auth', `Supabase error looking up googleId: ${googleId}`, player.error);
+      logger.error('google-auth', `db error looking up googleId: ${googleId}`, player.error);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 
     // Create new player with Google ID
     const username = email.split('@')[0];
-    const newPlayer = await supabase
+    const newPlayer = await db
       .from('players')
       .insert({
         username,
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       logger.error('google-auth', `Failed to create player for ${email}`, newPlayer.error);
       // Check if username already taken, try with suffix
       const uniqueUsername = `${username}_${Math.random().toString(36).substring(7)}`;
-      const retryPlayer = await supabase
+      const retryPlayer = await db
         .from('players')
         .insert({
           username: uniqueUsername,

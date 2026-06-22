@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const auth = await getAuthPayload(request);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('coop_sessions')
     .select(
       `id, status, boss_hp, created_at,
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   const auth = await getAuthPayload(request);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data: session, error } = await supabase
+  const { data: session, error } = await db
     .from('coop_sessions')
     .insert({ host_id: auth.playerId, boss_hp: 1000, status: 'waiting' })
     .select()
