@@ -3,6 +3,17 @@
 All notable changes to Idle Forge are documented here.
 
 
+## [2.1.8] - 2026-06-22
+
+### Added
+- **Schnell-Schmiede (Bulk Crafting)**: Neue ×5, ×10 und ×50 Buttons direkt unter dem Forge-Button — schmiedet mehrere Items auf einmal; Auto-Sell wird korrekt angewendet; SnackBar zeigt Zusammenfassung (Anzahl, Inventar, Auto-Sell-Gold)
+- **WhatsApp Release-Benachrichtigung**: Release-Pipeline sendet nach jedem GitHub Release eine WhatsApp-Nachricht via CallMeBot-Webhook (`WHATSAPP_WEBHOOK_URL` Secret)
+
+### Fixed
+- **Admin-Panel Item-Liste**: Nach dem Erstellen oder Bearbeiten eines Items wurde die Liste nicht neu geladen — Items schienen zu verschwinden weil sie nach `slot`+`id` sortiert an anderer Position erschienen als erwartet; Liste wird jetzt nach jeder Änderung neu von Supabase geladen
+- **Pipeline `tag-on-main-release-bump.yml`**: `actions/checkout@v4` schlug fehl wenn `BOT_GH_PAT` nicht gesetzt war (`token: ""` wird als fehlender Pflichtparameter behandelt); Fallback auf `github.token` für den Checkout-Schritt hinzugefügt
+
+
 ## [2.1.7] - 2026-06-22
 
 ### Fixed
