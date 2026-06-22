@@ -36,6 +36,7 @@ interface SelectRelation {
 
 type ParsedSelect = SelectColumn | SelectRelation;
 
+<<<<<<< HEAD
 let pool: Pool;
 
 export async function initializePool(): Promise<Pool> {
@@ -93,6 +94,20 @@ export function getPool(): Pool {
   }
   return pool;
 }
+=======
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+  console.warn('DATABASE_URL is not configured. API calls that require Postgres will fail.');
+}
+
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  max: 20,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 10_000,
+});
+>>>>>>> c74c4876a1f43ff0ed2c426087b772c82eb2698c
 
 const PLAYER_FK_COLUMNS = new Set([
   'challenger_id',
@@ -495,8 +510,12 @@ class QueryBuilder<T = any>
     }
 
     try {
+<<<<<<< HEAD
       const currentPool = getPool();
       const result = await currentPool.query(sql, this.values);
+=======
+      const result = await pool.query(sql, this.values);
+>>>>>>> c74c4876a1f43ff0ed2c426087b772c82eb2698c
       const rows = result.rows as any[];
 
       if (this.expectSingle) {

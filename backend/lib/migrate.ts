@@ -7,7 +7,17 @@ let migrated = false;
 export async function runMigration(): Promise<void> {
   if (migrated) return;
 
+<<<<<<< HEAD
   // Try to find schema.sql file
+=======
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    console.warn('[migrate] DATABASE_URL not set — skipping auto-migration.');
+    return;
+  }
+
+  // Try multiple paths to find schema.sql (handles local dev and Next.js build output)
+>>>>>>> c74c4876a1f43ff0ed2c426087b772c82eb2698c
   const candidates = [
     join(process.cwd(), 'database', 'schema.sql'),
     join(process.cwd(), 'backend', 'database', 'schema.sql'),
