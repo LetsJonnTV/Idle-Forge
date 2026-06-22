@@ -10,10 +10,7 @@
     "test": "npm run build"
   },
   "dependencies": {
-<<<<<<< HEAD
     "@google-cloud/sql-connector": "^1.5.0",
-=======
->>>>>>> c74c4876a1f43ff0ed2c426087b772c82eb2698c
     "@types/pg": "^8.20.0",
     "bcryptjs": "^2.4.3",
     "google-auth-library": "^9.10.0",
