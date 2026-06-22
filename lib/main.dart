@@ -3207,19 +3207,32 @@ class _BottomMenuState extends State<_BottomMenu> {
           child: SizedBox(
             height: _adaptiveSheetHeight(
               context,
-              factor: 0.6,
-              min: 340,
-              max: 780,
+              factor: 0.82,
+              min: 480,
+              max: 900,
             ),
             child: StatefulBuilder(
               builder: (context, setModalState) {
                 final quests = controller.questBoard;
+                final dailies = controller.dailyChallenges;
+
+                final now = DateTime.now();
+                final midnight = DateTime(now.year, now.month, now.day + 1);
+                final hoursLeft = midnight.difference(now).inHours;
+                final minutesLeft =
+                    midnight.difference(now).inMinutes % 60;
+                final resetLabel =
+                    'Reset in ${hoursLeft}h ${minutesLeft.toString().padLeft(2, '0')}m';
 
                 return LayoutBuilder(
                   builder: (context, constraints) {
                     final wide = constraints.maxWidth >= 900;
 
-                    Widget questCard(QuestStateView quest, {double? width}) {
+                    Widget questCard(
+                      QuestStateView quest, {
+                      double? width,
+                      required VoidCallback? onClaim,
+                    }) {
                       final progressRatio = (quest.progress / quest.target)
                           .clamp(0.0, 1.0);
                       final rewardText =
@@ -3275,12 +3288,7 @@ class _BottomMenuState extends State<_BottomMenu> {
                               )
                             else
                               FilledButton.tonal(
-                                onPressed: quest.canClaim
-                                    ? () {
-                                        controller.claimQuest(quest.type);
-                                        setModalState(() {});
-                                      }
-                                    : null,
+                                onPressed: quest.canClaim ? onClaim : null,
                                 child: const Text('Belohnung holen'),
                               ),
                           ],
@@ -3291,6 +3299,65 @@ class _BottomMenuState extends State<_BottomMenu> {
                     return ListView(
                       padding: const EdgeInsets.all(12),
                       children: [
+                        // ── Tägliche Herausforderungen ──────────────────
+                        Row(
+                          children: [
+                            const Text(
+                              'Tägliche Herausforderungen',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              resetLabel,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: context.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Täglich zurücksetzende Aufgaben für Bonusbelohnungen.',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        const SizedBox(height: 10),
+                        if (!wide)
+                          ...dailies.map(
+                            (c) => questCard(
+                              c,
+                              onClaim: () {
+                                controller.claimDailyChallenge(c.type);
+                                setModalState(() {});
+                              },
+                            ),
+                          )
+                        else
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 0,
+                            children: dailies
+                                .map(
+                                  (c) => questCard(
+                                    c,
+                                    width:
+                                        (constraints.maxWidth - 10) / 2,
+                                    onClaim: () {
+                                      controller.claimDailyChallenge(
+                                        c.type,
+                                      );
+                                      setModalState(() {});
+                                    },
+                                  ),
+                                )
+                                .toList(growable: false),
+                          ),
+
+                        // ── Quest Board ─────────────────────────────────
+                        const Divider(height: 24),
                         const Text(
                           'Quest Board',
                           style: TextStyle(
@@ -3320,8 +3387,16 @@ class _BottomMenuState extends State<_BottomMenu> {
                         ),
                         const SizedBox(height: 10),
                         if (!wide)
-                          ...quests.map((quest) => questCard(quest))
-                        else ...[
+                          ...quests.map(
+                            (quest) => questCard(
+                              quest,
+                              onClaim: () {
+                                controller.claimQuest(quest.type);
+                                setModalState(() {});
+                              },
+                            ),
+                          )
+                        else
                           Wrap(
                             spacing: 10,
                             runSpacing: 0,
@@ -3329,12 +3404,16 @@ class _BottomMenuState extends State<_BottomMenu> {
                                 .map(
                                   (quest) => questCard(
                                     quest,
-                                    width: (constraints.maxWidth - 10) / 2,
+                                    width:
+                                        (constraints.maxWidth - 10) / 2,
+                                    onClaim: () {
+                                      controller.claimQuest(quest.type);
+                                      setModalState(() {});
+                                    },
                                   ),
                                 )
                                 .toList(growable: false),
                           ),
-                        ],
                       ],
                     );
                   },

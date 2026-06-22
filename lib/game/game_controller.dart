@@ -193,6 +193,14 @@ class GameController extends ChangeNotifier {
   bool questCraftsClaimed = false;
   bool questBossClaimed = false;
 
+  String _dailyChallengesDateKey = '';
+  int dailyKillsProgress = 0;
+  int dailyCraftsProgress = 0;
+  int dailyBossProgress = 0;
+  bool dailyKillsClaimed = false;
+  bool dailyCraftsClaimed = false;
+  bool dailyBossClaimed = false;
+
   PetState? activePet;
   final List<Rune> runeInventory = [];
 
@@ -1160,6 +1168,10 @@ class GameController extends ChangeNotifier {
   int get questCraftsTarget => 16 + ((questCycle - 1) * 4);
   int get questBossTarget => 3 + ((questCycle - 1) ~/ 2);
 
+  static const int dailyKillsTarget = 50;
+  static const int dailyCraftsTarget = 10;
+  static const int dailyBossTarget = 2;
+
   int get talentAttackCost => 3 + (talentAttackLevel * 2);
   int get talentVitalityCost => 3 + (talentVitalityLevel * 2);
   int get talentForgeCost => 4 + (talentForgeLevel * 3);
@@ -1731,6 +1743,72 @@ class GameController extends ChangeNotifier {
     ];
   }
 
+  List<QuestStateView> get dailyChallenges {
+    _ensureDailyChallenges();
+    return [
+      QuestStateView(
+        type: QuestType.kills,
+        title: 'Tägliche Jagd',
+        description: 'Besiege $dailyKillsTarget Gegner',
+        progress: dailyKillsProgress.clamp(0, dailyKillsTarget),
+        target: dailyKillsTarget,
+        rewardGold: _scaledGoldReward(500),
+        rewardHammers: 15,
+        rewardShards: 3,
+        claimed: dailyKillsClaimed,
+        canClaim: !dailyKillsClaimed && dailyKillsProgress >= dailyKillsTarget,
+      ),
+      QuestStateView(
+        type: QuestType.crafts,
+        title: 'Tägliches Handwerk',
+        description: 'Schmiede $dailyCraftsTarget Items',
+        progress: dailyCraftsProgress.clamp(0, dailyCraftsTarget),
+        target: dailyCraftsTarget,
+        rewardGold: _scaledGoldReward(350),
+        rewardHammers: 20,
+        rewardShards: 0,
+        claimed: dailyCraftsClaimed,
+        canClaim: !dailyCraftsClaimed && dailyCraftsProgress >= dailyCraftsTarget,
+      ),
+      QuestStateView(
+        type: QuestType.bosses,
+        title: 'Tägliche Boss-Jagd',
+        description: 'Besiege $dailyBossTarget Bosse',
+        progress: dailyBossProgress.clamp(0, dailyBossTarget),
+        target: dailyBossTarget,
+        rewardGold: _scaledGoldReward(600),
+        rewardHammers: 10,
+        rewardShards: 8,
+        claimed: dailyBossClaimed,
+        canClaim: !dailyBossClaimed && dailyBossProgress >= dailyBossTarget,
+      ),
+    ];
+  }
+
+  bool get allDailyChallengesClaimed =>
+      dailyKillsClaimed && dailyCraftsClaimed && dailyBossClaimed;
+
+  bool claimDailyChallenge(QuestType type) {
+    final challenge = dailyChallenges.firstWhere((c) => c.type == type);
+    if (!challenge.canClaim) return false;
+
+    gold += challenge.rewardGold;
+    hammers += challenge.rewardHammers;
+    forgeShards += challenge.rewardShards;
+
+    if (type == QuestType.kills) {
+      dailyKillsClaimed = true;
+    } else if (type == QuestType.crafts) {
+      dailyCraftsClaimed = true;
+    } else {
+      dailyBossClaimed = true;
+    }
+
+    _save();
+    notifyListeners();
+    return true;
+  }
+
   List<GameItem> get equippedItems {
     final equippedIds = equippedBySlot.values.toSet();
     return inventory
@@ -2123,6 +2201,8 @@ class GameController extends ChangeNotifier {
 
     hammers += hammerDrop;
     totalKills += 1;
+    _ensureDailyChallenges();
+    dailyKillsProgress += 1;
     killsInStage += 1;
     _tryDropRecipe();
 
@@ -2148,6 +2228,7 @@ class GameController extends ChangeNotifier {
     if (isBossStage) {
       forgeShards += _scaledShardReward(1);
       bossDefeats += 1;
+      dailyBossProgress += 1;
     } else {}
 
     if (isBossStage) {
@@ -2445,6 +2526,8 @@ class GameController extends ChangeNotifier {
   GameItem _craftItemRaw({required void Function(int soldFor) onAutoSold}) {
     hammers -= 1;
     craftedItems += 1;
+    _ensureDailyChallenges();
+    dailyCraftsProgress += 1;
     final tier = _rollTier();
     final slot = ItemSlot.values[_random.nextInt(ItemSlot.values.length)];
 
@@ -3056,6 +3139,18 @@ class GameController extends ChangeNotifier {
     if (_dailyShopOffers.isEmpty || _dailyOfferDateKey != _todayKey()) {
       _regenerateDailyOffers();
     }
+  }
+
+  void _ensureDailyChallenges() {
+    final today = _todayKey();
+    if (_dailyChallengesDateKey == today) return;
+    _dailyChallengesDateKey = today;
+    dailyKillsProgress = 0;
+    dailyCraftsProgress = 0;
+    dailyBossProgress = 0;
+    dailyKillsClaimed = false;
+    dailyCraftsClaimed = false;
+    dailyBossClaimed = false;
   }
 
   String _todayKey() {
@@ -3892,6 +3987,14 @@ class GameController extends ChangeNotifier {
 
     loginStreakDays = map['loginStreakDays'] as int? ?? 0;
     _lastLoginDateKey = map['lastLoginDateKey'] as String? ?? '';
+    _dailyChallengesDateKey =
+        map['dailyChallengesDateKey'] as String? ?? '';
+    dailyKillsProgress = map['dailyKillsProgress'] as int? ?? 0;
+    dailyCraftsProgress = map['dailyCraftsProgress'] as int? ?? 0;
+    dailyBossProgress = map['dailyBossProgress'] as int? ?? 0;
+    dailyKillsClaimed = map['dailyKillsClaimed'] as bool? ?? false;
+    dailyCraftsClaimed = map['dailyCraftsClaimed'] as bool? ?? false;
+    dailyBossClaimed = map['dailyBossClaimed'] as bool? ?? false;
   }
 
   void _applyOfflineReward(DateTime lastActive) {
@@ -4063,6 +4166,8 @@ class GameController extends ChangeNotifier {
     final result = _craftItemWithTier(recipe.resultTier);
     inventory.add(result);
     craftedItems += 1;
+    _ensureDailyChallenges();
+    dailyCraftsProgress += 1;
     _save();
     notifyListeners();
     return result;
@@ -4172,6 +4277,13 @@ class GameController extends ChangeNotifier {
           .toList(growable: false),
       'loginStreakDays': loginStreakDays,
       'lastLoginDateKey': _lastLoginDateKey,
+      'dailyChallengesDateKey': _dailyChallengesDateKey,
+      'dailyKillsProgress': dailyKillsProgress,
+      'dailyCraftsProgress': dailyCraftsProgress,
+      'dailyBossProgress': dailyBossProgress,
+      'dailyKillsClaimed': dailyKillsClaimed,
+      'dailyCraftsClaimed': dailyCraftsClaimed,
+      'dailyBossClaimed': dailyBossClaimed,
     };
   }
 

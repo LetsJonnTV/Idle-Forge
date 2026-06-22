@@ -4,6 +4,9 @@ All notable changes to Idle Forge are documented here.
 
 ## [2.1.11] - 2026-06-22
 
+### Added
+- **Tägliche Herausforderungen**: 3 täglich zurücksetzende Aufgaben (50 Kills, 10 Schmiedungen, 2 Boss-Siege) mit Bonus-Belohnungen (Gold, Hämmer, Scherben). Quest-Board zeigt jetzt Daily-Challenges oben mit Reset-Countdown, darunter die regulären Quests.
+
 ### Changed
 - Backend vollständig von Supabase SDK auf PostgreSQL (`pg`) migriert; alle API-Routen unter `backend/app/api/**` nutzen jetzt die neue `db`-Abstraktion.
 - Legacy-Reste entfernt: `backend/lib/supabaseClient.ts`, `backend/vercel.json`, Vercel-Header-Fallback im Rate-Limiter.
