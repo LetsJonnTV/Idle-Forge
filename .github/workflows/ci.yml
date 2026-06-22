@@ -155,12 +155,27 @@ jobs:
           fi
 
   android-ui-test:
-    name: Android UI Test
+    name: Android UI Test (API ${{ matrix.api-level }})
     runs-on: ubuntu-latest
     needs:
       - changes
       - app-lint-test-ui
     if: needs.changes.outputs.app == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # API 30 = Android 11 — matches budget devices like Samsung Galaxy A12
+          # where the keyboard/adjustNothing regression was observed.
+          - api-level: 30
+            target: default
+            arch: x86_64
+            profile: pixel_4
+          # API 34 = Android 14 — baseline modern device smoke test.
+          - api-level: 34
+            target: google_apis
+            arch: x86_64
+            profile: pixel_6
 
     steps:
       - name: Checkout
@@ -198,10 +213,10 @@ jobs:
         if: steps.kvm.outputs.available == 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
-          arch: x86_64
-          profile: pixel_6
-          target: google_apis
+          api-level: ${{ matrix.api-level }}
+          arch: ${{ matrix.arch }}
+          profile: ${{ matrix.profile }}
+          target: ${{ matrix.target }}
           disable-animations: true
           script: flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart --dart-define=DISABLE_UPDATE_CHECK=true
 
