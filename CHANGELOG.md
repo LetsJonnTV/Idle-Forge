@@ -3,6 +3,7 @@
 All notable changes to Idle Forge are documented here.
 
 
+<<<<<<< HEAD
 ## [2.1.8] - 2026-06-22
 
 ### Added
@@ -14,6 +15,8 @@ All notable changes to Idle Forge are documented here.
 - **Pipeline `tag-on-main-release-bump.yml`**: `actions/checkout@v4` schlug fehl wenn `BOT_GH_PAT` nicht gesetzt war (`token: ""` wird als fehlender Pflichtparameter behandelt); Fallback auf `github.token` für den Checkout-Schritt hinzugefügt
 
 
+=======
+>>>>>>> cc77112a9c7e7664e7b17745f5c74a1e60cbcdcf
 ## [2.1.7] - 2026-06-22
 
 ### Fixed
