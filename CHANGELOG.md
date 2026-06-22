@@ -2,6 +2,12 @@
 
 All notable changes to Idle Forge are documented here.
 
+## [2.1.10] - 2026-06-22
+
+### Fixed
+- **Android-Tastatur/Inputs stabilisiert**: Test-Hook `enableFlutterDriverExtension()` aus dem normalen App-Start entfernt, damit Textfelder auf echten Geraeten die Systemtastatur wieder zuverlaessig oeffnen.
+- **In-App-Update auf Android robuster gemacht**: APK-Installation auf `ACTION_INSTALL_PACKAGE` umgestellt, fehlende Berechtigung fuer "Unbekannte Apps installieren" wird erkannt und direkt in die passende Systemeinstellung geleitet, plus konkretere Fehlermeldungen statt generischem "Installation fehlgeschlagen".
+
 ## [2.1.9] - 2026-06-22
 
 ### Fixed

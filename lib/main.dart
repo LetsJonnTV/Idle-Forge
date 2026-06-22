@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_driver/driver_extension.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -133,9 +132,6 @@ extension _AppColors on BuildContext {
 }
 
 Future<void> main() async {
-  // Enable Flutter Driver extension for integration tests.
-  enableFlutterDriverExtension();
-
   WidgetsFlutterBinding.ensureInitialized();
   // TODO: Supabase initialisieren wenn SUPABASE_URL und SUPABASE_ANON_KEY als --dart-define übergeben werden
   // await Supabase.initialize(
@@ -6563,9 +6559,20 @@ class _UpdateDialogState extends State<_UpdateDialog> {
 
     final success = await UpdateInstaller.install(filePath);
     if (!success && mounted) {
+      final installError = UpdateInstaller.lastError;
+      var message = 'Installation fehlgeschlagen.';
+      if (installError != null &&
+          installError.contains('UNKNOWN_SOURCES_PERMISSION_REQUIRED')) {
+        message =
+            'Bitte erlaube "Unbekannte Apps installieren" fuer Idle Forge und versuche es erneut.';
+      } else if (installError != null &&
+          installError.contains('NO_PACKAGE_INSTALLER_AVAILABLE')) {
+        message =
+            'Kein Paket-Installer verfuegbar. Bitte lade das APK manuell aus dem Release herunter.';
+      }
       setState(() {
         _downloading = false;
-        _error = 'Installation fehlgeschlagen.';
+        _error = message;
       });
     }
   }
