@@ -3,7 +3,7 @@ const nextConfig = {
   experimental: {
     instrumentationHook: true,
   },
-  // Bundle schema.sql into the Vercel serverless deployment
+  // Bundle schema.sql so runtime migrations can read it in container deployments
   outputFileTracingIncludes: {
     '/api/**': ['./supabase/schema.sql'],
   },
