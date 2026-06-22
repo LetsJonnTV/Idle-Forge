@@ -22,6 +22,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ secrets.BOT_GH_PAT }}
 
       - name: Validate version format
         run: |
@@ -30,15 +31,14 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout main
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
       - name: Create and push release tag
         run: |
           VERSION_TAG="${{ inputs.version }}"
+          if [ -z "${{ secrets.BOT_GH_PAT }}" ]; then
+            echo "Missing BOT_GH_PAT secret. A PAT is required so the tag push triggers the release workflow."
+            exit 1
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if git ls-remote --exit-code --tags origin "refs/tags/${VERSION_TAG}" >/dev/null 2>&1; then
