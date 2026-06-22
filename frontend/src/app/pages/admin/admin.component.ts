@@ -37,7 +37,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   giveMap:    Record<string, GiveState>    = {};
   rowMessages: Record<string, string>      = {};
 
-  private searchSubject = new Subject<string>();
+  private readonly searchSubject = new Subject<string>();
   private searchSub!: Subscription;
 
   /* ── Items tab ───────────────────────────────────── */
@@ -62,7 +62,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     gloves: '🧤 Handschuhe', boots: '👢 Stiefel', ring: '💍 Ring',
   };
 
-  constructor(private adminService: AdminService) {}
+  constructor(private readonly adminService: AdminService) {}
 
   ngOnInit(): void {
     this.loadPlayers();
@@ -221,12 +221,12 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.newItemMsg = '';
     const payload = { ...this.newItem, icon_path: this.newItem.icon_path || undefined };
     this.adminService.createItem(payload).subscribe({
-      next: res => {
-        this.items = [res.item, ...this.items];
+      next: () => {
         this.newItem = { id: '', slot: 'weapon', name: '', base_power: 1, icon_path: '' };
         this.newItemMsg = '✓ Item erstellt!';
         this.newItemLoading = false;
         setTimeout(() => this.newItemMsg = '', 3000);
+        this.loadItems();
       },
       error: err => {
         this.newItemMsg = '✗ ' + (err?.error?.error ?? err?.error?.message ?? 'Fehler');
@@ -251,13 +251,12 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.editItemMsg = '';
     const { id, ...updates } = this.editingItem;
     this.adminService.updateItem(id, updates).subscribe({
-      next: res => {
-        const idx = this.items.findIndex(i => i.id === id);
-        if (idx >= 0) this.items[idx] = res.item;
+      next: () => {
         this.editingItem = null;
         this.editItemLoading = false;
         this.itemMsg = '✓ Item aktualisiert!';
         setTimeout(() => this.itemMsg = '', 3000);
+        this.loadItems();
       },
       error: err => {
         this.editItemMsg = '✗ ' + (err?.error?.message ?? 'Fehler');

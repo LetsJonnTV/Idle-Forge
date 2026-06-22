@@ -167,6 +167,5 @@ jobs:
       - name: Send WhatsApp webhook message
         if: ${{ env.WHATSAPP_WEBHOOK_URL != '' }}
         run: |
-          curl -X POST "${{ env.WHATSAPP_WEBHOOK_URL }}" \
-            -H "Content-Type: application/json" \
-            -d '{"text":"Idle Forge Release '${{ github.ref_name }}' wurde veroeffentlicht."}'
+          curl -G "${{ env.WHATSAPP_WEBHOOK_URL }}" \
+            --data-urlencode "text=Idle Forge Release ${{ github.ref_name }} wurde veroeffentlicht."

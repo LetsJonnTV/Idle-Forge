@@ -2292,10 +2292,59 @@ class _ForgePanel extends StatelessWidget {
               ),
             );
 
+            final bulkRow = Row(
+              children: [
+                for (final count in [5, 10, 50]) ...[
+                  if (count > 5) SizedBox(width: _rs(context, 6, min: 4)),
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                          vertical: _rs(context, dense ? 4 : 6, min: 3),
+                        ),
+                        textStyle: TextStyle(
+                          fontSize: _rs(context, dense ? 11 : 12, min: 10),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        side: BorderSide(color: context.borderHeavy),
+                        foregroundColor: context.textBright,
+                      ),
+                      onPressed: () {
+                        final result = controller.craftMultiple(count);
+                        if (result.crafted == 0) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                controller.text.tr('notEnoughHammers'),
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                        final parts = <String>[
+                          '${result.crafted}× geschmiedet',
+                          if (result.addedToInventory > 0)
+                            '${result.addedToInventory} im Inventar',
+                          if (result.autoSold > 0)
+                            '${result.autoSold} verkauft (+${result.goldFromAutoSell} Gold)',
+                        ];
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(parts.join(' · '))),
+                        );
+                      },
+                      child: Text('×$count'),
+                    ),
+                  ),
+                ],
+              ],
+            );
+
             if (compact) {
               return Column(
                 children: [
                   craftCard,
+                  SizedBox(height: _rs(context, 6, min: 4)),
+                  bulkRow,
                   SizedBox(height: _rs(context, 8, min: 5)),
                   upgradeCard,
                 ],
@@ -2303,8 +2352,17 @@ class _ForgePanel extends StatelessWidget {
             }
 
             return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: craftCard),
+                Expanded(
+                  child: Column(
+                    children: [
+                      craftCard,
+                      SizedBox(height: _rs(context, 6, min: 4)),
+                      bulkRow,
+                    ],
+                  ),
+                ),
                 SizedBox(width: _rs(context, 8, min: 5)),
                 Expanded(child: upgradeCard),
               ],
