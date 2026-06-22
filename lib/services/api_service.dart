@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -704,11 +705,18 @@ class ApiService {
     try {
       final data = await _get('/api/saves');
       final save = data['save'];
-      if (save == null) return null;
-      return Map<String, dynamic>.from(save as Map);
-    } on ApiException {
+      if (save == null) {
+        debugPrint('downloadSave: no save on server');
+        return null;
+      }
+      final saveMap = Map<String, dynamic>.from(save as Map);
+      debugPrint('downloadSave: loaded ${saveMap.length} fields');
+      return saveMap;
+    } on ApiException catch (e) {
+      debugPrint('downloadSave ApiException: ${e.message}');
       return null;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('downloadSave error: $e');
       return null;
     }
   }
