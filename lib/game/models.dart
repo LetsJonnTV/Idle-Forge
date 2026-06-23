@@ -686,6 +686,7 @@ class PrestigeShopItem {
   final int shardCost;
   final PrestigeShopBonusType bonusType;
   final double bonusValue;
+
   /// For cosmetics: color hex or title string.
   final String cosmeticValue;
 }
