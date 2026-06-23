@@ -332,6 +332,8 @@ class ApiService {
   /// Shows Google sign-in dialog to user.
   static const _googleWebClientId = String.fromEnvironment(
     'GOOGLE_WEB_CLIENT_ID',
+    defaultValue:
+        '274619001220-ikmd7mo5ibotreahfdqm1u6sjvij7i7d.apps.googleusercontent.com',
   );
 
   Future<bool> loginWithGoogle() async {
