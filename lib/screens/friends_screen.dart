@@ -169,18 +169,13 @@ class _FriendsScreenState extends State<FriendsScreen>
           backgroundColor: _isDark ? const Color(0xFF1F1F2E) : null,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: BorderSide(
-              color: won ? winColor : loseColor,
-              width: 2,
-            ),
+            side: BorderSide(color: won ? winColor : loseColor, width: 2),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                won
-                    ? Icons.emoji_events_rounded
-                    : Icons.sports_kabaddi_rounded,
+                won ? Icons.emoji_events_rounded : Icons.sports_kabaddi_rounded,
                 size: 56,
                 color: won ? const Color(0xFFFFD700) : loseColor,
               ),
@@ -454,14 +449,14 @@ class _FriendsScreenState extends State<FriendsScreen>
             onTap: friendId.isEmpty
                 ? null
                 : () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => PlayerProfileScreen(
-                          playerId: friendId,
-                          username: username,
-                          text: widget.text,
-                        ),
+                    MaterialPageRoute<void>(
+                      builder: (_) => PlayerProfileScreen(
+                        playerId: friendId,
+                        username: username,
+                        text: widget.text,
                       ),
                     ),
+                  ),
           );
         },
       ),

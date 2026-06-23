@@ -1258,7 +1258,8 @@ class GameController extends ChangeNotifier {
   }
 
   double get prestigeShopOfflineMultiplier =>
-      1.0 + _sumPrestigeShopBonus(PrestigeShopBonusType.offlineRewardMultiplier);
+      1.0 +
+      _sumPrestigeShopBonus(PrestigeShopBonusType.offlineRewardMultiplier);
 
   double get prestigeShopGoldMultiplier =>
       1.0 + _sumPrestigeShopBonus(PrestigeShopBonusType.goldMultiplier);
@@ -1269,7 +1270,8 @@ class GameController extends ChangeNotifier {
   double get prestigeShopForgeBonusChance =>
       _sumPrestigeShopBonus(PrestigeShopBonusType.forgeBonusChance);
 
-  bool isPrestigeItemPurchased(String id) => purchasedPrestigeItems.contains(id);
+  bool isPrestigeItemPurchased(String id) =>
+      purchasedPrestigeItems.contains(id);
 
   /// Buys a prestige shop item. Returns true on success.
   bool buyPrestigeItem(String id) {

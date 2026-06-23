@@ -27,8 +27,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
   bool _offline = false;
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
-  Color get _bg =>
-      _isDark ? const Color(0xFF0C0F16) : const Color(0xFFF0E8D8);
+  Color get _bg => _isDark ? const Color(0xFF0C0F16) : const Color(0xFFF0E8D8);
   Color get _cardBg =>
       _isDark ? const Color(0xFF191E2C) : const Color(0xFFFFF8EC);
   Color get _cardBorder =>
@@ -349,10 +348,7 @@ class _ItemRow extends StatelessWidget {
                     padding: const EdgeInsets.all(6),
                     child: SvgPicture.asset(
                       iconPath,
-                      colorFilter: ColorFilter.mode(
-                        tierColor,
-                        BlendMode.srcIn,
-                      ),
+                      colorFilter: ColorFilter.mode(tierColor, BlendMode.srcIn),
                     ),
                   )
                 : Icon(Icons.inventory_2_outlined, color: tierColor, size: 20),
@@ -361,10 +357,7 @@ class _ItemRow extends StatelessWidget {
           Expanded(
             child: Text(
               name,
-              style: TextStyle(
-                color: textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(color: textPrimary, fontWeight: FontWeight.w500),
               overflow: TextOverflow.ellipsis,
             ),
           ),

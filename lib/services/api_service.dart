@@ -842,9 +842,7 @@ class ApiService {
       final data = await _get('/api/players/me/inventory');
       final raw = data['items'] as List?;
       if (raw == null || raw.isEmpty) return null;
-      return raw
-          .map((e) => Map<String, dynamic>.from(e as Map))
-          .toList();
+      return raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     } on ApiException {
       return null;
     } catch (_) {

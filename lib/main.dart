@@ -5680,166 +5680,160 @@ class _BottomMenuState extends State<_BottomMenu> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              ...GameController.prestigeShopItems.map(
-                                (item) {
-                                  final lang = controller.localeCode;
-                                  final name = lang == 'de'
-                                      ? item.nameDe
-                                      : item.nameEn;
-                                  final desc = lang == 'de'
-                                      ? item.descDe
-                                      : item.descEn;
-                                  final owned = controller
-                                      .isPrestigeItemPurchased(item.id);
-                                  final isTitle =
-                                      item.category ==
-                                      PrestigeShopCategory.cosmetic &&
-                                      item.bonusType ==
-                                          PrestigeShopBonusType.none &&
-                                      !item.cosmeticValue.startsWith('#');
-                                  final isColor =
-                                      item.category ==
-                                      PrestigeShopCategory.cosmetic &&
-                                      item.cosmeticValue.startsWith('#');
-                                  final equippedTitle =
-                                      controller.equippedPrestigeTitle;
-                                  final equippedColor =
-                                      controller.equippedNameColorHex;
-                                  final isEquipped = isTitle
-                                      ? equippedTitle == item.cosmeticValue
-                                      : isColor
-                                      ? equippedColor == item.cosmeticValue
-                                      : false;
-                                  final canAfford =
-                                      controller.forgeShards >= item.shardCost;
+                              ...GameController.prestigeShopItems.map((item) {
+                                final lang = controller.localeCode;
+                                final name = lang == 'de'
+                                    ? item.nameDe
+                                    : item.nameEn;
+                                final desc = lang == 'de'
+                                    ? item.descDe
+                                    : item.descEn;
+                                final owned = controller
+                                    .isPrestigeItemPurchased(item.id);
+                                final isTitle =
+                                    item.category ==
+                                        PrestigeShopCategory.cosmetic &&
+                                    item.bonusType ==
+                                        PrestigeShopBonusType.none &&
+                                    !item.cosmeticValue.startsWith('#');
+                                final isColor =
+                                    item.category ==
+                                        PrestigeShopCategory.cosmetic &&
+                                    item.cosmeticValue.startsWith('#');
+                                final equippedTitle =
+                                    controller.equippedPrestigeTitle;
+                                final equippedColor =
+                                    controller.equippedNameColorHex;
+                                final isEquipped = isTitle
+                                    ? equippedTitle == item.cosmeticValue
+                                    : isColor
+                                    ? equippedColor == item.cosmeticValue
+                                    : false;
+                                final canAfford =
+                                    controller.forgeShards >= item.shardCost;
 
-                                  return Card(
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(12),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            width: 42,
-                                            height: 42,
-                                            decoration: BoxDecoration(
-                                              color: item.category ==
-                                                      PrestigeShopCategory
-                                                          .cosmetic
-                                                  ? const Color(
-                                                      0xFFD4A84B,
-                                                    ).withAlpha(30)
-                                                  : const Color(
-                                                      0xFF7C4DFF,
-                                                    ).withAlpha(30),
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                            ),
-                                            child: Icon(
-                                              item.category ==
-                                                      PrestigeShopCategory
-                                                          .cosmetic
-                                                  ? Icons.palette_outlined
-                                                  : Icons.bolt_outlined,
-                                              color: item.category ==
-                                                      PrestigeShopCategory
-                                                          .cosmetic
-                                                  ? const Color(0xFFD4A84B)
-                                                  : const Color(0xFF7C4DFF),
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 42,
+                                          height: 42,
+                                          decoration: BoxDecoration(
+                                            color:
+                                                item.category ==
+                                                    PrestigeShopCategory
+                                                        .cosmetic
+                                                ? const Color(
+                                                    0xFFD4A84B,
+                                                  ).withAlpha(30)
+                                                : const Color(
+                                                    0xFF7C4DFF,
+                                                  ).withAlpha(30),
+                                            borderRadius: BorderRadius.circular(
+                                              10,
                                             ),
                                           ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  name,
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  desc,
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: context.textSecondary,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  '${item.shardCost} Scherben',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: canAfford || owned
-                                                        ? const Color(
-                                                            0xFFD4A84B,
-                                                          )
-                                                        : context.textSecondary,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
+                                          child: Icon(
+                                            item.category ==
+                                                    PrestigeShopCategory
+                                                        .cosmetic
+                                                ? Icons.palette_outlined
+                                                : Icons.bolt_outlined,
+                                            color:
+                                                item.category ==
+                                                    PrestigeShopCategory
+                                                        .cosmetic
+                                                ? const Color(0xFFD4A84B)
+                                                : const Color(0xFF7C4DFF),
                                           ),
-                                          const SizedBox(width: 8),
-                                          if (owned && (isTitle || isColor))
-                                            FilledButton.tonal(
-                                              onPressed: isEquipped
-                                                  ? () => setModalState(() {
-                                                        if (isTitle) {
-                                                          controller
-                                                              .equipPrestigeTitle(
-                                                                null,
-                                                              );
-                                                        } else {
-                                                          controller
-                                                              .equipNameColor(
-                                                                null,
-                                                              );
-                                                        }
-                                                      })
-                                                  : () => setModalState(() {
-                                                        if (isTitle) {
-                                                          controller
-                                                              .equipPrestigeTitle(
-                                                                item.cosmeticValue,
-                                                              );
-                                                        } else {
-                                                          controller
-                                                              .equipNameColor(
-                                                                item.cosmeticValue,
-                                                              );
-                                                        }
-                                                      }),
-                                              child: Text(
-                                                isEquipped
-                                                    ? 'Aktiv'
-                                                    : 'Anlegen',
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                name,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                               ),
-                                            )
-                                          else if (owned)
-                                            const Chip(label: Text('Besessen'))
-                                          else
-                                            FilledButton(
-                                              onPressed: canAfford
-                                                  ? () => setModalState(() {
-                                                        controller
-                                                            .buyPrestigeItem(
-                                                              item.id,
-                                                            );
-                                                      })
-                                                  : null,
-                                              child: const Text('Kaufen'),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                desc,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: context.textSecondary,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                '${item.shardCost} Scherben',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: canAfford || owned
+                                                      ? const Color(0xFFD4A84B)
+                                                      : context.textSecondary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        if (owned && (isTitle || isColor))
+                                          FilledButton.tonal(
+                                            onPressed: isEquipped
+                                                ? () => setModalState(() {
+                                                    if (isTitle) {
+                                                      controller
+                                                          .equipPrestigeTitle(
+                                                            null,
+                                                          );
+                                                    } else {
+                                                      controller.equipNameColor(
+                                                        null,
+                                                      );
+                                                    }
+                                                  })
+                                                : () => setModalState(() {
+                                                    if (isTitle) {
+                                                      controller
+                                                          .equipPrestigeTitle(
+                                                            item.cosmeticValue,
+                                                          );
+                                                    } else {
+                                                      controller.equipNameColor(
+                                                        item.cosmeticValue,
+                                                      );
+                                                    }
+                                                  }),
+                                            child: Text(
+                                              isEquipped ? 'Aktiv' : 'Anlegen',
                                             ),
-                                        ],
-                                      ),
+                                          )
+                                        else if (owned)
+                                          const Chip(label: Text('Besessen'))
+                                        else
+                                          FilledButton(
+                                            onPressed: canAfford
+                                                ? () => setModalState(() {
+                                                    controller.buyPrestigeItem(
+                                                      item.id,
+                                                    );
+                                                  })
+                                                : null,
+                                            child: const Text('Kaufen'),
+                                          ),
+                                      ],
                                     ),
-                                  );
-                                },
-                              ),
+                                  ),
+                                );
+                              }),
                             ] else ...[
                               const Text(
                                 'Angebote',
@@ -5852,9 +5846,7 @@ class _BottomMenuState extends State<_BottomMenu> {
                                   style: TextStyle(color: context.textPrimary),
                                 ),
                               if (!wide)
-                                ...offers.map(
-                                  (offer) => shopCard(offer: offer),
-                                )
+                                ...offers.map((offer) => shopCard(offer: offer))
                               else
                                 Wrap(
                                   spacing: 10,
