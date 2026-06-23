@@ -8,7 +8,7 @@ import 'package:path_provider/path_provider.dart';
 /// Handles downloading and installing updates on Android and Windows.
 class UpdateInstaller {
   static const _androidChannel = MethodChannel(
-    'com.example.idle_forge/install',
+    'com.letsjonntv.idle_forge/install',
   );
   static String? _lastError;
 

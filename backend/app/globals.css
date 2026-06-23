@@ -1,0 +1,95 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0c0f16;
+  --bg2: #191e2c;
+  --bg3: #0e1220;
+  --border: #7a5818;
+  --border2: #3a3018;
+  --gold: #d4a84b;
+  --gold-bright: #f0c050;
+  --text: #ded0b0;
+  --text2: #9a8860;
+  --text3: #666;
+  --red: #e07070;
+  --radius: 10px;
+}
+
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: monospace; font-size: 14px; }
+
+a { color: var(--gold); text-decoration: none; }
+a:hover { color: var(--gold-bright); }
+
+button {
+  cursor: pointer;
+  font-family: monospace;
+  border: none;
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  font-size: 13px;
+  transition: opacity 0.15s;
+}
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button:not(:disabled):hover { opacity: 0.85; }
+
+input {
+  font-family: monospace;
+  font-size: 14px;
+  background: var(--bg3);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 10px 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s;
+}
+input:focus { border-color: var(--gold); }
+
+.card {
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.btn-gold {
+  background: var(--gold);
+  color: #1a1000;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text);
+}
+
+.btn-danger {
+  background: transparent;
+  border: 1.5px solid #7a2020;
+  color: var(--red);
+}
+
+.tier-common    { color: #999; }
+.tier-uncommon  { color: #4a9e72; }
+.tier-rare      { color: #4488ee; }
+.tier-epic      { color: #aa44ee; }
+.tier-legendary { color: #f0a030; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.badge-common    { background: #2a2a2a; color: #999; }
+.badge-uncommon  { background: #1a3028; color: #4a9e72; }
+.badge-rare      { background: #0e1e3a; color: #4488ee; }
+.badge-epic      { background: #220a3a; color: #aa44ee; }
+.badge-legendary { background: #2a1800; color: #f0a030; }
+.badge-equipped  { background: #1a2a0a; color: #7ac040; }

@@ -3,6 +3,9 @@ import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
+const VALID_SLOTS = new Set(['weapon', 'armor', 'helm', 'gloves', 'boots', 'ring']);
+const VALID_TIERS = new Set(['common', 'uncommon', 'rare', 'epic', 'legendary']);
+
 // GET /api/players/me/inventory — returns all items for the authenticated player
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request);
@@ -12,7 +15,7 @@ export async function GET(request: NextRequest) {
   const auth = await getAuthPayload(request);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data: items, error } = await db
+  const { data: rows, error } = await db
     .from('player_items')
     .select('id, slot, tier, set_id, power, sell_value, name, icon_path, is_locked, is_equipped, enchantments, updated_at')
     .eq('player_id', auth.playerId)
@@ -23,24 +26,37 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch inventory' }, { status: 500 });
   }
 
-  return NextResponse.json({ items: items ?? [] });
+  // Return camelCase keys so GameItem.fromJson() works without remapping
+  const items = (rows ?? []).map((r: Record<string, unknown>) => ({
+    id: r.id,
+    name: r.name,
+    slot: r.slot,
+    tier: r.tier,
+    setId: r.set_id,
+    power: r.power,
+    sellValue: r.sell_value,
+    iconPath: r.icon_path,
+    isLocked: r.is_locked,
+    isEquipped: r.is_equipped,
+    enchantments: r.enchantments,
+    updatedAt: r.updated_at,
+  }));
+
+  return NextResponse.json({ items });
 }
 
 interface ItemPayload {
   id: string;
   slot: string;
-  tier: number;
+  tier: string;
   setId: string;
   power: number;
   sellValue: number;
   name: string;
   iconPath: string;
   isLocked: boolean;
-  isEquipped: boolean;
   enchantments: unknown[];
 }
-
-const VALID_SLOTS = ['weapon', 'armor', 'helm', 'gloves', 'boots', 'ring'];
 
 // PUT /api/players/me/inventory — bulk-replace all items for the authenticated player
 // Called by the app on pause/close to sync the full inventory to the server.
@@ -68,12 +84,12 @@ export async function PUT(request: NextRequest) {
   const rows: Record<string, unknown>[] = [];
   for (const raw of body.items as ItemPayload[]) {
     if (typeof raw.id !== 'string' || !raw.id) continue;
-    if (!VALID_SLOTS.includes(raw.slot)) continue;
+    if (!VALID_SLOTS.has(raw.slot)) continue;
     rows.push({
       id: raw.id,
       player_id: auth.playerId,
       slot: raw.slot,
-      tier: Math.floor(Number(raw.tier) || 0),
+      tier: VALID_TIERS.has(raw.tier) ? raw.tier : 'common',
       set_id: typeof raw.setId === 'string' ? raw.setId : 'ember',
       power: Math.floor(Number(raw.power) || 0),
       sell_value: Math.floor(Number(raw.sellValue) || 0),
@@ -86,7 +102,6 @@ export async function PUT(request: NextRequest) {
     });
   }
 
-  // Delete all existing items for this player, then insert the new set.
   const { error: deleteError } = await db
     .from('player_items')
     .delete()
