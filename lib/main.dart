@@ -32,7 +32,7 @@ enum SmartEquipMode { purePower, setSynergy }
 
 enum AchievementFilterMode { all, claimable, unclaimed, claimed }
 
-enum ShopPanelTab { all, daily, upgrades, resources, combat }
+enum ShopPanelTab { all, daily, upgrades, resources, combat, prestige }
 
 double _uiScale(BuildContext context, {double min = 0.78, double max = 1.28}) {
   final size = MediaQuery.sizeOf(context);
@@ -133,6 +133,7 @@ extension _AppColors on BuildContext {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  ApiService.validateConfig();
   await ApiService.instance.loadStoredCredentials();
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -147,13 +148,22 @@ class IdleForgeApp extends StatefulWidget {
   State<IdleForgeApp> createState() => _IdleForgeAppState();
 }
 
-class _IdleForgeAppState extends State<IdleForgeApp> {
+class _IdleForgeAppState extends State<IdleForgeApp>
+    with WidgetsBindingObserver {
   final GameController controller = GameController(localeCode: 'de');
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _boot();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      controller.syncInventoryToServer().ignore();
+    }
   }
 
   Future<void> _boot() async {
@@ -218,6 +228,7 @@ class _IdleForgeAppState extends State<IdleForgeApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     controller.dispose();
     super.dispose();
   }
@@ -432,12 +443,32 @@ class _TopBar extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (controller.equippedPrestigeTitle != null)
+                      Text(
+                        controller.equippedPrestigeTitle!,
+                        style: TextStyle(
+                          fontSize: _rs(context, dense ? 10 : 11, min: 9),
+                          color: const Color(0xFFD4A84B),
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
                     Text(
                       controller.playerName,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: _rs(context, dense ? 13 : 14, min: 11),
-                        color: context.textBright,
+                        color: controller.equippedNameColorHex != null
+                            ? Color(
+                                int.parse(
+                                  controller.equippedNameColorHex!.replaceFirst(
+                                    '#',
+                                    'FF',
+                                  ),
+                                  radix: 16,
+                                ),
+                              )
+                            : context.textBright,
                       ),
                     ),
                     SizedBox(height: _rs(context, 2, min: 1)),
@@ -5527,6 +5558,7 @@ class _BottomMenuState extends State<_BottomMenu> {
                                 ShopPanelTab.combat =>
                                   offer.kind == ShopOfferKind.healingFlask ||
                                       offer.kind == ShopOfferKind.berserkFlask,
+                                ShopPanelTab.prestige => false,
                               };
                             })
                             .toList(growable: false);
@@ -5621,34 +5653,223 @@ class _BottomMenuState extends State<_BottomMenu> {
                                     () => selectedTab = ShopPanelTab.combat,
                                   ),
                                 ),
+                                ChoiceChip(
+                                  label: const Text('Prestige'),
+                                  selected:
+                                      selectedTab == ShopPanelTab.prestige,
+                                  onSelected: (_) => setModalState(
+                                    () => selectedTab = ShopPanelTab.prestige,
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 10),
-                            const Text(
-                              'Angebote',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 8),
-                            if (offers.isEmpty)
+                            if (selectedTab == ShopPanelTab.prestige) ...[
                               Text(
-                                'Keine Angebote in dieser Kategorie.',
-                                style: TextStyle(color: context.textPrimary),
+                                'Prestige-Shop',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            if (!wide)
-                              ...offers.map((offer) => shopCard(offer: offer))
-                            else
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 0,
-                                children: offers
-                                    .map(
-                                      (offer) => shopCard(
-                                        offer: offer,
-                                        width: (constraints.maxWidth - 10) / 2,
+                              const SizedBox(height: 4),
+                              Text(
+                                'Scherben: ${controller.forgeShards}',
+                                style: TextStyle(
+                                  color: context.textSecondary,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ...GameController.prestigeShopItems.map(
+                                (item) {
+                                  final lang = controller.localeCode;
+                                  final name = lang == 'de'
+                                      ? item.nameDe
+                                      : item.nameEn;
+                                  final desc = lang == 'de'
+                                      ? item.descDe
+                                      : item.descEn;
+                                  final owned = controller
+                                      .isPrestigeItemPurchased(item.id);
+                                  final isTitle =
+                                      item.category ==
+                                      PrestigeShopCategory.cosmetic &&
+                                      item.bonusType ==
+                                          PrestigeShopBonusType.none &&
+                                      !item.cosmeticValue.startsWith('#');
+                                  final isColor =
+                                      item.category ==
+                                      PrestigeShopCategory.cosmetic &&
+                                      item.cosmeticValue.startsWith('#');
+                                  final equippedTitle =
+                                      controller.equippedPrestigeTitle;
+                                  final equippedColor =
+                                      controller.equippedNameColorHex;
+                                  final isEquipped = isTitle
+                                      ? equippedTitle == item.cosmeticValue
+                                      : isColor
+                                      ? equippedColor == item.cosmeticValue
+                                      : false;
+                                  final canAfford =
+                                      controller.forgeShards >= item.shardCost;
+
+                                  return Card(
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 42,
+                                            height: 42,
+                                            decoration: BoxDecoration(
+                                              color: item.category ==
+                                                      PrestigeShopCategory
+                                                          .cosmetic
+                                                  ? const Color(
+                                                      0xFFD4A84B,
+                                                    ).withAlpha(30)
+                                                  : const Color(
+                                                      0xFF7C4DFF,
+                                                    ).withAlpha(30),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            child: Icon(
+                                              item.category ==
+                                                      PrestigeShopCategory
+                                                          .cosmetic
+                                                  ? Icons.palette_outlined
+                                                  : Icons.bolt_outlined,
+                                              color: item.category ==
+                                                      PrestigeShopCategory
+                                                          .cosmetic
+                                                  ? const Color(0xFFD4A84B)
+                                                  : const Color(0xFF7C4DFF),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  name,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  desc,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: context.textSecondary,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  '${item.shardCost} Scherben',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: canAfford || owned
+                                                        ? const Color(
+                                                            0xFFD4A84B,
+                                                          )
+                                                        : context.textSecondary,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          if (owned && (isTitle || isColor))
+                                            FilledButton.tonal(
+                                              onPressed: isEquipped
+                                                  ? () => setModalState(() {
+                                                        if (isTitle) {
+                                                          controller
+                                                              .equipPrestigeTitle(
+                                                                null,
+                                                              );
+                                                        } else {
+                                                          controller
+                                                              .equipNameColor(
+                                                                null,
+                                                              );
+                                                        }
+                                                      })
+                                                  : () => setModalState(() {
+                                                        if (isTitle) {
+                                                          controller
+                                                              .equipPrestigeTitle(
+                                                                item.cosmeticValue,
+                                                              );
+                                                        } else {
+                                                          controller
+                                                              .equipNameColor(
+                                                                item.cosmeticValue,
+                                                              );
+                                                        }
+                                                      }),
+                                              child: Text(
+                                                isEquipped
+                                                    ? 'Aktiv'
+                                                    : 'Anlegen',
+                                              ),
+                                            )
+                                          else if (owned)
+                                            const Chip(label: Text('Besessen'))
+                                          else
+                                            FilledButton(
+                                              onPressed: canAfford
+                                                  ? () => setModalState(() {
+                                                        controller
+                                                            .buyPrestigeItem(
+                                                              item.id,
+                                                            );
+                                                      })
+                                                  : null,
+                                              child: const Text('Kaufen'),
+                                            ),
+                                        ],
                                       ),
-                                    )
-                                    .toList(growable: false),
+                                    ),
+                                  );
+                                },
                               ),
+                            ] else ...[
+                              const Text(
+                                'Angebote',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 8),
+                              if (offers.isEmpty)
+                                Text(
+                                  'Keine Angebote in dieser Kategorie.',
+                                  style: TextStyle(color: context.textPrimary),
+                                ),
+                              if (!wide)
+                                ...offers.map(
+                                  (offer) => shopCard(offer: offer),
+                                )
+                              else
+                                Wrap(
+                                  spacing: 10,
+                                  runSpacing: 0,
+                                  children: offers
+                                      .map(
+                                        (offer) => shopCard(
+                                          offer: offer,
+                                          width:
+                                              (constraints.maxWidth - 10) / 2,
+                                        ),
+                                      )
+                                      .toList(growable: false),
+                                ),
+                            ],
                           ],
                         );
                       },
