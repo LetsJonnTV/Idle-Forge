@@ -1,6 +1,7 @@
 substitutions:
   _SERVICE_NAME: idle-forge-api
-  _REGION: europe-west3
+  _REGION: europe-west1
+  _DB_REGION: europe-west3
   _INGRESS: internal-and-cloud-load-balancing
 
 steps:
@@ -33,7 +34,7 @@ steps:
       - '--ingress=${_INGRESS}'
       - '--port=8080'
       - '--image=gcr.io/$PROJECT_ID/idle-forge-backend:$COMMIT_SHA'
-      - '--set-env-vars=DEBUG=false,CLOUD_SQL_CONNECTION_NAME=$PROJECT_ID:${_REGION}:idle-forge-pg'
+      - '--set-env-vars=DEBUG=false,CLOUD_SQL_CONNECTION_NAME=$PROJECT_ID:${_DB_REGION}:idle-forge-pg'
       - '--set-secrets=JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,DATABASE_URL=database-url:latest'
 
 images:
