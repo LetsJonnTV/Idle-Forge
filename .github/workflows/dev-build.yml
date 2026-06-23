@@ -60,6 +60,7 @@ jobs:
       GCP_REGION: ${{ vars.GCP_REGION }}
       GCP_ARTIFACT_REPO: ${{ vars.GCP_ARTIFACT_REPO }}
       GCP_DEV_SERVICE: ${{ vars.GCP_DEV_SERVICE }}
+      GCP_CLOUD_SQL_INSTANCE: ${{ vars.GCP_CLOUD_SQL_INSTANCE }}
     defaults:
       run:
         working-directory: backend
@@ -74,6 +75,7 @@ jobs:
           echo "region=${GCP_REGION:-europe-west3}" >> "$GITHUB_OUTPUT"
           echo "repo=${GCP_ARTIFACT_REPO:-idle-forge}" >> "$GITHUB_OUTPUT"
           echo "service=${GCP_DEV_SERVICE:-idle-forge-api-dev}" >> "$GITHUB_OUTPUT"
+          echo "sql_instance=${GCP_CLOUD_SQL_INSTANCE:-idle-forge-pg}" >> "$GITHUB_OUTPUT"
 
       - name: Check GCP auth secrets
         id: gcp-config
@@ -122,7 +124,7 @@ jobs:
             --allow-unauthenticated \
             --port 8080 \
             --image "${{ steps.image.outputs.image }}" \
-            --set-env-vars "DEBUG=false" \
+            --set-env-vars "DEBUG=false,CLOUD_SQL_CONNECTION_NAME=${{ steps.defaults.outputs.project }}:${{ steps.defaults.outputs.region }}:${{ steps.defaults.outputs.sql_instance }}" \
             --set-secrets "JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,DATABASE_URL=database-url:latest"
 
   backend-deploy-dev-skipped:

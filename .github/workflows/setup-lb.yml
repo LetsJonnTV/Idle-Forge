@@ -1,0 +1,144 @@
+name: Setup Load Balancer (one-time)
+
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: 'API domain (e.g. api.idle-forge.jonn2008.me)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  setup-lb:
+    name: Create Global HTTPS Load Balancer
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      GCP_PROD_SERVICE: ${{ vars.GCP_PROD_SERVICE }}
+
+    steps:
+      - name: Resolve defaults
+        id: defaults
+        run: |
+          echo "project=${GCP_PROJECT_ID:-astral-theory-449511-c1}" >> "$GITHUB_OUTPUT"
+          echo "region=${GCP_REGION:-europe-west3}" >> "$GITHUB_OUTPUT"
+          echo "service=${GCP_PROD_SERVICE:-idle-forge-api}" >> "$GITHUB_OUTPUT"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOYER_SA }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Reserve global static IP
+        id: ip
+        run: |
+          gcloud compute addresses create idle-forge-ip \
+            --global \
+            --project "${{ steps.defaults.outputs.project }}" 2>/dev/null || true
+
+          IP=$(gcloud compute addresses describe idle-forge-ip \
+            --global \
+            --project "${{ steps.defaults.outputs.project }}" \
+            --format "value(address)")
+          echo "ip=$IP" >> "$GITHUB_OUTPUT"
+          echo "Static IP: $IP"
+
+      - name: Create Serverless NEG
+        run: |
+          gcloud compute network-endpoint-groups create idle-forge-neg \
+            --region "${{ steps.defaults.outputs.region }}" \
+            --network-endpoint-type serverless \
+            --cloud-run-service "${{ steps.defaults.outputs.service }}" \
+            --project "${{ steps.defaults.outputs.project }}" 2>/dev/null || true
+
+      - name: Create Backend Service and attach NEG
+        run: |
+          gcloud compute backend-services create idle-forge-backend \
+            --global \
+            --project "${{ steps.defaults.outputs.project }}" 2>/dev/null || true
+
+          gcloud compute backend-services add-backend idle-forge-backend \
+            --global \
+            --network-endpoint-group idle-forge-neg \
+            --network-endpoint-group-region "${{ steps.defaults.outputs.region }}" \
+            --project "${{ steps.defaults.outputs.project }}" 2>/dev/null || true
+
+      - name: Create URL Map
+        run: |
+          gcloud compute url-maps create idle-forge-url-map \
+            --default-service idle-forge-backend \
+            --project "${{ steps.defaults.outputs.project }}" 2>/dev/null || true
+
+      - name: Create Managed SSL Certificate
+        run: |
+          gcloud compute ssl-certificates create idle-forge-cert \
+            --domains "${{ inputs.domain }}" \
+            --global \
+            --project "${{ steps.defaults.outputs.project }}" 2>/dev/null || true
+
+      - name: Create HTTPS Target Proxy
+        run: |
+          gcloud compute target-https-proxies create idle-forge-https-proxy \
+            --ssl-certificates idle-forge-cert \
+            --url-map idle-forge-url-map \
+            --project "${{ steps.defaults.outputs.project }}" 2>/dev/null || true
+
+      - name: Create HTTPS Forwarding Rule
+        run: |
+          gcloud compute forwarding-rules create idle-forge-https-rule \
+            --global \
+            --target-https-proxy idle-forge-https-proxy \
+            --address idle-forge-ip \
+            --ports 443 \
+            --project "${{ steps.defaults.outputs.project }}" 2>/dev/null || true
+
+      - name: Create HTTP to HTTPS Redirect
+        run: |
+          cat > /tmp/http-redirect.yaml << 'EOF'
+          name: idle-forge-http-redirect
+          defaultUrlRedirect:
+            redirectResponseCode: MOVED_PERMANENTLY_DEFAULT
+            httpsRedirect: true
+          EOF
+
+          gcloud compute url-maps import idle-forge-http-redirect \
+            --global \
+            --source /tmp/http-redirect.yaml \
+            --project "${{ steps.defaults.outputs.project }}" \
+            --quiet 2>/dev/null || true
+
+          gcloud compute target-http-proxies create idle-forge-http-proxy \
+            --url-map idle-forge-http-redirect \
+            --project "${{ steps.defaults.outputs.project }}" 2>/dev/null || true
+
+          gcloud compute forwarding-rules create idle-forge-http-rule \
+            --global \
+            --target-http-proxy idle-forge-http-proxy \
+            --address idle-forge-ip \
+            --ports 80 \
+            --project "${{ steps.defaults.outputs.project }}" 2>/dev/null || true
+
+      - name: Print DNS instructions
+        run: |
+          echo "=========================================="
+          echo "  Load Balancer setup complete!"
+          echo "=========================================="
+          echo ""
+          echo "  Add this DNS A record at Namecheap:"
+          echo ""
+          echo "    Host:  ${{ inputs.domain }}"
+          echo "    Type:  A"
+          echo "    Value: ${{ steps.ip.outputs.ip }}"
+          echo ""
+          echo "  After DNS propagation the SSL certificate"
+          echo "  provisions automatically (up to 15 min)."
+          echo "=========================================="
