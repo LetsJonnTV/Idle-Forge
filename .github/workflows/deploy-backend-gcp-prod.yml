@@ -22,6 +22,7 @@ jobs:
       GCP_REGION: ${{ vars.GCP_REGION }}
       GCP_ARTIFACT_REPO: ${{ vars.GCP_ARTIFACT_REPO }}
       GCP_PROD_SERVICE: ${{ vars.GCP_PROD_SERVICE }}
+      GCP_CLOUD_SQL_INSTANCE: ${{ vars.GCP_CLOUD_SQL_INSTANCE }}
 
     steps:
       - name: Checkout
@@ -34,6 +35,7 @@ jobs:
           echo "region=${GCP_REGION:-europe-west3}" >> "$GITHUB_OUTPUT"
           echo "repo=${GCP_ARTIFACT_REPO:-idle-forge}" >> "$GITHUB_OUTPUT"
           echo "service=${GCP_PROD_SERVICE:-idle-forge-api}" >> "$GITHUB_OUTPUT"
+          echo "sql_instance=${GCP_CLOUD_SQL_INSTANCE:-idle-forge-pg}" >> "$GITHUB_OUTPUT"
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -63,7 +65,8 @@ jobs:
             --region "${{ steps.defaults.outputs.region }}" \
             --platform managed \
             --allow-unauthenticated \
+            --ingress internal-and-cloud-load-balancing \
             --port 8080 \
             --image "${{ steps.image.outputs.image }}" \
-            --set-env-vars "DEBUG=false" \
+            --set-env-vars "DEBUG=false,CLOUD_SQL_CONNECTION_NAME=${{ steps.defaults.outputs.project }}:${{ steps.defaults.outputs.region }}:${{ steps.defaults.outputs.sql_instance }}" \
             --set-secrets "JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,DATABASE_URL=database-url:latest"
