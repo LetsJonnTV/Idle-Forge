@@ -330,13 +330,17 @@ class ApiService {
 
   /// Login with Google account. Returns true on success.
   /// Shows Google sign-in dialog to user.
-  static const _googleWebClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+  static const _googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+  );
 
   Future<bool> loginWithGoogle() async {
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn(
         scopes: <String>['email'],
-        serverClientId: _googleWebClientId.isNotEmpty ? _googleWebClientId : null,
+        serverClientId: _googleWebClientId.isNotEmpty
+            ? _googleWebClientId
+            : null,
       );
 
       final account = await googleSignIn.signIn();
