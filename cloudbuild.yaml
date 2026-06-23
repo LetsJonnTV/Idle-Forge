@@ -1,0 +1,43 @@
+substitutions:
+  _SERVICE_NAME: idle-forge-api
+  _REGION: europe-west3
+  _INGRESS: internal-and-cloud-load-balancing
+
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    id: Build
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/idle-forge/idle-forge-backend:$COMMIT_SHA'
+      - './backend'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: Push
+    waitFor: ['Build']
+    args:
+      - 'push'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/idle-forge/idle-forge-backend:$COMMIT_SHA'
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: Deploy
+    waitFor: ['Push']
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE_NAME}'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--ingress=${_INGRESS}'
+      - '--port=8080'
+      - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/idle-forge/idle-forge-backend:$COMMIT_SHA'
+      - '--set-env-vars=DEBUG=false,CLOUD_SQL_CONNECTION_NAME=$PROJECT_ID:${_REGION}:idle-forge-pg'
+      - '--set-secrets=JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,DATABASE_URL=database-url:latest'
+
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/idle-forge/idle-forge-backend:$COMMIT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
