@@ -1,9 +1,11 @@
 import 'dart:math' as math;
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'firebase_options.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_driver/driver_extension.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -18,6 +20,7 @@ import 'screens/friends_screen.dart';
 import 'screens/leaderboard_screen.dart';
 import 'screens/pvp_screen.dart';
 import 'services/api_service.dart';
+import 'services/remote_config_service.dart';
 import 'services/update_checker.dart';
 import 'services/update_installer.dart';
 
@@ -33,7 +36,7 @@ enum SmartEquipMode { purePower, setSynergy }
 
 enum AchievementFilterMode { all, claimable, unclaimed, claimed }
 
-enum ShopPanelTab { all, daily, upgrades, resources, combat }
+enum ShopPanelTab { all, daily, upgrades, resources, combat, prestige }
 
 double _uiScale(BuildContext context, {double min = 0.78, double max = 1.28}) {
   final size = MediaQuery.sizeOf(context);
@@ -133,15 +136,23 @@ extension _AppColors on BuildContext {
 }
 
 Future<void> main() async {
-  // Enable Flutter Driver extension for integration tests.
-  enableFlutterDriverExtension();
-
   WidgetsFlutterBinding.ensureInitialized();
-  // TODO: Supabase initialisieren wenn SUPABASE_URL und SUPABASE_ANON_KEY als --dart-define übergeben werden
-  // await Supabase.initialize(
-  //   url: String.fromEnvironment('SUPABASE_URL', defaultValue: ''),
-  //   anonKey: String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: ''),
-  // );
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      FlutterError.onError =
+          FirebaseCrashlytics.instance.recordFlutterFatalError;
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+    } catch (e) {
+      debugPrint('[Firebase] init failed: $e');
+    }
+  }
+  ApiService.validateConfig();
   await ApiService.instance.loadStoredCredentials();
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -156,16 +167,27 @@ class IdleForgeApp extends StatefulWidget {
   State<IdleForgeApp> createState() => _IdleForgeAppState();
 }
 
-class _IdleForgeAppState extends State<IdleForgeApp> {
+class _IdleForgeAppState extends State<IdleForgeApp>
+    with WidgetsBindingObserver {
   final GameController controller = GameController(localeCode: 'de');
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _boot();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      controller.syncInventoryToServer().ignore();
+    }
+  }
+
   Future<void> _boot() async {
+    await RemoteConfigService.instance.init();
+    controller.tuning = RemoteConfigService.instance.tuning;
     await controller.initialize();
     if (!mounted) {
       return;
@@ -227,6 +249,7 @@ class _IdleForgeAppState extends State<IdleForgeApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     controller.dispose();
     super.dispose();
   }
@@ -441,12 +464,32 @@ class _TopBar extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (controller.equippedPrestigeTitle != null)
+                      Text(
+                        controller.equippedPrestigeTitle!,
+                        style: TextStyle(
+                          fontSize: _rs(context, dense ? 10 : 11, min: 9),
+                          color: const Color(0xFFD4A84B),
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
                     Text(
                       controller.playerName,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: _rs(context, dense ? 13 : 14, min: 11),
-                        color: context.textBright,
+                        color: controller.equippedNameColorHex != null
+                            ? Color(
+                                int.parse(
+                                  controller.equippedNameColorHex!.replaceFirst(
+                                    '#',
+                                    'FF',
+                                  ),
+                                  radix: 16,
+                                ),
+                              )
+                            : context.textBright,
                       ),
                     ),
                     SizedBox(height: _rs(context, 2, min: 1)),
@@ -3216,19 +3259,31 @@ class _BottomMenuState extends State<_BottomMenu> {
           child: SizedBox(
             height: _adaptiveSheetHeight(
               context,
-              factor: 0.6,
-              min: 340,
-              max: 780,
+              factor: 0.82,
+              min: 480,
+              max: 900,
             ),
             child: StatefulBuilder(
               builder: (context, setModalState) {
                 final quests = controller.questBoard;
+                final dailies = controller.dailyChallenges;
+
+                final now = DateTime.now();
+                final midnight = DateTime(now.year, now.month, now.day + 1);
+                final hoursLeft = midnight.difference(now).inHours;
+                final minutesLeft = midnight.difference(now).inMinutes % 60;
+                final resetLabel =
+                    'Reset in ${hoursLeft}h ${minutesLeft.toString().padLeft(2, '0')}m';
 
                 return LayoutBuilder(
                   builder: (context, constraints) {
                     final wide = constraints.maxWidth >= 900;
 
-                    Widget questCard(QuestStateView quest, {double? width}) {
+                    Widget questCard(
+                      QuestStateView quest, {
+                      double? width,
+                      required VoidCallback? onClaim,
+                    }) {
                       final progressRatio = (quest.progress / quest.target)
                           .clamp(0.0, 1.0);
                       final rewardText =
@@ -3284,12 +3339,7 @@ class _BottomMenuState extends State<_BottomMenu> {
                               )
                             else
                               FilledButton.tonal(
-                                onPressed: quest.canClaim
-                                    ? () {
-                                        controller.claimQuest(quest.type);
-                                        setModalState(() {});
-                                      }
-                                    : null,
+                                onPressed: quest.canClaim ? onClaim : null,
                                 child: const Text('Belohnung holen'),
                               ),
                           ],
@@ -3300,6 +3350,62 @@ class _BottomMenuState extends State<_BottomMenu> {
                     return ListView(
                       padding: const EdgeInsets.all(12),
                       children: [
+                        // ── Tägliche Herausforderungen ──────────────────
+                        Row(
+                          children: [
+                            const Text(
+                              'Tägliche Herausforderungen',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              resetLabel,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: context.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Täglich zurücksetzende Aufgaben für Bonusbelohnungen.',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        const SizedBox(height: 10),
+                        if (!wide)
+                          ...dailies.map(
+                            (c) => questCard(
+                              c,
+                              onClaim: () {
+                                controller.claimDailyChallenge(c.type);
+                                setModalState(() {});
+                              },
+                            ),
+                          )
+                        else
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 0,
+                            children: dailies
+                                .map(
+                                  (c) => questCard(
+                                    c,
+                                    width: (constraints.maxWidth - 10) / 2,
+                                    onClaim: () {
+                                      controller.claimDailyChallenge(c.type);
+                                      setModalState(() {});
+                                    },
+                                  ),
+                                )
+                                .toList(growable: false),
+                          ),
+
+                        // ── Quest Board ─────────────────────────────────
+                        const Divider(height: 24),
                         const Text(
                           'Quest Board',
                           style: TextStyle(
@@ -3329,8 +3435,16 @@ class _BottomMenuState extends State<_BottomMenu> {
                         ),
                         const SizedBox(height: 10),
                         if (!wide)
-                          ...quests.map((quest) => questCard(quest))
-                        else ...[
+                          ...quests.map(
+                            (quest) => questCard(
+                              quest,
+                              onClaim: () {
+                                controller.claimQuest(quest.type);
+                                setModalState(() {});
+                              },
+                            ),
+                          )
+                        else
                           Wrap(
                             spacing: 10,
                             runSpacing: 0,
@@ -3339,11 +3453,14 @@ class _BottomMenuState extends State<_BottomMenu> {
                                   (quest) => questCard(
                                     quest,
                                     width: (constraints.maxWidth - 10) / 2,
+                                    onClaim: () {
+                                      controller.claimQuest(quest.type);
+                                      setModalState(() {});
+                                    },
                                   ),
                                 )
                                 .toList(growable: false),
                           ),
-                        ],
                       ],
                     );
                   },
@@ -5462,6 +5579,7 @@ class _BottomMenuState extends State<_BottomMenu> {
                                 ShopPanelTab.combat =>
                                   offer.kind == ShopOfferKind.healingFlask ||
                                       offer.kind == ShopOfferKind.berserkFlask,
+                                ShopPanelTab.prestige => false,
                               };
                             })
                             .toList(growable: false);
@@ -5556,34 +5674,215 @@ class _BottomMenuState extends State<_BottomMenu> {
                                     () => selectedTab = ShopPanelTab.combat,
                                   ),
                                 ),
+                                ChoiceChip(
+                                  label: const Text('Prestige'),
+                                  selected:
+                                      selectedTab == ShopPanelTab.prestige,
+                                  onSelected: (_) => setModalState(
+                                    () => selectedTab = ShopPanelTab.prestige,
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 10),
-                            const Text(
-                              'Angebote',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 8),
-                            if (offers.isEmpty)
+                            if (selectedTab == ShopPanelTab.prestige) ...[
                               Text(
-                                'Keine Angebote in dieser Kategorie.',
-                                style: TextStyle(color: context.textPrimary),
+                                'Prestige-Shop',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            if (!wide)
-                              ...offers.map((offer) => shopCard(offer: offer))
-                            else
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 0,
-                                children: offers
-                                    .map(
-                                      (offer) => shopCard(
-                                        offer: offer,
-                                        width: (constraints.maxWidth - 10) / 2,
-                                      ),
-                                    )
-                                    .toList(growable: false),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Scherben: ${controller.forgeShards}',
+                                style: TextStyle(
+                                  color: context.textSecondary,
+                                  fontSize: 13,
+                                ),
                               ),
+                              const SizedBox(height: 8),
+                              ...GameController.prestigeShopItems.map((item) {
+                                final lang = controller.localeCode;
+                                final name = lang == 'de'
+                                    ? item.nameDe
+                                    : item.nameEn;
+                                final desc = lang == 'de'
+                                    ? item.descDe
+                                    : item.descEn;
+                                final owned = controller
+                                    .isPrestigeItemPurchased(item.id);
+                                final isTitle =
+                                    item.category ==
+                                        PrestigeShopCategory.cosmetic &&
+                                    item.bonusType ==
+                                        PrestigeShopBonusType.none &&
+                                    !item.cosmeticValue.startsWith('#');
+                                final isColor =
+                                    item.category ==
+                                        PrestigeShopCategory.cosmetic &&
+                                    item.cosmeticValue.startsWith('#');
+                                final equippedTitle =
+                                    controller.equippedPrestigeTitle;
+                                final equippedColor =
+                                    controller.equippedNameColorHex;
+                                final isEquipped = isTitle
+                                    ? equippedTitle == item.cosmeticValue
+                                    : isColor
+                                    ? equippedColor == item.cosmeticValue
+                                    : false;
+                                final canAfford =
+                                    controller.forgeShards >= item.shardCost;
+
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 42,
+                                          height: 42,
+                                          decoration: BoxDecoration(
+                                            color:
+                                                item.category ==
+                                                    PrestigeShopCategory
+                                                        .cosmetic
+                                                ? const Color(
+                                                    0xFFD4A84B,
+                                                  ).withAlpha(30)
+                                                : const Color(
+                                                    0xFF7C4DFF,
+                                                  ).withAlpha(30),
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            item.category ==
+                                                    PrestigeShopCategory
+                                                        .cosmetic
+                                                ? Icons.palette_outlined
+                                                : Icons.bolt_outlined,
+                                            color:
+                                                item.category ==
+                                                    PrestigeShopCategory
+                                                        .cosmetic
+                                                ? const Color(0xFFD4A84B)
+                                                : const Color(0xFF7C4DFF),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                name,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                desc,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: context.textSecondary,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                '${item.shardCost} Scherben',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: canAfford || owned
+                                                      ? const Color(0xFFD4A84B)
+                                                      : context.textSecondary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        if (owned && (isTitle || isColor))
+                                          FilledButton.tonal(
+                                            onPressed: isEquipped
+                                                ? () => setModalState(() {
+                                                    if (isTitle) {
+                                                      controller
+                                                          .equipPrestigeTitle(
+                                                            null,
+                                                          );
+                                                    } else {
+                                                      controller.equipNameColor(
+                                                        null,
+                                                      );
+                                                    }
+                                                  })
+                                                : () => setModalState(() {
+                                                    if (isTitle) {
+                                                      controller
+                                                          .equipPrestigeTitle(
+                                                            item.cosmeticValue,
+                                                          );
+                                                    } else {
+                                                      controller.equipNameColor(
+                                                        item.cosmeticValue,
+                                                      );
+                                                    }
+                                                  }),
+                                            child: Text(
+                                              isEquipped ? 'Aktiv' : 'Anlegen',
+                                            ),
+                                          )
+                                        else if (owned)
+                                          const Chip(label: Text('Besessen'))
+                                        else
+                                          FilledButton(
+                                            onPressed: canAfford
+                                                ? () => setModalState(() {
+                                                    controller.buyPrestigeItem(
+                                                      item.id,
+                                                    );
+                                                  })
+                                                : null,
+                                            child: const Text('Kaufen'),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ] else ...[
+                              const Text(
+                                'Angebote',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 8),
+                              if (offers.isEmpty)
+                                Text(
+                                  'Keine Angebote in dieser Kategorie.',
+                                  style: TextStyle(color: context.textPrimary),
+                                ),
+                              if (!wide)
+                                ...offers.map((offer) => shopCard(offer: offer))
+                              else
+                                Wrap(
+                                  spacing: 10,
+                                  runSpacing: 0,
+                                  children: offers
+                                      .map(
+                                        (offer) => shopCard(
+                                          offer: offer,
+                                          width:
+                                              (constraints.maxWidth - 10) / 2,
+                                        ),
+                                      )
+                                      .toList(growable: false),
+                                ),
+                            ],
                           ],
                         );
                       },
@@ -6563,9 +6862,20 @@ class _UpdateDialogState extends State<_UpdateDialog> {
 
     final success = await UpdateInstaller.install(filePath);
     if (!success && mounted) {
+      final installError = UpdateInstaller.lastError;
+      var message = 'Installation fehlgeschlagen.';
+      if (installError != null &&
+          installError.contains('UNKNOWN_SOURCES_PERMISSION_REQUIRED')) {
+        message =
+            'Bitte erlaube "Unbekannte Apps installieren" fuer Idle Forge und versuche es erneut.';
+      } else if (installError != null &&
+          installError.contains('NO_PACKAGE_INSTALLER_AVAILABLE')) {
+        message =
+            'Kein Paket-Installer verfuegbar. Bitte lade das APK manuell aus dem Release herunter.';
+      }
       setState(() {
         _downloading = false;
-        _error = 'Installation fehlgeschlagen.';
+        _error = message;
       });
     }
   }

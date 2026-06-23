@@ -1,5 +1,5 @@
-import { readFileSync } from 'fs';
-import { join, resolve } from 'path';
+import { readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { Client } from 'pg';
 
 let migrated = false;
@@ -13,12 +13,12 @@ export async function runMigration(): Promise<void> {
     return;
   }
 
-  // Try multiple paths to find schema.sql (handles local dev, Next.js build output, and Vercel serverless)
+  // Try multiple paths to find schema.sql (handles local dev and Next.js build output)
   const candidates = [
-    join(process.cwd(), 'supabase', 'schema.sql'),
-    join(process.cwd(), 'backend', 'supabase', 'schema.sql'),
-    resolve(__dirname, '../../supabase/schema.sql'),
-    resolve(__dirname, '../../../supabase/schema.sql'),
+    join(process.cwd(), 'database', 'schema.sql'),
+    join(process.cwd(), 'backend', 'database', 'schema.sql'),
+    resolve(__dirname, '../../database/schema.sql'),
+    resolve(__dirname, '../../../database/schema.sql'),
   ];
 
   let sql: string | null = null;

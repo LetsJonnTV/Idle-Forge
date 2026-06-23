@@ -43,6 +43,7 @@ app.*.map.json
 /android/app/release
 android/local.properties
 android/build/
+android/app/google-services.json
 
 # Angular build output — deployed via GitHub Actions, not committed
 # Keep only the CNAME file for custom domain

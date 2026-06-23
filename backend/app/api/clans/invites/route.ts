@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const auth = await getAuthPayload(request);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('clan_invites')
     .select(`
       id,
@@ -56,7 +56,7 @@ export async function PUT(request: NextRequest) {
   }
 
   // Fetch the invite
-  const { data: invite } = await supabase
+  const { data: invite } = await db
     .from('clan_invites')
     .select('id, clan_id, invitee_id, status')
     .eq('id', inviteId)
@@ -74,20 +74,20 @@ export async function PUT(request: NextRequest) {
   const newStatus = accept ? 'accepted' : 'declined';
 
   // Update invite status
-  await supabase
+  await db
     .from('clan_invites')
     .update({ status: newStatus })
     .eq('id', inviteId);
 
   if (accept) {
     // Add player to clan
-    await supabase.from('clan_members').insert({
+    await db.from('clan_members').insert({
       clan_id: invite.clan_id,
       player_id: auth.playerId,
     });
 
     // Update player's clan_id
-    await supabase
+    await db
       .from('players')
       .update({ clan_id: invite.clan_id })
       .eq('id', auth.playerId);

@@ -8,8 +8,11 @@ import 'package:path_provider/path_provider.dart';
 /// Handles downloading and installing updates on Android and Windows.
 class UpdateInstaller {
   static const _androidChannel = MethodChannel(
-    'com.example.idle_forge/install',
+    'com.letsjonntv.idle_forge/install',
   );
+  static String? _lastError;
+
+  static String? get lastError => _lastError;
 
   /// Downloads the update file and reports progress via [onProgress] (0.0–1.0).
   /// Returns the path to the downloaded file, or null on failure.
@@ -18,6 +21,7 @@ class UpdateInstaller {
     required void Function(double progress) onProgress,
   }) async {
     try {
+      _lastError = null;
       final dir = await getTemporaryDirectory();
       final fileName = defaultTargetPlatform == TargetPlatform.android
           ? 'idle_forge_update.apk'
@@ -47,6 +51,7 @@ class UpdateInstaller {
       onProgress(1.0);
       return filePath;
     } catch (e) {
+      _lastError = e.toString();
       debugPrint('Update download failed: $e');
       return null;
     }
@@ -64,11 +69,17 @@ class UpdateInstaller {
 
   static Future<bool> _installAndroid(String apkPath) async {
     try {
+      _lastError = null;
       final result = await _androidChannel.invokeMethod<bool>('installApk', {
         'path': apkPath,
       });
       return result ?? false;
+    } on PlatformException catch (e) {
+      _lastError = e.message ?? e.code;
+      debugPrint('APK install failed: ${e.code} ${e.message}');
+      return false;
     } catch (e) {
+      _lastError = e.toString();
       debugPrint('APK install failed: $e');
       return false;
     }

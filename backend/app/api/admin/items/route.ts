@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { requireAdmin } from '@/lib/adminAuth';
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   const search = url.searchParams.get('q')?.trim() ?? '';
   const slot = url.searchParams.get('slot')?.trim() ?? '';
 
-  let query = supabase
+  let query = db
     .from('item_blueprints')
     .select('id, slot, name, base_power, icon_path, is_active, created_at')
     .order('slot')
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `slot must be one of: ${validSlots.join(', ')}` }, { status: 400 });
   }
 
-  const { data: item, error } = await supabase
+  const { data: item, error } = await db
     .from('item_blueprints')
     .insert({ id, slot, name, base_power, icon_path: icon_path ?? null })
     .select()

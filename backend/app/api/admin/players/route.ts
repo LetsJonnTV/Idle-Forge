@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { requireAdmin } from '@/lib/adminAuth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get('q')?.trim().toLowerCase();
 
-  let query = supabase
+  let query = db
     .from('players')
     .select('id, username, is_admin, is_blocked, total_strength, prestige_level, chapter, created_at')
     .order('created_at', { ascending: false });

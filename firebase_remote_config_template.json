@@ -1,0 +1,47 @@
+{
+  "parameters": {
+    "gold_gain_multiplier": {
+      "defaultValue": { "value": "1.0" },
+      "description": "Multiplier for all gold gained from kills. 1.0 = normal, 2.0 = double gold.",
+      "valueType": "NUMBER"
+    },
+    "offline_reward_multiplier": {
+      "defaultValue": { "value": "1.0" },
+      "description": "Multiplier for offline rewards. 1.0 = normal, 1.5 = +50% offline income.",
+      "valueType": "NUMBER"
+    },
+    "player_damage_multiplier": {
+      "defaultValue": { "value": "1.0" },
+      "description": "Multiplier for player damage output. 1.0 = normal, 0.8 = nerf, 1.2 = buff.",
+      "valueType": "NUMBER"
+    },
+    "enemy_hp_multiplier": {
+      "defaultValue": { "value": "1.0" },
+      "description": "Multiplier for enemy HP. 1.0 = normal, 0.8 = easier, 1.3 = harder.",
+      "valueType": "NUMBER"
+    },
+    "auto_attack_interval_sec": {
+      "defaultValue": { "value": "1.0" },
+      "description": "Seconds between auto attacks. Lower = faster. Min ~0.2.",
+      "valueType": "NUMBER"
+    },
+    "kills_per_stage": {
+      "defaultValue": { "value": "10" },
+      "description": "Number of kills required to advance to the next stage.",
+      "valueType": "NUMBER"
+    },
+    "forge_extra_bonus": {
+      "defaultValue": { "value": "0.0" },
+      "description": "Extra forge bonus added on top of normal forge output. 0.0 = none.",
+      "valueType": "NUMBER"
+    },
+    "event_gold_bonus": {
+      "defaultValue": { "value": "0.0" },
+      "description": "Temporary event gold bonus added to gold_gain_multiplier. Set to 0.5 for a weekend +50% gold event, reset to 0.0 afterwards.",
+      "valueType": "NUMBER"
+    }
+  },
+  "version": {
+    "versionNumber": "1"
+  }
+}

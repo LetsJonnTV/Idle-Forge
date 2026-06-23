@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 // GET /api/leaderboard?scope=weekly
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
   // For weekly: filter by players created/active in the last 7 days.
   // We use created_at as a proxy for "active this week" since we don't track login time yet.
-  let query = supabase
+  let query = db
     .from('players')
     .select('id, username, total_strength, prestige_level, chapter')
     .order('total_strength', { ascending: false })
@@ -31,7 +31,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch leaderboard' }, { status: 500 });
   }
 
-  const entries = (data ?? []).map((p, idx) => ({
+  type LeaderboardRow = {
+    id: string;
+    username: string;
+    total_strength: number;
+    prestige_level: number;
+    chapter: number;
+  };
+
+  const rows = Array.isArray(data) ? (data as LeaderboardRow[]) : [];
+  const entries = rows.map((p: LeaderboardRow, idx: number) => ({
     rank: idx + 1,
     id: p.id,
     username: p.username,

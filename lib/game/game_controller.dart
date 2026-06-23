@@ -193,6 +193,14 @@ class GameController extends ChangeNotifier {
   bool questCraftsClaimed = false;
   bool questBossClaimed = false;
 
+  String _dailyChallengesDateKey = '';
+  int dailyKillsProgress = 0;
+  int dailyCraftsProgress = 0;
+  int dailyBossProgress = 0;
+  bool dailyKillsClaimed = false;
+  bool dailyCraftsClaimed = false;
+  bool dailyBossClaimed = false;
+
   PetState? activePet;
   final List<Rune> runeInventory = [];
 
@@ -253,6 +261,10 @@ class GameController extends ChangeNotifier {
   final Set<String> discoveredRecipes = {};
   final Set<String> unlockedAscensionNodes = {};
   int ascensionPoints = 0;
+
+  final Set<String> purchasedPrestigeItems = {};
+  String? equippedPrestigeTitle;
+  String? equippedNameColorHex;
 
   EnemyState enemy = const EnemyState(
     name: 'Schleim',
@@ -597,6 +609,116 @@ class GameController extends ChangeNotifier {
       bonusValue: 0.2,
       requiredNodeId: 'rogue_2_gold',
       tier: 3,
+    ),
+  ];
+
+  static const List<PrestigeShopItem> prestigeShopItems = [
+    // ─── Kosmetische Titel ────────────────────────────────────────────── //
+    PrestigeShopItem(
+      id: 'title_veteran',
+      category: PrestigeShopCategory.cosmetic,
+      nameDe: 'Veteran',
+      nameEn: 'Veteran',
+      descDe: 'Zeigt "[Veteran]" vor deinem Namen.',
+      descEn: 'Displays "[Veteran]" before your name.',
+      shardCost: 10,
+      cosmeticValue: 'Veteran',
+    ),
+    PrestigeShopItem(
+      id: 'title_master',
+      category: PrestigeShopCategory.cosmetic,
+      nameDe: 'Meister',
+      nameEn: 'Master',
+      descDe: 'Zeigt "[Meister]" vor deinem Namen.',
+      descEn: 'Displays "[Master]" before your name.',
+      shardCost: 20,
+      cosmeticValue: 'Meister',
+    ),
+    PrestigeShopItem(
+      id: 'title_legend',
+      category: PrestigeShopCategory.cosmetic,
+      nameDe: 'Legende',
+      nameEn: 'Legend',
+      descDe: 'Zeigt "[Legende]" vor deinem Namen.',
+      descEn: 'Displays "[Legend]" before your name.',
+      shardCost: 40,
+      cosmeticValue: 'Legende',
+    ),
+    // ─── Namensfarben ─────────────────────────────────────────────────── //
+    PrestigeShopItem(
+      id: 'color_gold',
+      category: PrestigeShopCategory.cosmetic,
+      nameDe: 'Goldener Name',
+      nameEn: 'Golden Name',
+      descDe: 'Dein Name leuchtet in Gold.',
+      descEn: 'Your name glows in gold.',
+      shardCost: 15,
+      cosmeticValue: '#D4A84B',
+    ),
+    PrestigeShopItem(
+      id: 'color_crimson',
+      category: PrestigeShopCategory.cosmetic,
+      nameDe: 'Scharlachroter Name',
+      nameEn: 'Crimson Name',
+      descDe: 'Dein Name erstrahlt in Scharlachrot.',
+      descEn: 'Your name blazes in crimson.',
+      shardCost: 15,
+      cosmeticValue: '#E05050',
+    ),
+    PrestigeShopItem(
+      id: 'color_teal',
+      category: PrestigeShopCategory.cosmetic,
+      nameDe: 'Tüürkiser Name',
+      nameEn: 'Teal Name',
+      descDe: 'Dein Name glänzt in Türkis.',
+      descEn: 'Your name shines in teal.',
+      shardCost: 15,
+      cosmeticValue: '#2ABFBF',
+    ),
+    // ─── Permanente QoL-Boosts ────────────────────────────────────────── //
+    PrestigeShopItem(
+      id: 'boost_offline',
+      category: PrestigeShopCategory.boost,
+      nameDe: 'Wächter der Esse',
+      nameEn: 'Forge Warden',
+      descDe: '+15% Offline-Belohnungen dauerhaft.',
+      descEn: '+15% offline rewards permanently.',
+      shardCost: 20,
+      bonusType: PrestigeShopBonusType.offlineRewardMultiplier,
+      bonusValue: 0.15,
+    ),
+    PrestigeShopItem(
+      id: 'boost_gold',
+      category: PrestigeShopCategory.boost,
+      nameDe: 'Goldgier',
+      nameEn: 'Gold Greed',
+      descDe: '+8% Gold aus allen Quellen dauerhaft.',
+      descEn: '+8% gold from all sources permanently.',
+      shardCost: 25,
+      bonusType: PrestigeShopBonusType.goldMultiplier,
+      bonusValue: 0.08,
+    ),
+    PrestigeShopItem(
+      id: 'boost_hammer',
+      category: PrestigeShopCategory.boost,
+      nameDe: 'Hammerkunst',
+      nameEn: 'Hammer Art',
+      descDe: '+10% Hammer-Drop-Chance dauerhaft.',
+      descEn: '+10% hammer drop chance permanently.',
+      shardCost: 20,
+      bonusType: PrestigeShopBonusType.hammerDropChance,
+      bonusValue: 0.10,
+    ),
+    PrestigeShopItem(
+      id: 'boost_forge',
+      category: PrestigeShopCategory.boost,
+      nameDe: 'Runenschmiede',
+      nameEn: 'Rune Forge',
+      descDe: '+5% Schmiedechance dauerhaft.',
+      descEn: '+5% forge chance permanently.',
+      shardCost: 30,
+      bonusType: PrestigeShopBonusType.forgeBonusChance,
+      bonusValue: 0.05,
     ),
   ];
 
@@ -1075,6 +1197,7 @@ class GameController extends ChangeNotifier {
               (talentForgeLevel * 0.008) +
               setForgeBonus +
               ascensionForgeBonusChance +
+              prestigeShopForgeBonusChance +
               petForgeBonus)
           .clamp(0, 0.65);
 
@@ -1120,6 +1243,73 @@ class GameController extends ChangeNotifier {
     return 1.0 + _sumAscensionBonus(AscensionBonusType.offlineRewardMultiplier);
   }
 
+  // ─── Prestige-Shop Boni ─────────────────────────────────────────────── //
+
+  double _sumPrestigeShopBonus(PrestigeShopBonusType type) {
+    double total = 0;
+    for (final itemId in purchasedPrestigeItems) {
+      for (final item in prestigeShopItems) {
+        if (item.id == itemId && item.bonusType == type) {
+          total += item.bonusValue;
+        }
+      }
+    }
+    return total;
+  }
+
+  double get prestigeShopOfflineMultiplier =>
+      1.0 +
+      _sumPrestigeShopBonus(PrestigeShopBonusType.offlineRewardMultiplier);
+
+  double get prestigeShopGoldMultiplier =>
+      1.0 + _sumPrestigeShopBonus(PrestigeShopBonusType.goldMultiplier);
+
+  double get prestigeShopHammerDropBonus =>
+      _sumPrestigeShopBonus(PrestigeShopBonusType.hammerDropChance);
+
+  double get prestigeShopForgeBonusChance =>
+      _sumPrestigeShopBonus(PrestigeShopBonusType.forgeBonusChance);
+
+  bool isPrestigeItemPurchased(String id) =>
+      purchasedPrestigeItems.contains(id);
+
+  /// Buys a prestige shop item. Returns true on success.
+  bool buyPrestigeItem(String id) {
+    if (purchasedPrestigeItems.contains(id)) return false;
+    final item = prestigeShopItems.where((e) => e.id == id).firstOrNull;
+    if (item == null) return false;
+    if (forgeShards < item.shardCost) return false;
+
+    forgeShards -= item.shardCost;
+    purchasedPrestigeItems.add(id);
+
+    if (item.category == PrestigeShopCategory.cosmetic) {
+      if (id.startsWith('title_')) {
+        equippedPrestigeTitle = item.cosmeticValue;
+      } else if (id.startsWith('color_')) {
+        equippedNameColorHex = item.cosmeticValue;
+      }
+    }
+
+    _save();
+    notifyListeners();
+    return true;
+  }
+
+  /// Equip a previously purchased cosmetic title.
+  void equipPrestigeTitle(String? titleValue) {
+    equippedPrestigeTitle = titleValue;
+    _save();
+    notifyListeners();
+  }
+
+  /// Equip a previously purchased name color.
+  void equipNameColor(String? colorHex) {
+    equippedNameColorHex = colorHex;
+    _save();
+    notifyListeners();
+  }
+
   double _sumAscensionBonus(AscensionBonusType type) {
     double total = 0;
     for (final nodeId in unlockedAscensionNodes) {
@@ -1159,6 +1349,10 @@ class GameController extends ChangeNotifier {
   int get questKillsTarget => 80 + ((questCycle - 1) * 18);
   int get questCraftsTarget => 16 + ((questCycle - 1) * 4);
   int get questBossTarget => 3 + ((questCycle - 1) ~/ 2);
+
+  static const int dailyKillsTarget = 50;
+  static const int dailyCraftsTarget = 10;
+  static const int dailyBossTarget = 2;
 
   int get talentAttackCost => 3 + (talentAttackLevel * 2);
   int get talentVitalityCost => 3 + (talentVitalityLevel * 2);
@@ -1731,6 +1925,73 @@ class GameController extends ChangeNotifier {
     ];
   }
 
+  List<QuestStateView> get dailyChallenges {
+    _ensureDailyChallenges();
+    return [
+      QuestStateView(
+        type: QuestType.kills,
+        title: 'Tägliche Jagd',
+        description: 'Besiege $dailyKillsTarget Gegner',
+        progress: dailyKillsProgress.clamp(0, dailyKillsTarget),
+        target: dailyKillsTarget,
+        rewardGold: _scaledGoldReward(500),
+        rewardHammers: 15,
+        rewardShards: 3,
+        claimed: dailyKillsClaimed,
+        canClaim: !dailyKillsClaimed && dailyKillsProgress >= dailyKillsTarget,
+      ),
+      QuestStateView(
+        type: QuestType.crafts,
+        title: 'Tägliches Handwerk',
+        description: 'Schmiede $dailyCraftsTarget Items',
+        progress: dailyCraftsProgress.clamp(0, dailyCraftsTarget),
+        target: dailyCraftsTarget,
+        rewardGold: _scaledGoldReward(350),
+        rewardHammers: 20,
+        rewardShards: 0,
+        claimed: dailyCraftsClaimed,
+        canClaim:
+            !dailyCraftsClaimed && dailyCraftsProgress >= dailyCraftsTarget,
+      ),
+      QuestStateView(
+        type: QuestType.bosses,
+        title: 'Tägliche Boss-Jagd',
+        description: 'Besiege $dailyBossTarget Bosse',
+        progress: dailyBossProgress.clamp(0, dailyBossTarget),
+        target: dailyBossTarget,
+        rewardGold: _scaledGoldReward(600),
+        rewardHammers: 10,
+        rewardShards: 8,
+        claimed: dailyBossClaimed,
+        canClaim: !dailyBossClaimed && dailyBossProgress >= dailyBossTarget,
+      ),
+    ];
+  }
+
+  bool get allDailyChallengesClaimed =>
+      dailyKillsClaimed && dailyCraftsClaimed && dailyBossClaimed;
+
+  bool claimDailyChallenge(QuestType type) {
+    final challenge = dailyChallenges.firstWhere((c) => c.type == type);
+    if (!challenge.canClaim) return false;
+
+    gold += challenge.rewardGold;
+    hammers += challenge.rewardHammers;
+    forgeShards += challenge.rewardShards;
+
+    if (type == QuestType.kills) {
+      dailyKillsClaimed = true;
+    } else if (type == QuestType.crafts) {
+      dailyCraftsClaimed = true;
+    } else {
+      dailyBossClaimed = true;
+    }
+
+    _save();
+    notifyListeners();
+    return true;
+  }
+
   List<GameItem> get equippedItems {
     final equippedIds = equippedBySlot.values.toSet();
     return inventory
@@ -1803,6 +2064,7 @@ class GameController extends ChangeNotifier {
     // If logged in, try to sync with the cloud save. Use cloud if it is newer.
     if (ApiService.instance.isLoggedIn) {
       await _syncCloudOnStartup();
+      await _syncInventoryFromServer();
     }
     checkAndClaimLoginStreak();
     _ensureDailyOffers();
@@ -2116,13 +2378,19 @@ class GameController extends ChangeNotifier {
 
   void _onEnemyDefeated() {
     int hammerDrop = 1;
-    if (_random.nextDouble() < shopHammerBonusChance) {
+    final hammerExtraChance =
+        shopHammerBonusChance +
+        ascensionHammerDropChance +
+        prestigeShopHammerDropBonus;
+    if (_random.nextDouble() < hammerExtraChance) {
       hammerDrop += 1;
       lastCombatEvent = 'Bonus-Hammer gefunden!';
     }
 
     hammers += hammerDrop;
     totalKills += 1;
+    _ensureDailyChallenges();
+    dailyKillsProgress += 1;
     killsInStage += 1;
     _tryDropRecipe();
 
@@ -2135,6 +2403,7 @@ class GameController extends ChangeNotifier {
     final goldMultiplier =
         tuning.goldGainMultiplier *
         clanGoldBonusMultiplier *
+        prestigeShopGoldMultiplier *
         (1 + petGoldBonus + runeGoldBonus);
     final goldDrop = ((2 + chapter) * goldMultiplier).round();
     gold += goldDrop;
@@ -2148,6 +2417,7 @@ class GameController extends ChangeNotifier {
     if (isBossStage) {
       forgeShards += _scaledShardReward(1);
       bossDefeats += 1;
+      dailyBossProgress += 1;
     } else {}
 
     if (isBossStage) {
@@ -2445,6 +2715,8 @@ class GameController extends ChangeNotifier {
   GameItem _craftItemRaw({required void Function(int soldFor) onAutoSold}) {
     hammers -= 1;
     craftedItems += 1;
+    _ensureDailyChallenges();
+    dailyCraftsProgress += 1;
     final tier = _rollTier();
     final slot = ItemSlot.values[_random.nextInt(ItemSlot.values.length)];
 
@@ -3056,6 +3328,18 @@ class GameController extends ChangeNotifier {
     if (_dailyShopOffers.isEmpty || _dailyOfferDateKey != _todayKey()) {
       _regenerateDailyOffers();
     }
+  }
+
+  void _ensureDailyChallenges() {
+    final today = _todayKey();
+    if (_dailyChallengesDateKey == today) return;
+    _dailyChallengesDateKey = today;
+    dailyKillsProgress = 0;
+    dailyCraftsProgress = 0;
+    dailyBossProgress = 0;
+    dailyKillsClaimed = false;
+    dailyCraftsClaimed = false;
+    dailyBossClaimed = false;
   }
 
   String _todayKey() {
@@ -3876,6 +4160,13 @@ class GameController extends ChangeNotifier {
       ..addAll(
         (map['unlockedAscensionNodes'] as List<dynamic>? ?? []).cast<String>(),
       );
+    purchasedPrestigeItems
+      ..clear()
+      ..addAll(
+        (map['purchasedPrestigeItems'] as List<dynamic>? ?? []).cast<String>(),
+      );
+    equippedPrestigeTitle = map['equippedPrestigeTitle'] as String?;
+    equippedNameColorHex = map['equippedNameColorHex'] as String?;
 
     final petJson = map['activePet'] as Map?;
     if (petJson != null) {
@@ -3892,6 +4183,13 @@ class GameController extends ChangeNotifier {
 
     loginStreakDays = map['loginStreakDays'] as int? ?? 0;
     _lastLoginDateKey = map['lastLoginDateKey'] as String? ?? '';
+    _dailyChallengesDateKey = map['dailyChallengesDateKey'] as String? ?? '';
+    dailyKillsProgress = map['dailyKillsProgress'] as int? ?? 0;
+    dailyCraftsProgress = map['dailyCraftsProgress'] as int? ?? 0;
+    dailyBossProgress = map['dailyBossProgress'] as int? ?? 0;
+    dailyKillsClaimed = map['dailyKillsClaimed'] as bool? ?? false;
+    dailyCraftsClaimed = map['dailyCraftsClaimed'] as bool? ?? false;
+    dailyBossClaimed = map['dailyBossClaimed'] as bool? ?? false;
   }
 
   void _applyOfflineReward(DateTime lastActive) {
@@ -3908,7 +4206,8 @@ class GameController extends ChangeNotifier {
                 (6 + chapter) *
                 tuning.offlineRewardMultiplier *
                 clanGoldBonusMultiplier *
-                ascensionOfflineMultiplier)
+                ascensionOfflineMultiplier *
+                prestigeShopOfflineMultiplier)
             .round();
     final earnedHammers = estimatedKills;
 
@@ -4063,6 +4362,8 @@ class GameController extends ChangeNotifier {
     final result = _craftItemWithTier(recipe.resultTier);
     inventory.add(result);
     craftedItems += 1;
+    _ensureDailyChallenges();
+    dailyCraftsProgress += 1;
     _save();
     notifyListeners();
     return result;
@@ -4166,12 +4467,22 @@ class GameController extends ChangeNotifier {
       'discoveredRecipes': discoveredRecipes.toList(growable: false),
       'unlockedAscensionNodes': unlockedAscensionNodes.toList(growable: false),
       'ascensionPoints': ascensionPoints,
+      'purchasedPrestigeItems': purchasedPrestigeItems.toList(growable: false),
+      'equippedPrestigeTitle': equippedPrestigeTitle,
+      'equippedNameColorHex': equippedNameColorHex,
       'activePet': activePet?.toJson(),
       'runeInventory': runeInventory
           .map((r) => r.toJson())
           .toList(growable: false),
       'loginStreakDays': loginStreakDays,
       'lastLoginDateKey': _lastLoginDateKey,
+      'dailyChallengesDateKey': _dailyChallengesDateKey,
+      'dailyKillsProgress': dailyKillsProgress,
+      'dailyCraftsProgress': dailyCraftsProgress,
+      'dailyBossProgress': dailyBossProgress,
+      'dailyKillsClaimed': dailyKillsClaimed,
+      'dailyCraftsClaimed': dailyCraftsClaimed,
+      'dailyBossClaimed': dailyBossClaimed,
     };
   }
 
@@ -4233,7 +4544,7 @@ class GameController extends ChangeNotifier {
     notifyListeners();
     try {
       final cloudData = await ApiService.instance.downloadSave();
-      if (cloudData == null) {
+      if (cloudData == null || cloudData.isEmpty) {
         cloudSyncStatus = 'error';
         notifyListeners();
         return;
@@ -4243,8 +4554,10 @@ class GameController extends ChangeNotifier {
       await _load();
       _spawnEnemy();
       playerHp = playerHp.clamp(1.0, maxPlayerHp).toDouble();
+      _save();
       cloudSyncStatus = 'loaded';
-    } catch (_) {
+    } catch (e) {
+      debugPrint('cloudLoad error: $e');
       cloudSyncStatus = 'error';
     }
     notifyListeners();
@@ -4282,7 +4595,10 @@ class GameController extends ChangeNotifier {
   Future<void> _syncCloudOnStartup() async {
     try {
       final cloudData = await ApiService.instance.downloadSave();
-      if (cloudData == null) return;
+      if (cloudData == null || cloudData.isEmpty) {
+        debugPrint('_syncCloudOnStartup: no cloud data');
+        return;
+      }
 
       final cloudMillis = cloudData['lastActiveMillis'] as int? ?? 0;
       final prefs = await SharedPreferences.getInstance();
@@ -4293,12 +4609,58 @@ class GameController extends ChangeNotifier {
         localMillis = localMap['lastActiveMillis'] as int? ?? 0;
       }
 
+      debugPrint('_syncCloudOnStartup: cloud=$cloudMillis, local=$localMillis');
       if (cloudMillis > localMillis) {
+        debugPrint('_syncCloudOnStartup: loading cloud save');
         await prefs.setString(_saveKey, jsonEncode(cloudData));
         await _load();
+        debugPrint('_syncCloudOnStartup: cloud save loaded');
       }
-    } catch (_) {
-      // Silently ignore startup cloud sync errors.
+    } catch (e) {
+      debugPrint('_syncCloudOnStartup error: $e');
+    }
+  }
+
+  /// Downloads inventory from the server and applies it locally.
+  /// Called on startup after _syncCloudOnStartup so that web-frontend
+  /// edits (equip/sell) are always reflected when the app opens.
+  Future<void> _syncInventoryFromServer() async {
+    try {
+      final serverItems = await ApiService.instance.downloadInventory();
+      if (serverItems == null || serverItems.isEmpty) return;
+
+      inventory.clear();
+      equippedBySlot.clear();
+
+      for (final raw in serverItems) {
+        final item = GameItem.fromJson(raw);
+        inventory.add(item);
+        if (raw['isEquipped'] == true) {
+          equippedBySlot[item.slot] = item.id;
+        }
+      }
+
+      debugPrint('_syncInventoryFromServer: loaded ${inventory.length} items');
+    } catch (e) {
+      debugPrint('_syncInventoryFromServer error: $e');
+    }
+  }
+
+  /// Uploads the current inventory to the dedicated player_items table.
+  /// Called when the app goes to the background (AppLifecycleState.paused).
+  Future<void> syncInventoryToServer() async {
+    if (!ApiService.instance.isLoggedIn) return;
+    try {
+      final items = inventory
+          .map((item) => item.toJson())
+          .toList(growable: false);
+      final equipped = equippedBySlot.map(
+        (slot, id) => MapEntry(slot.name, id),
+      );
+      await ApiService.instance.uploadInventory(items, equipped);
+      debugPrint('syncInventoryToServer: uploaded ${items.length} items');
+    } catch (e) {
+      debugPrint('syncInventoryToServer error: $e');
     }
   }
 }

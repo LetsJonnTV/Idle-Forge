@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   const { allowed } = checkRateLimit(ip);
   if (!allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('clans')
     .select('id, name, level, xp, description, created_at, leader:leader_id(id, username)')
     .order('level', { ascending: false })
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
   const cleanName = name.trim();
 
   // Create clan
-  const { data: clan, error: clanError } = await supabase
+  const { data: clan, error: clanError } = await db
     .from('clans')
     .insert({ name: cleanName, leader_id: auth.playerId, description })
     .select('id, name, level, xp, description')
@@ -65,13 +65,13 @@ export async function POST(request: NextRequest) {
   }
 
   // Add leader as member
-  await supabase.from('clan_members').insert({
+  await db.from('clan_members').insert({
     clan_id: clan.id,
     player_id: auth.playerId,
   });
 
   // Update player's clan_id
-  await supabase.from('players').update({ clan_id: clan.id }).eq('id', auth.playerId);
+  await db.from('players').update({ clan_id: clan.id }).eq('id', auth.playerId);
 
   return NextResponse.json({ clan }, { status: 201 });
 }

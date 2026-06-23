@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { requireAdmin } from '@/lib/adminAuth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   }
 
   const hash = await bcrypt.hash(newPassword, 12);
-  const { error } = await supabase
+  const { error } = await db
     .from('players')
     .update({ password_hash: hash })
     .eq('id', params.id);
@@ -59,7 +59,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     return NextResponse.json({ error: 'blocked (boolean) required' }, { status: 400 });
   }
 
-  const { error } = await supabase
+  const { error } = await db
     .from('players')
     .update({ is_blocked: body.blocked })
     .eq('id', params.id);
@@ -81,7 +81,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   const { error: authError, auth } = await requireAdmin(request);
   if (authError || !auth) return authError!;
 
-  const { error } = await supabase
+  const { error } = await db
     .from('players')
     .delete()
     .eq('id', params.id);
@@ -120,7 +120,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ error: 'itemId required for item' }, { status: 400 });
   }
 
-  const { error } = await supabase.from('pending_rewards').insert({
+  const { error } = await db.from('pending_rewards').insert({
     player_id: params.id,
     reward_type: body.type,
     amount: body.type === 'gold' ? body.amount : null,

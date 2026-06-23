@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -32,7 +32,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 
   // Fetch the relationship — must be addressee to respond
-  const { data: friendship, error: fetchError } = await supabase
+  const { data: friendship, error: fetchError } = await db
     .from('friends')
     .select('id, requester_id, addressee_id, status')
     .eq('id', params.id)
@@ -48,13 +48,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
   if (action === 'reject') {
     // Delete the request
-    await supabase.from('friends').delete().eq('id', params.id);
+    await db.from('friends').delete().eq('id', params.id);
     return NextResponse.json({ message: 'Request rejected' });
   }
 
   const newStatus = action === 'accept' ? 'accepted' : 'blocked';
 
-  const { data: updated, error: updateError } = await supabase
+  const { data: updated, error: updateError } = await db
     .from('friends')
     .update({ status: newStatus })
     .eq('id', params.id)

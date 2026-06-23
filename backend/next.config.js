@@ -1,11 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   experimental: {
     instrumentationHook: true,
-  },
-  // Bundle schema.sql into the Vercel serverless deployment
-  outputFileTracingIncludes: {
-    '/api/**': ['./supabase/schema.sql'],
   },
 };
 

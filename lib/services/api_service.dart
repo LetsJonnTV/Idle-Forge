@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 
 /// Exception thrown by ApiService on network or server errors.
@@ -60,6 +62,17 @@ class ApiService {
     'API_BASE_URL',
     defaultValue: 'https://api.idle-forge.jonn2008.me',
   );
+
+  static void validateConfig() {
+    if (_baseUrl.isEmpty || !_baseUrl.startsWith('http')) {
+      debugPrint(
+        '[ApiService] WARNING: API_BASE_URL is misconfigured ("$_baseUrl"). '
+        'Pass --dart-define=API_BASE_URL=https://... at build time.',
+      );
+    } else {
+      debugPrint('[ApiService] Base URL: $_baseUrl');
+    }
+  }
 
   static const String _tokenKey = 'idle_forge_jwt';
   static const String _playerIdKey = 'idle_forge_player_id';
@@ -120,6 +133,7 @@ class ApiService {
       await _storage.delete(key: _playerIdKey);
       await _storage.delete(key: _usernameKey);
     } catch (_) {}
+    await logoutGoogle();
   }
 
   // ------------------------------------------------------------------ //
@@ -157,6 +171,9 @@ class ApiService {
         throw const ApiException(message: 'Request timed out', isOffline: true);
       }
       throw ApiException(message: e.toString());
+    } catch (e, stack) {
+      debugPrint('_post unhandled error [$path]: $e\n$stack');
+      throw ApiException(message: e.toString());
     }
   }
 
@@ -180,6 +197,9 @@ class ApiService {
       if (e.toString().contains('TimeoutException')) {
         throw const ApiException(message: 'Request timed out', isOffline: true);
       }
+      throw ApiException(message: e.toString());
+    } catch (e, stack) {
+      debugPrint('_get unhandled error [$path]: $e\n$stack');
       throw ApiException(message: e.toString());
     }
   }
@@ -207,6 +227,9 @@ class ApiService {
       if (e.toString().contains('TimeoutException')) {
         throw const ApiException(message: 'Request timed out', isOffline: true);
       }
+      throw ApiException(message: e.toString());
+    } catch (e, stack) {
+      debugPrint('_put unhandled error [$path]: $e\n$stack');
       throw ApiException(message: e.toString());
     }
   }
@@ -278,8 +301,9 @@ class ApiService {
       return true;
     } on ApiException {
       rethrow;
-    } catch (_) {
-      return false;
+    } catch (e, stack) {
+      debugPrint('register unexpected error: $e\n$stack');
+      throw ApiException(message: e.toString());
     }
   }
 
@@ -298,8 +322,67 @@ class ApiService {
       return true;
     } on ApiException {
       rethrow;
-    } catch (_) {
+    } catch (e, stack) {
+      debugPrint('login unexpected error: $e\n$stack');
+      throw ApiException(message: e.toString());
+    }
+  }
+
+  /// Login with Google account. Returns true on success.
+  /// Shows Google sign-in dialog to user.
+  static const _googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue:
+        '274619001220-ikmd7mo5ibotreahfdqm1u6sjvij7i7d.apps.googleusercontent.com',
+  );
+
+  Future<bool> loginWithGoogle() async {
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        scopes: <String>['email'],
+        serverClientId: _googleWebClientId.isNotEmpty
+            ? _googleWebClientId
+            : null,
+      );
+
+      final account = await googleSignIn.signIn();
+      if (account == null) {
+        // User cancelled
+        return false;
+      }
+
+      final authentication = await account.authentication;
+      final idToken = authentication.idToken;
+
+      if (idToken == null) {
+        debugPrint('loginWithGoogle: No ID token received');
+        return false;
+      }
+
+      // Send idToken to backend
+      final data = await _post('/api/auth/google', {'idToken': idToken});
+
+      await _persistCredentials(
+        data['token'] as String,
+        data['playerId'] as String,
+        data['username'] as String,
+      );
+
+      debugPrint('loginWithGoogle: Success - playerId ${data['playerId']}');
+      return true;
+    } catch (e) {
+      debugPrint('loginWithGoogle error: $e');
       return false;
+    }
+  }
+
+  /// Logout from Google
+  Future<void> logoutGoogle() async {
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut();
+    } catch (e) {
+      debugPrint('logoutGoogle error: $e');
     }
   }
 
@@ -579,6 +662,22 @@ class ApiService {
   }
 
   // ------------------------------------------------------------------ //
+  //  Player Profiles
+  // ------------------------------------------------------------------ //
+
+  /// Get public profile of a player by their ID.
+  /// Returns { player: {...}, equippedItems: [...] } or null.
+  Future<Map<String, dynamic>?> getPlayerProfile(String playerId) async {
+    try {
+      return await _get('/api/players/$playerId/profile');
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ------------------------------------------------------------------ //
   //  PVP
   // ------------------------------------------------------------------ //
 
@@ -704,8 +803,57 @@ class ApiService {
     try {
       final data = await _get('/api/saves');
       final save = data['save'];
-      if (save == null) return null;
-      return Map<String, dynamic>.from(save as Map);
+      if (save == null) {
+        debugPrint('downloadSave: no save on server');
+        return null;
+      }
+      final saveMap = Map<String, dynamic>.from(save as Map);
+      debugPrint('downloadSave: loaded ${saveMap.length} fields');
+      return saveMap;
+    } on ApiException catch (e) {
+      debugPrint('downloadSave ApiException: ${e.message}');
+      return null;
+    } catch (e) {
+      debugPrint('downloadSave error: $e');
+      return null;
+    }
+  }
+
+  // ------------------------------------------------------------------ //
+  //  Inventory Sync
+  // ------------------------------------------------------------------ //
+
+  /// Upload the full inventory to the dedicated player_items table.
+  /// [items] is the raw JSON list from GameItem.toJson().
+  /// [equippedBySlot] maps slot names to equipped item IDs.
+  Future<bool> uploadInventory(
+    List<Map<String, dynamic>> items,
+    Map<String, String> equippedBySlot,
+  ) async {
+    if (!isLoggedIn) return false;
+    try {
+      await _put('/api/players/me/inventory', {
+        'items': items,
+        'equippedBySlot': equippedBySlot,
+      });
+      return true;
+    } on ApiException catch (e) {
+      if (e.isOffline) return false;
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Download inventory from the dedicated player_items table.
+  /// Returns null if no items exist on the server or on any error.
+  Future<List<Map<String, dynamic>>?> downloadInventory() async {
+    if (!isLoggedIn) return null;
+    try {
+      final data = await _get('/api/players/me/inventory');
+      final raw = data['items'] as List?;
+      if (raw == null || raw.isEmpty) return null;
+      return raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     } on ApiException {
       return null;
     } catch (_) {

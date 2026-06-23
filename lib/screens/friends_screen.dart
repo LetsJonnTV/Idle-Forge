@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_text.dart';
 import '../services/api_service.dart';
+import 'player_profile_screen.dart';
 
 /// Friends list and friend requests screen.
 class FriendsScreen extends StatefulWidget {
@@ -23,6 +24,9 @@ class _FriendsScreenState extends State<FriendsScreen>
   bool _sendingRequest = false;
   String? _sendError;
   String? _sendSuccess;
+
+  String? _challengingUsername;
+  String? _challengeError;
 
   @override
   void initState() {
@@ -110,6 +114,113 @@ class _FriendsScreenState extends State<FriendsScreen>
         context,
       ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (_) {}
+  }
+
+  Future<void> _duelFriend(String username) async {
+    setState(() {
+      _challengingUsername = username;
+      _challengeError = null;
+    });
+
+    try {
+      final result = await ApiService.instance.challengePvp(username);
+      if (!mounted) return;
+      setState(() => _challengingUsername = null);
+      if (result != null) {
+        await _showDuelResult(result, username);
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _challengingUsername = null;
+        _challengeError = e.isOffline
+            ? widget.text.tr('errorOffline')
+            : (e.message.isNotEmpty
+                  ? e.message
+                  : widget.text.tr('pvpChallengeFailed'));
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _challengingUsername = null;
+        _challengeError = widget.text.tr('errorUnexpected');
+      });
+    }
+  }
+
+  Future<void> _showDuelResult(
+    Map<String, dynamic> result,
+    String opponentName,
+  ) async {
+    final battleResult = result['result'] as Map<String, dynamic>? ?? {};
+    final won = battleResult['challengerWon'] as bool? ?? false;
+    final cStr = (battleResult['challengerStrength'] as num?)?.toInt() ?? 0;
+    final dStr = (battleResult['defenderStrength'] as num?)?.toInt() ?? 0;
+
+    final winColor = const Color(0xFF7AC97A);
+    final loseColor = const Color(0xFFE07070);
+
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: _isDark ? const Color(0xFF1F1F2E) : null,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: won ? winColor : loseColor, width: 2),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                won ? Icons.emoji_events_rounded : Icons.sports_kabaddi_rounded,
+                size: 56,
+                color: won ? const Color(0xFFFFD700) : loseColor,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                won
+                    ? '⚔️ ${widget.text.tr('pvpWon').toUpperCase()}'
+                    : '💀 ${widget.text.tr('pvpLost').toUpperCase()}',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: won ? const Color(0xFFFFD700) : loseColor,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'vs $opponentName',
+                style: TextStyle(
+                  color: _textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '${widget.text.tr('pvpYourStr')}: $cStr\n'
+                '${widget.text.tr('pvpOpponentStr')}: $dStr',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: _textSecondary, fontSize: 13),
+              ),
+            ],
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              style: FilledButton.styleFrom(
+                backgroundColor: _accent,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(widget.text.tr('pvpContinue')),
+            ),
+          ],
+        );
+      },
+    );
+    setState(() => _challengeError = null);
   }
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
@@ -243,6 +354,17 @@ class _FriendsScreenState extends State<FriendsScreen>
                       ),
                     ),
                   ),
+                if (_challengeError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      _challengeError!,
+                      style: const TextStyle(
+                        color: Color(0xFFE07070),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -307,6 +429,11 @@ class _FriendsScreenState extends State<FriendsScreen>
           final addressee = f['addressee'] as Map<String, dynamic>? ?? {};
           final friend = requester['id'] == myId ? addressee : requester;
 
+          final username = (friend['username'] as String?) ?? '';
+          final isChallenging = _challengingUsername == username;
+
+          final friendId = (friend['id'] as String?) ?? '';
+
           return _FriendCard(
             friend: friend,
             isDark: _isDark,
@@ -315,6 +442,21 @@ class _FriendsScreenState extends State<FriendsScreen>
             textSecondary: _textSecondary,
             accent: _accent,
             text: widget.text,
+            isChallenging: isChallenging,
+            onChallenge: (_challengingUsername != null || username.isEmpty)
+                ? null
+                : () => _duelFriend(username),
+            onTap: friendId.isEmpty
+                ? null
+                : () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => PlayerProfileScreen(
+                        playerId: friendId,
+                        username: username,
+                        text: widget.text,
+                      ),
+                    ),
+                  ),
           );
         },
       ),
@@ -368,6 +510,9 @@ class _FriendCard extends StatelessWidget {
     required this.textSecondary,
     required this.accent,
     required this.text,
+    required this.isChallenging,
+    required this.onChallenge,
+    required this.onTap,
   });
 
   final Map<String, dynamic> friend;
@@ -377,6 +522,9 @@ class _FriendCard extends StatelessWidget {
   final Color textSecondary;
   final Color accent;
   final AppText text;
+  final bool isChallenging;
+  final VoidCallback? onChallenge;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -384,45 +532,86 @@ class _FriendCard extends StatelessWidget {
     final strength = (friend['total_strength'] as num?)?.toInt() ?? 0;
     final prestige = (friend['prestige_level'] as num?)?.toInt() ?? 0;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? const Color(0xFF3B3B3B) : const Color(0xFFDDDDDD),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? const Color(0xFF3B3B3B) : const Color(0xFFDDDDDD),
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: accent.withAlpha(60),
-            child: Text(
-              username.isNotEmpty ? username[0].toUpperCase() : '?',
-              style: TextStyle(color: accent, fontWeight: FontWeight.bold),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: accent.withAlpha(60),
+              child: Text(
+                username.isNotEmpty ? username[0].toUpperCase() : '?',
+                style: TextStyle(color: accent, fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  username,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: textPrimary,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    username,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: textPrimary,
+                    ),
                   ),
-                ),
-                Text(
-                  '${text.tr('totalStrength')}: $strength · Prestige: $prestige',
-                  style: TextStyle(fontSize: 12, color: textSecondary),
-                ),
-              ],
+                  Text(
+                    '${text.tr('totalStrength')}: $strength · Prestige: $prestige',
+                    style: TextStyle(fontSize: 12, color: textSecondary),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            isChallenging
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: accent,
+                    ),
+                  )
+                : FilledButton.tonal(
+                    onPressed: onChallenge,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: accent.withAlpha(40),
+                      foregroundColor: accent,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.sports_kabaddi_rounded, size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          text.tr('pvpChallenge'),
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+          ],
+        ),
       ),
     );
   }

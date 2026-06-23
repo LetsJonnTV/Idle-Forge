@@ -2,8 +2,31 @@
 
 All notable changes to Idle Forge are documented here.
 
+## [2.1.11] - 2026-06-22
 
-<<<<<<< HEAD
+### Added
+- **Tägliche Herausforderungen**: 3 täglich zurücksetzende Aufgaben (50 Kills, 10 Schmiedungen, 2 Boss-Siege) mit Bonus-Belohnungen (Gold, Hämmer, Scherben). Quest-Board zeigt jetzt Daily-Challenges oben mit Reset-Countdown, darunter die regulären Quests.
+
+### Changed
+- Backend vollständig von Supabase SDK auf PostgreSQL (`pg`) migriert; alle API-Routen unter `backend/app/api/**` nutzen jetzt die neue `db`-Abstraktion.
+- Legacy-Reste entfernt: `backend/lib/supabaseClient.ts`, `backend/vercel.json`, Vercel-Header-Fallback im Rate-Limiter.
+- Cloud-Run-Deploy-Workflows (`dev-build.yml`, `deploy-backend-gcp-prod.yml`) auf reine Secrets `DATABASE_URL`, `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` reduziert.
+- Backend-Env-Template auf PostgreSQL-only aktualisiert (`backend/.env.example`).
+- Google OAuth Setup-Dokumentation auf Cloud Run + PostgreSQL aktualisiert (`GOOGLE_OAUTH_SETUP.md`).
+- Schema-Header entbrandet und Google-OAuth-Spalten (google_id, email) + Indizes idempotent in backend/database/schema.sql ergänzt.
+
+## [2.1.10] - 2026-06-22
+
+### Fixed
+- **Android-Tastatur/Inputs stabilisiert**: Test-Hook `enableFlutterDriverExtension()` aus dem normalen App-Start entfernt, damit Textfelder auf echten Geraeten die Systemtastatur wieder zuverlaessig oeffnen.
+- **In-App-Update auf Android robuster gemacht**: APK-Installation auf `ACTION_INSTALL_PACKAGE` umgestellt, fehlende Berechtigung fuer "Unbekannte Apps installieren" wird erkannt und direkt in die passende Systemeinstellung geleitet, plus konkretere Fehlermeldungen statt generischem "Installation fehlgeschlagen".
+
+## [2.1.9] - 2026-06-22
+
+### Fixed
+- Release-Vorbereitung: App-Version auf `2.1.9+0` erhöht
+- Changelog-Konflikt bereinigt (verbliebene Git-Merge-Marker entfernt)
+
 ## [2.1.8] - 2026-06-22
 
 ### Added
@@ -14,9 +37,6 @@ All notable changes to Idle Forge are documented here.
 - **Admin-Panel Item-Liste**: Nach dem Erstellen oder Bearbeiten eines Items wurde die Liste nicht neu geladen — Items schienen zu verschwinden weil sie nach `slot`+`id` sortiert an anderer Position erschienen als erwartet; Liste wird jetzt nach jeder Änderung neu von Supabase geladen
 - **Pipeline `tag-on-main-release-bump.yml`**: `actions/checkout@v4` schlug fehl wenn `BOT_GH_PAT` nicht gesetzt war (`token: ""` wird als fehlender Pflichtparameter behandelt); Fallback auf `github.token` für den Checkout-Schritt hinzugefügt
 
-
-=======
->>>>>>> cc77112a9c7e7664e7b17745f5c74a1e60cbcdcf
 ## [2.1.7] - 2026-06-22
 
 ### Fixed

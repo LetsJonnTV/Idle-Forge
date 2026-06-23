@@ -27,6 +27,7 @@ class _AuthScreenState extends State<AuthScreen>
   final _formKey = GlobalKey<FormState>();
 
   bool _loading = false;
+  bool _googleLoading = false;
   String? _errorMessage;
   bool _obscurePassword = true;
 
@@ -96,6 +97,30 @@ class _AuthScreenState extends State<AuthScreen>
       setState(() => _errorMessage = widget.text.tr('errorUnexpected'));
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _submitGoogle() async {
+    setState(() {
+      _googleLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final success = await ApiService.instance.loginWithGoogle();
+
+      if (!mounted) return;
+
+      if (success) {
+        widget.onLoggedIn();
+      } else {
+        setState(() => _errorMessage = 'Google login cancelled');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'Google login failed: $e');
+    } finally {
+      if (mounted) setState(() => _googleLoading = false);
     }
   }
 
@@ -296,6 +321,77 @@ class _AuthScreenState extends State<AuthScreen>
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
+                                ),
+                                const SizedBox(height: 12),
+
+                                // Or Divider
+                                Row(
+                                  children: [
+                                    const Expanded(
+                                      child: Divider(
+                                        color: Color(0xFFAA8844),
+                                        height: 1,
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                      ),
+                                      child: Text(
+                                        'oder',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: _isDark
+                                              ? const Color(0xFF9A8860)
+                                              : const Color(0xFF6A5028),
+                                        ),
+                                      ),
+                                    ),
+                                    const Expanded(
+                                      child: Divider(
+                                        color: Color(0xFFAA8844),
+                                        height: 1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+
+                                // Google Sign In
+                                OutlinedButton.icon(
+                                  onPressed: _googleLoading || _loading
+                                      ? null
+                                      : _submitGoogle,
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(
+                                      color: _border,
+                                      width: 1.5,
+                                    ),
+                                    foregroundColor: _isDark
+                                        ? const Color(0xFFDED0B0)
+                                        : const Color(0xFF2A1E08),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  icon: _googleLoading
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(Icons.g_mobiledata),
+                                  label: Text(
+                                    _googleLoading ? '' : 'Google anmelden',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),

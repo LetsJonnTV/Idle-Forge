@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -14,7 +14,7 @@ export async function GET(
 
   const { id: clanId } = params;
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('clan_chat')
     .select('id, player_id, username, message, created_at')
     .eq('clan_id', clanId)
@@ -61,7 +61,7 @@ export async function POST(
   }
 
   // Check that the player is a member of this clan
-  const { data: membership } = await supabase
+  const { data: membership } = await db
     .from('clan_members')
     .select('player_id')
     .eq('clan_id', clanId)
@@ -73,7 +73,7 @@ export async function POST(
   }
 
   // Fetch username
-  const { data: player } = await supabase
+  const { data: player } = await db
     .from('players')
     .select('username')
     .eq('id', auth.playerId)
@@ -83,7 +83,7 @@ export async function POST(
     return NextResponse.json({ error: 'Player not found' }, { status: 404 });
   }
 
-  const { data: chatMessage, error: insertError } = await supabase
+  const { data: chatMessage, error: insertError } = await db
     .from('clan_chat')
     .insert({
       clan_id: clanId,

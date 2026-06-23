@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
   const auth = await getAuthPayload(request);
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('pvp_battles')
     .select(
       `id, status, created_at, challenger_strength, defender_strength,
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Resolve defender
-  const { data: defender } = await supabase
+  const { data: defender } = await db
     .from('players')
     .select('id, username, total_strength')
     .eq('username', defenderUsername.trim().toLowerCase())
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Get challenger's strength
-  const { data: challenger } = await supabase
+  const { data: challenger } = await db
     .from('players')
     .select('total_strength')
     .eq('id', auth.playerId)
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     defenderStrength
   );
 
-  const { data: battle, error: insertError } = await supabase
+  const { data: battle, error: insertError } = await db
     .from('pvp_battles')
     .insert({
       challenger_id: auth.playerId,

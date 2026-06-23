@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { db } from '@/lib/dbClient';
 import { getAuthPayload } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -19,7 +19,7 @@ export async function POST(
   const { id: clanId } = params;
 
   // Verify caller is the clan leader
-  const { data: clan } = await supabase
+  const { data: clan } = await db
     .from('clans')
     .select('id, leader_id')
     .eq('id', clanId)
@@ -46,7 +46,7 @@ export async function POST(
   }
 
   // Find the target player
-  const { data: invitee } = await supabase
+  const { data: invitee } = await db
     .from('players')
     .select('id, username, clan_id')
     .eq('username', username.trim())
@@ -65,7 +65,7 @@ export async function POST(
   }
 
   // Check for existing pending invite
-  const { data: existingInvite } = await supabase
+  const { data: existingInvite } = await db
     .from('clan_invites')
     .select('id, status')
     .eq('clan_id', clanId)
@@ -77,7 +77,7 @@ export async function POST(
   }
 
   // Upsert invite
-  const { error: inviteError } = await supabase
+  const { error: inviteError } = await db
     .from('clan_invites')
     .upsert(
       {
