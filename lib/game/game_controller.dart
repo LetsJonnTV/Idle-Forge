@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_text.dart';
+import '../services/analytics_service.dart';
 import '../services/api_service.dart';
 import '../services/item_catalog_service.dart';
 import '../services/notification_service.dart';
@@ -2421,6 +2422,12 @@ class GameController extends ChangeNotifier {
     } else {}
 
     if (isBossStage) {
+      AnalyticsService.instance.logBossDefeated(
+        chapter: chapter,
+        stage: stage,
+        totalBossDefeats: bossDefeats,
+      );
+      AnalyticsService.instance.logChapterComplete(chapter: chapter + 1);
       chapter += 1;
       stage = 1;
       killsInStage = 0;
@@ -2715,6 +2722,10 @@ class GameController extends ChangeNotifier {
   GameItem _craftItemRaw({required void Function(int soldFor) onAutoSold}) {
     hammers -= 1;
     craftedItems += 1;
+    AnalyticsService.instance.logItemCrafted(
+      itemName: 'random',
+      totalCrafted: craftedItems,
+    );
     _ensureDailyChallenges();
     dailyCraftsProgress += 1;
     final tier = _rollTier();
@@ -3079,6 +3090,10 @@ class GameController extends ChangeNotifier {
     forgeShards += _scaledShardReward(gained);
     prestigeLevel += gained;
     ascensionPoints += gained;
+    AnalyticsService.instance.logPrestige(
+      newPrestigeLevel: prestigeLevel,
+      chapter: chapter,
+    );
 
     gold = 60;
     hammers = 0;
@@ -3132,6 +3147,7 @@ class GameController extends ChangeNotifier {
     }
 
     questCycle += 1;
+    AnalyticsService.instance.logQuestCompleted(questCycle: questCycle);
     questKillsClaimed = false;
     questCraftsClaimed = false;
     questBossClaimed = false;

@@ -6,6 +6,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 
+import 'analytics_service.dart';
+
 /// Exception thrown by ApiService on network or server errors.
 class ApiException implements Exception {
   const ApiException({
@@ -369,6 +371,7 @@ class ApiService {
       );
 
       debugPrint('loginWithGoogle: Success - playerId ${data['playerId']}');
+      AnalyticsService.instance.logLogin(method: 'google');
       return true;
     } catch (e) {
       debugPrint('loginWithGoogle error: $e');

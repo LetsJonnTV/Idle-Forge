@@ -20,6 +20,7 @@ import 'screens/friends_screen.dart';
 import 'screens/leaderboard_screen.dart';
 import 'screens/pvp_screen.dart';
 import 'services/api_service.dart';
+import 'services/analytics_service.dart';
 import 'services/remote_config_service.dart';
 import 'services/update_checker.dart';
 import 'services/update_installer.dart';
@@ -148,6 +149,7 @@ Future<void> main() async {
         FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
         return true;
       };
+      AnalyticsService.instance.init();
     } catch (e) {
       debugPrint('[Firebase] init failed: $e');
     }
@@ -350,10 +352,42 @@ class _IdleForgeHomeState extends State<IdleForgeHome> {
     if (!controller.tutorialCompleted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && !controller.tutorialCompleted) {
-          _showTutorial();
+          _showLoginPromptThenTutorial();
         }
       });
     }
+  }
+
+  Future<void> _showLoginPromptThenTutorial() async {
+    if (!mounted) return;
+
+    if (!ApiService.instance.isLoggedIn) {
+      final goToLogin = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.black87,
+        builder: (ctx) => _LoginPromptDialog(
+          onLogin: () => Navigator.of(ctx).pop(true),
+          onSkip: () => Navigator.of(ctx).pop(false),
+        ),
+      );
+
+      if (goToLogin == true && mounted) {
+        await Navigator.push<void>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AuthScreen(
+              onLoggedIn: () => Navigator.pop(context),
+              onSkip: () => Navigator.pop(context),
+              text: controller.text,
+            ),
+          ),
+        );
+      }
+    }
+
+    if (!mounted || controller.tutorialCompleted) return;
+    _showTutorial();
   }
 
   void _showTutorial() {
@@ -6878,6 +6912,129 @@ class _UpdateDialogState extends State<_UpdateDialog> {
         _error = message;
       });
     }
+  }
+}
+
+class _LoginPromptDialog extends StatelessWidget {
+  const _LoginPromptDialog({required this.onLogin, required this.onSkip});
+
+  final VoidCallback onLogin;
+  final VoidCallback onSkip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 420),
+            padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+            decoration: BoxDecoration(
+              color: context.cardBg,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: context.cardBorder, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFD4A44C).withValues(alpha: 0.15),
+                  ),
+                  child: const Icon(
+                    Icons.person_add_rounded,
+                    size: 44,
+                    color: Color(0xFFD4A44C),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Konto verknüpfen',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: context.textBright,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Erstelle ein Konto oder melde dich an, um deinen Fortschritt zu sichern und Online-Features wie Rangliste, Freunde, PVP und Koop zu nutzen.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: context.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: onLogin,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4A44C),
+                      foregroundColor: const Color(0xFF1A1A1A),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Anmelden / Registrieren',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: onSkip,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: context.textSecondary,
+                      side: BorderSide(color: context.cardBorder),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Ohne Konto fortfahren',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Ohne Konto werden Spieldaten nicht gespeichert\nund Online-Features sind nicht verfügbar.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    height: 1.4,
+                    color: context.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

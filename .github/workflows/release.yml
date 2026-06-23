@@ -111,6 +111,16 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      - name: Remove Firebase from Windows plugins
+        shell: pwsh
+        run: |
+          (Get-Content windows/flutter/generated_plugins.cmake) |
+            Where-Object { $_ -notmatch 'firebase_core' } |
+            Set-Content windows/flutter/generated_plugins.cmake -Encoding UTF8
+          (Get-Content windows/flutter/generated_plugin_registrant.cc) |
+            Where-Object { $_ -notmatch 'firebase_core|FirebaseCore' } |
+            Set-Content windows/flutter/generated_plugin_registrant.cc -Encoding UTF8
+
       - name: Inject Build Number
         shell: pwsh
         run: |
