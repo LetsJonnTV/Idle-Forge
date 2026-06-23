@@ -3219,8 +3219,7 @@ class _BottomMenuState extends State<_BottomMenu> {
                 final now = DateTime.now();
                 final midnight = DateTime(now.year, now.month, now.day + 1);
                 final hoursLeft = midnight.difference(now).inHours;
-                final minutesLeft =
-                    midnight.difference(now).inMinutes % 60;
+                final minutesLeft = midnight.difference(now).inMinutes % 60;
                 final resetLabel =
                     'Reset in ${hoursLeft}h ${minutesLeft.toString().padLeft(2, '0')}m';
 
@@ -3343,12 +3342,9 @@ class _BottomMenuState extends State<_BottomMenu> {
                                 .map(
                                   (c) => questCard(
                                     c,
-                                    width:
-                                        (constraints.maxWidth - 10) / 2,
+                                    width: (constraints.maxWidth - 10) / 2,
                                     onClaim: () {
-                                      controller.claimDailyChallenge(
-                                        c.type,
-                                      );
+                                      controller.claimDailyChallenge(c.type);
                                       setModalState(() {});
                                     },
                                   ),
@@ -3404,8 +3400,7 @@ class _BottomMenuState extends State<_BottomMenu> {
                                 .map(
                                   (quest) => questCard(
                                     quest,
-                                    width:
-                                        (constraints.maxWidth - 10) / 2,
+                                    width: (constraints.maxWidth - 10) / 2,
                                     onClaim: () {
                                       controller.claimQuest(quest.type);
                                       setModalState(() {});

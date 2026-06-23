@@ -1768,7 +1768,8 @@ class GameController extends ChangeNotifier {
         rewardHammers: 20,
         rewardShards: 0,
         claimed: dailyCraftsClaimed,
-        canClaim: !dailyCraftsClaimed && dailyCraftsProgress >= dailyCraftsTarget,
+        canClaim:
+            !dailyCraftsClaimed && dailyCraftsProgress >= dailyCraftsTarget,
       ),
       QuestStateView(
         type: QuestType.bosses,
@@ -3987,8 +3988,7 @@ class GameController extends ChangeNotifier {
 
     loginStreakDays = map['loginStreakDays'] as int? ?? 0;
     _lastLoginDateKey = map['lastLoginDateKey'] as String? ?? '';
-    _dailyChallengesDateKey =
-        map['dailyChallengesDateKey'] as String? ?? '';
+    _dailyChallengesDateKey = map['dailyChallengesDateKey'] as String? ?? '';
     dailyKillsProgress = map['dailyKillsProgress'] as int? ?? 0;
     dailyCraftsProgress = map['dailyCraftsProgress'] as int? ?? 0;
     dailyBossProgress = map['dailyBossProgress'] as int? ?? 0;
@@ -4410,8 +4410,7 @@ class GameController extends ChangeNotifier {
         localMillis = localMap['lastActiveMillis'] as int? ?? 0;
       }
 
-      debugPrint(
-          '_syncCloudOnStartup: cloud=$cloudMillis, local=$localMillis');
+      debugPrint('_syncCloudOnStartup: cloud=$cloudMillis, local=$localMillis');
       if (cloudMillis > localMillis) {
         debugPrint('_syncCloudOnStartup: loading cloud save');
         await prefs.setString(_saveKey, jsonEncode(cloudData));
