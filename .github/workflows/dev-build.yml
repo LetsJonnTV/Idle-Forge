@@ -103,7 +103,10 @@ jobs:
 
       - name: Configure Docker for Artifact Registry
         if: ${{ steps.gcp-config.outputs.can_deploy == 'true' }}
-        run: gcloud auth configure-docker "${{ steps.defaults.outputs.region }}-docker.pkg.dev" --quiet
+        run: |
+          gcloud auth print-access-token | \
+            docker login -u oauth2accesstoken --password-stdin \
+            "${{ steps.defaults.outputs.region }}-docker.pkg.dev"
 
       - name: Build and push backend image
         if: ${{ steps.gcp-config.outputs.can_deploy == 'true' }}

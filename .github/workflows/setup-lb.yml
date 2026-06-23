@@ -4,9 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       domain:
-        description: 'API domain (e.g. api.idle-forge.jonn2008.me)'
+        description: 'API domain'
         required: true
         type: string
+        default: 'api.idle-forge.jonn2008.me'
 
 permissions:
   contents: read
