@@ -653,6 +653,43 @@ class CraftingRecipe {
   final double dropChance;
 }
 
+enum PrestigeShopCategory { cosmetic, boost }
+
+enum PrestigeShopBonusType {
+  none,
+  offlineRewardMultiplier,
+  goldMultiplier,
+  hammerDropChance,
+  forgeBonusChance,
+}
+
+class PrestigeShopItem {
+  const PrestigeShopItem({
+    required this.id,
+    required this.category,
+    required this.nameDe,
+    required this.nameEn,
+    required this.descDe,
+    required this.descEn,
+    required this.shardCost,
+    this.bonusType = PrestigeShopBonusType.none,
+    this.bonusValue = 0.0,
+    this.cosmeticValue = '',
+  });
+
+  final String id;
+  final PrestigeShopCategory category;
+  final String nameDe;
+  final String nameEn;
+  final String descDe;
+  final String descEn;
+  final int shardCost;
+  final PrestigeShopBonusType bonusType;
+  final double bonusValue;
+  /// For cosmetics: color hex or title string.
+  final String cosmeticValue;
+}
+
 enum AscensionPath { warrior, smith, rogue }
 
 enum AscensionBonusType {
