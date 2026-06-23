@@ -363,7 +363,10 @@ class _AuthScreenState extends State<AuthScreen>
                                       ? null
                                       : _submitGoogle,
                                   style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: _border, width: 1.5),
+                                    side: BorderSide(
+                                      color: _border,
+                                      width: 1.5,
+                                    ),
                                     foregroundColor: _isDark
                                         ? const Color(0xFFDED0B0)
                                         : const Color(0xFF2A1E08),
@@ -384,9 +387,7 @@ class _AuthScreenState extends State<AuthScreen>
                                         )
                                       : const Icon(Icons.g_mobiledata),
                                   label: Text(
-                                    _googleLoading
-                                        ? ''
-                                        : 'Google anmelden',
+                                    _googleLoading ? '' : 'Google anmelden',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w500,
                                     ),

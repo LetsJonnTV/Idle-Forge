@@ -309,9 +309,7 @@ class ApiService {
   /// Shows Google sign-in dialog to user.
   Future<bool> loginWithGoogle() async {
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        scopes: <String>['email'],
-      );
+      final GoogleSignIn googleSignIn = GoogleSignIn(scopes: <String>['email']);
 
       final account = await googleSignIn.signIn();
       if (account == null) {
@@ -328,9 +326,7 @@ class ApiService {
       }
 
       // Send idToken to backend
-      final data = await _post('/api/auth/google', {
-        'idToken': idToken,
-      });
+      final data = await _post('/api/auth/google', {'idToken': idToken});
 
       await _persistCredentials(
         data['token'] as String,
