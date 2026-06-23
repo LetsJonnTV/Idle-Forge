@@ -9,7 +9,7 @@ steps:
     args:
       - 'build'
       - '-t'
-      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/idle-forge/idle-forge-backend:$COMMIT_SHA'
+      - 'gcr.io/$PROJECT_ID/idle-forge-backend:$COMMIT_SHA'
       - './backend'
 
   - name: 'gcr.io/cloud-builders/docker'
@@ -17,7 +17,7 @@ steps:
     waitFor: ['Build']
     args:
       - 'push'
-      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/idle-forge/idle-forge-backend:$COMMIT_SHA'
+      - 'gcr.io/$PROJECT_ID/idle-forge-backend:$COMMIT_SHA'
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: Deploy
@@ -32,12 +32,12 @@ steps:
       - '--allow-unauthenticated'
       - '--ingress=${_INGRESS}'
       - '--port=8080'
-      - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/idle-forge/idle-forge-backend:$COMMIT_SHA'
+      - '--image=gcr.io/$PROJECT_ID/idle-forge-backend:$COMMIT_SHA'
       - '--set-env-vars=DEBUG=false,CLOUD_SQL_CONNECTION_NAME=$PROJECT_ID:${_REGION}:idle-forge-pg'
       - '--set-secrets=JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,DATABASE_URL=database-url:latest'
 
 images:
-  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/idle-forge/idle-forge-backend:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/idle-forge-backend:$COMMIT_SHA'
 
 options:
   logging: CLOUD_LOGGING_ONLY
