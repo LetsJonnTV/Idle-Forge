@@ -18,7 +18,11 @@ class RemoteConfigService {
     'event_gold_bonus': 0.0,
   };
 
+  static bool get _supported =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
   Future<void> init() async {
+    if (!_supported) return;
     try {
       final rc = FirebaseRemoteConfig.instance;
       await rc.setDefaults(_defaults);
@@ -36,6 +40,7 @@ class RemoteConfigService {
   }
 
   BalanceTuning get tuning {
+    if (!_supported) return const BalanceTuning();
     try {
       final rc = FirebaseRemoteConfig.instance;
       final eventBonus = rc.getDouble('event_gold_bonus');
