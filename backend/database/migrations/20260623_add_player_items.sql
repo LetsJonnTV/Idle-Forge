@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS player_items (
   id TEXT NOT NULL,
   player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
   slot TEXT NOT NULL,
-  tier INTEGER NOT NULL,
+  tier TEXT NOT NULL,
   set_id TEXT NOT NULL,
   power INTEGER NOT NULL,
   sell_value INTEGER NOT NULL,

@@ -4635,7 +4635,7 @@ class GameController extends ChangeNotifier {
       for (final raw in serverItems) {
         final item = GameItem.fromJson(raw);
         inventory.add(item);
-        if (raw['is_equipped'] == true) {
+        if (raw['isEquipped'] == true) {
           equippedBySlot[item.slot] = item.id;
         }
       }

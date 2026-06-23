@@ -1,4 +1,4 @@
-package com.example.idle_forge
+package com.letsjonntv.idle_forge
 
 import android.content.Intent
 import android.os.Build
@@ -11,7 +11,7 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
 class MainActivity : FlutterActivity() {
-    private val channel = "com.example.idle_forge/install"
+    private val channel = "com.letsjonntv.idle_forge/install"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
