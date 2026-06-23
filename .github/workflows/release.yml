@@ -127,7 +127,7 @@ jobs:
           (Get-Content pubspec.yaml) -replace '^(version: .+)\+\d+$', "`$1+${{ github.run_number }}" | Set-Content pubspec.yaml
 
       - name: Build Windows Release
-        run: flutter build windows --release --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }}
+        run: flutter build windows --release --no-pub --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }}
 
       - name: Package Windows Build
         shell: pwsh
