@@ -67,6 +67,11 @@ jobs:
       - name: Restore google-services.json
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
 
+      - name: Restore debug keystore
+        run: |
+          mkdir -p ~/.android
+          echo '${{ secrets.ANDROID_DEBUG_KEYSTORE }}' | base64 -d > ~/.android/debug.keystore
+
       - name: Inject Build Number
         run: |
           sed -i "s/^version: \(.*\)+.*/version: \1+${{ github.run_number }}/" pubspec.yaml
