@@ -75,6 +75,27 @@ jobs:
           echo '${{ secrets.ANDROID_DEBUG_KEYSTORE }}' | base64 -d > ~/.android/debug.keystore
           keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android 2>&1 | grep -E "SHA1|SHA256"
 
+      - name: Validate keystore SHA1 against google-services.json
+        run: |
+          KEYSTORE_SHA1=$(keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android 2>/dev/null | awk -F': ' '/SHA1:/{print $2; exit}' | tr -d ':' | tr '[:lower:]' '[:upper:]')
+
+          JSON_SHA1=$(python3 -c "import json; d=json.load(open('android/app/google-services.json','r',encoding='utf-8')); target='com.letsjonntv.idle_forge'; sha=next((o['android_info']['certificate_hash'] for c in d.get('client',[]) if c.get('client_info',{}).get('android_client_info',{}).get('package_name')==target for o in c.get('oauth_client',[]) if o.get('client_type')==1 and o.get('android_info')), ''); print(sha)")
+
+          if [ -z "$JSON_SHA1" ]; then
+          echo "::error::No Android OAuth certificate_hash found in google-services.json for package com.letsjonntv.idle_forge"
+          exit 1
+          fi
+
+          JSON_SHA1=$(echo "$JSON_SHA1" | tr -d ':' | tr '[:lower:]' '[:upper:]')
+
+          echo "Keystore SHA1 (normalized): $KEYSTORE_SHA1"
+          echo "google-services SHA1 (normalized): $JSON_SHA1"
+
+          if [ "$KEYSTORE_SHA1" != "$JSON_SHA1" ]; then
+            echo "::error::Signing SHA1 mismatch. Update ANDROID_DEBUG_KEYSTORE secret or regenerate GOOGLE_SERVICES_JSON with the matching SHA1."
+            exit 1
+          fi
+
       - name: Inject Build Number
         run: |
           sed -i "s/^version: \(.*\)+.*/version: \1+${{ github.run_number }}/" pubspec.yaml

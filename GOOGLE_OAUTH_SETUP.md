@@ -13,8 +13,12 @@ Dieses Projekt nutzt Google Sign-In mit einem Next.js Backend auf Google Cloud R
 
 ### Android Client
 
-- Package Name: `com.example.idle_forge` (oder euer echtes Package)
+- Package Name: `com.letsjonntv.idle_forge`
 - SHA-1 des Signing-Zertifikats hinterlegen
+
+Wichtig fuer CI/CD: Wenn Android-Builds in GitHub Actions laufen, muss die SHA-1 des in der Pipeline verwendeten Keystores mit der SHA-1 im Android OAuth Client uebereinstimmen. In diesem Repo wird der Keystore aus `ANDROID_DEBUG_KEYSTORE` restauriert.
+
+Wenn lokal alles funktioniert, in der Pipeline aber `sign_in_failed` mit Status 10 auftritt, ist fast immer die SHA-1 des CI-Keystores nicht im Google OAuth Android Client hinterlegt.
 
 Beispiel Debug-SHA1:
 
