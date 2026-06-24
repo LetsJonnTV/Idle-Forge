@@ -339,6 +339,7 @@ class ApiService {
   );
 
   Future<bool> loginWithGoogle() async {
+    debugPrint('[GoogleSignIn] serverClientId: $_googleWebClientId');
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn(
         scopes: <String>['email'],
@@ -349,17 +350,19 @@ class ApiService {
 
       final account = await googleSignIn.signIn();
       if (account == null) {
-        // User cancelled
+        debugPrint('[GoogleSignIn] signIn() returned null (user cancelled or silent failure)');
         return false;
       }
+      debugPrint('[GoogleSignIn] account: ${account.email}');
 
       final authentication = await account.authentication;
       final idToken = authentication.idToken;
 
       if (idToken == null) {
-        debugPrint('loginWithGoogle: No ID token received');
+        debugPrint('[GoogleSignIn] idToken is null — serverClientId may be wrong or missing');
         return false;
       }
+      debugPrint('[GoogleSignIn] idToken received (${idToken.length} chars)');
 
       // Send idToken to backend
       final data = await _post('/api/auth/google', {'idToken': idToken});
@@ -823,6 +826,150 @@ class ApiService {
   }
 
   // ------------------------------------------------------------------ //
+  //  Daily Challenges
+  // ------------------------------------------------------------------ //
+
+  /// Fetch today's challenge record from the server. Creates one if it's a new day.
+  Future<Map<String, dynamic>?> getDailyChallenges() async {
+    if (!isLoggedIn) return null;
+    try {
+      final data = await _get('/api/daily_challenges');
+      return data['challenge'] as Map<String, dynamic>?;
+    } on ApiException {
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Sync progress and optionally claim a completed challenge.
+  /// [claim] is 'kills', 'crafts', or 'boss'. Pass null to only sync progress.
+  Future<Map<String, dynamic>?> syncDailyChallenges({
+    int? killsProgress,
+    int? craftsProgress,
+    int? bossProgress,
+    String? claim,
+  }) async {
+    if (!isLoggedIn) return null;
+    try {
+      final body = <String, dynamic>{};
+      if (killsProgress != null) body['kills_progress'] = killsProgress;
+      if (craftsProgress != null) body['crafts_progress'] = craftsProgress;
+      if (bossProgress != null) body['boss_progress'] = bossProgress;
+      if (claim != null) body['claim'] = claim;
+      final data = await _post('/api/daily_challenges', body);
+      return data['challenge'] as Map<String, dynamic>?;
+    } on ApiException {
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ------------------------------------------------------------------ //
+  //  Prestige Shop
+  // ------------------------------------------------------------------ //
+
+  /// Fetch all purchased prestige shop item IDs for the current player.
+  Future<List<String>> getPrestigePurchases() async {
+    if (!isLoggedIn) return [];
+    try {
+      final data = await _get('/api/prestige_shop');
+      return List<String>.from(data['purchasedIds'] as List? ?? []);
+    } on ApiException {
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Record a prestige shop purchase on the server.
+  Future<bool> recordPrestigePurchase(String itemId) async {
+    if (!isLoggedIn) return false;
+    try {
+      await _post('/api/prestige_shop', {'itemId': itemId});
+      return true;
+    } on ApiException catch (e) {
+      if (e.statusCode == 409) return true; // already purchased — idempotent
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ------------------------------------------------------------------ //
+  //  World Boss
+  // ------------------------------------------------------------------ //
+
+  /// Get current active world boss with player damage + leaderboard.
+  Future<Map<String, dynamic>?> getWorldBoss() async {
+    if (!isLoggedIn) return null;
+    try {
+      return await _get('/api/world_boss');
+    } on ApiException {
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Attack the current world boss with [damage] points.
+  Future<Map<String, dynamic>?> attackWorldBoss(int damage) async {
+    if (!isLoggedIn) return null;
+    try {
+      return await _post('/api/world_boss', {'damage': damage});
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ------------------------------------------------------------------ //
+  //  Seasonal Events
+  // ------------------------------------------------------------------ //
+
+  /// Fetch all currently active seasonal events with player currency.
+  Future<List<Map<String, dynamic>>> getActiveEvents() async {
+    if (!isLoggedIn) return [];
+    try {
+      final data = await _get('/api/events');
+      return List<Map<String, dynamic>>.from(data['events'] as List? ?? []);
+    } on ApiException {
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Fetch shop items + player currency for a specific event.
+  Future<Map<String, dynamic>?> getEventShop(String eventId) async {
+    if (!isLoggedIn) return null;
+    try {
+      return await _get('/api/events/$eventId/shop');
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Buy an event shop item.
+  Future<Map<String, dynamic>?> buyEventItem(
+    String eventId,
+    String itemId,
+  ) async {
+    if (!isLoggedIn) return null;
+    try {
+      return await _post('/api/events/$eventId/shop', {'itemId': itemId});
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ------------------------------------------------------------------ //
   //  Inventory Sync
   // ------------------------------------------------------------------ //
 
@@ -857,6 +1004,142 @@ class ApiService {
       final raw = data['items'] as List?;
       if (raw == null || raw.isEmpty) return null;
       return raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } on ApiException {
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ------------------------------------------------------------------ //
+  //  Clan War (Phase 4.1)
+  // ------------------------------------------------------------------ //
+
+  /// Get the current active clan war for the player's clan.
+  Future<Map<String, dynamic>?> getClanWar() async {
+    if (!isLoggedIn) return null;
+    try {
+      return await _get('/api/clan_war');
+    } on ApiException {
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Contribute points to the clan's active war (once per 24h).
+  Future<Map<String, dynamic>?> contributeClanWar() async {
+    if (!isLoggedIn) return null;
+    try {
+      return await _post('/api/clan_war', {});
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ------------------------------------------------------------------ //
+  //  Auction House (Phase 4.2)
+  // ------------------------------------------------------------------ //
+
+  /// Browse active auctions with optional slot filter and sort.
+  Future<Map<String, dynamic>> getAuctions({
+    String? slot,
+    String sort = 'ends_asc',
+    int page = 1,
+  }) async {
+    try {
+      final params = StringBuffer('/api/auction?sort=$sort&page=$page');
+      if (slot != null && slot.isNotEmpty) params.write('&slot=$slot');
+      return await _get(params.toString());
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException(message: e.toString());
+    }
+  }
+
+  /// List an item from the player's inventory on the auction house.
+  Future<Map<String, dynamic>?> createAuction({
+    required String itemId,
+    required int minPrice,
+    int? buyNowPrice,
+    int durationHours = 24,
+  }) async {
+    if (!isLoggedIn) return null;
+    try {
+      final body = <String, dynamic>{
+        'item_id': itemId,
+        'min_price': minPrice,
+        'duration_hours': durationHours,
+      };
+      if (buyNowPrice != null) body['buy_now_price'] = buyNowPrice;
+      return await _post('/api/auction', body);
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Place a bid on an auction.
+  Future<Map<String, dynamic>?> placeBid(String auctionId, int amount) async {
+    if (!isLoggedIn) return null;
+    try {
+      return await _post('/api/auction/$auctionId', {
+        'action': 'bid',
+        'amount': amount,
+      });
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Buy an auction immediately at the buy-now price.
+  Future<Map<String, dynamic>?> buyNowAuction(String auctionId) async {
+    if (!isLoggedIn) return null;
+    try {
+      return await _post('/api/auction/$auctionId', {'action': 'buy_now'});
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Claim a won auction — transfers item to inventory.
+  Future<Map<String, dynamic>?> claimAuction(String auctionId) async {
+    if (!isLoggedIn) return null;
+    try {
+      return await _post('/api/auction/$auctionId', {'action': 'claim'});
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Cancel an active auction with no bids (returns item to inventory).
+  Future<bool> cancelAuction(String auctionId) async {
+    if (!isLoggedIn) return false;
+    try {
+      await _post('/api/auction/$auctionId', {'action': 'cancel'});
+      return true;
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Fetch the current player's own auctions (selling) and won auctions to claim.
+  Future<Map<String, dynamic>?> getMyAuctions() async {
+    if (!isLoggedIn) return null;
+    try {
+      return await _get('/api/auction/mine');
     } on ApiException {
       return null;
     } catch (_) {
