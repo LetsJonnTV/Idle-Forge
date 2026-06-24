@@ -1,0 +1,125 @@
+<div class="admin-events-page">
+  <div class="container">
+    <div class="title-row" *ngIf="!selectedEvent">
+      <div>
+        <h1>Admin Events</h1>
+        <p>Seasonal Events erstellen und verwalten.</p>
+      </div>
+      <button class="btn btn-primary btn-sm" (click)="showCreate = !showCreate">
+        {{ showCreate ? 'Abbrechen' : 'Neues Event' }}
+      </button>
+    </div>
+
+    <div class="error-card" *ngIf="error">{{ error }}</div>
+
+    <ng-container *ngIf="!selectedEvent">
+      <div class="stats-row">
+        <div class="stat-card"><strong>{{ events.length }}</strong><span>Gesamt</span></div>
+        <div class="stat-card"><strong>{{ activeCount }}</strong><span>Aktiv</span></div>
+        <div class="stat-card"><strong>{{ upcomingCount }}</strong><span>Geplant</span></div>
+      </div>
+
+      <div class="card" *ngIf="showCreate">
+        <h3>Neues Event</h3>
+        <div class="grid">
+          <label>Name *<input class="input" [(ngModel)]="createForm.name" /></label>
+          <label>Waehrungsname<input class="input" [(ngModel)]="createForm.currency_name" /></label>
+          <label class="span-2">Beschreibung<input class="input" [(ngModel)]="createForm.description" /></label>
+          <label>Start *<input class="input" type="datetime-local" [(ngModel)]="createForm.starts_at" /></label>
+          <label>Ende *<input class="input" type="datetime-local" [(ngModel)]="createForm.ends_at" /></label>
+          <label class="span-2">Banner Farbe<input class="input" [(ngModel)]="createForm.banner_color" /></label>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary btn-sm" (click)="createEvent()" [disabled]="creating">
+            {{ creating ? 'Erstelle...' : 'Event erstellen' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="loading" *ngIf="loading">Lade Events...</div>
+      <div class="empty-state" *ngIf="!loading && events.length === 0">Noch keine Events vorhanden.</div>
+
+      <div class="list" *ngIf="!loading && events.length > 0">
+        <div class="event-card" *ngFor="let event of events">
+          <div class="event-head">
+            <div class="swatch" [style.background]="event.banner_color"></div>
+            <div>
+              <div class="event-name">{{ event.name }}</div>
+              <div class="event-meta">{{ fmtDate(event.starts_at) }} - {{ fmtDate(event.ends_at) }}</div>
+            </div>
+          </div>
+          <div class="event-info">
+            <span>Status: {{ event.status }}</span>
+            <span>Items: {{ event.item_count }}</span>
+          </div>
+          <div class="event-actions">
+            <button class="btn btn-secondary btn-sm" (click)="openDetail(event)">Detail</button>
+            <button class="btn btn-warning btn-sm" *ngIf="event.status === 'active'" (click)="endNow(event)">Beenden</button>
+            <button class="btn btn-danger btn-sm" (click)="deleteEvent(event)">Loeschen</button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="selectedEvent">
+      <div class="detail-head">
+        <button class="btn btn-secondary btn-sm" (click)="backToList()">Zurueck</button>
+        <div>
+          <h2>{{ selectedEvent.name }}</h2>
+          <p>{{ fmtDate(selectedEvent.starts_at) }} - {{ fmtDate(selectedEvent.ends_at) }}</p>
+        </div>
+      </div>
+
+      <div class="detail-grid">
+        <div class="card span-2">
+          <div class="title-row-inline">
+            <h3>Shop Items ({{ items.length }})</h3>
+            <button class="btn btn-primary btn-sm" (click)="showAddItem = !showAddItem">
+              {{ showAddItem ? 'Abbrechen' : 'Item hinzufuegen' }}
+            </button>
+          </div>
+
+          <div class="add-item" *ngIf="showAddItem">
+            <div class="grid">
+              <label>Name *<input class="input" [(ngModel)]="itemForm.name" /></label>
+              <label>Kosten *<input class="input" type="number" [(ngModel)]="itemForm.currency_cost" min="1" /></label>
+              <label class="span-2">Beschreibung<input class="input" [(ngModel)]="itemForm.description" /></label>
+              <label>Icon<input class="input" [(ngModel)]="itemForm.icon" /></label>
+              <label>Max pro Spieler<input class="input" type="number" [(ngModel)]="itemForm.max_per_player" min="1" /></label>
+            </div>
+            <button class="btn btn-primary btn-sm" (click)="addItem()" [disabled]="addingItem">
+              {{ addingItem ? 'Speichere...' : 'Item speichern' }}
+            </button>
+          </div>
+
+          <div class="loading" *ngIf="itemsLoading">Lade Items...</div>
+          <table class="items-table" *ngIf="!itemsLoading && items.length > 0">
+            <thead>
+              <tr><th>Name</th><th>Kosten</th><th>Max</th><th>Kaeufer</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of items">
+                <td>{{ item.name }}</td>
+                <td>{{ item.currency_cost }}</td>
+                <td>{{ item.max_per_player }}</td>
+                <td>{{ item.purchase_count }}</td>
+                <td><button class="btn btn-danger btn-sm" (click)="deleteItem(item)">Loeschen</button></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="empty-state" *ngIf="!itemsLoading && items.length === 0">Keine Shop-Items vorhanden.</div>
+        </div>
+
+        <div class="card">
+          <h3>Waehrung vergeben</h3>
+          <label>Spielername<input class="input" [(ngModel)]="giveUsername" /></label>
+          <label>Betrag<input class="input" type="number" [(ngModel)]="giveAmount" min="1" /></label>
+          <button class="btn btn-primary btn-sm" (click)="giveCurrency()" [disabled]="giving">
+            {{ giving ? 'Vergebe...' : 'Vergeben' }}
+          </button>
+          <div class="inline-msg" [class.ok]="giveResult.startsWith('OK')" *ngIf="giveResult">{{ giveResult }}</div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

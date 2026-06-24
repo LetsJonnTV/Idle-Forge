@@ -15,6 +15,11 @@ import { LandingComponent }   from './pages/landing/landing.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { AdminComponent }     from './pages/admin/admin.component';
 import { WikiComponent }      from './pages/wiki/wiki.component';
+import { InventoryComponent } from './pages/inventory/inventory.component';
+import { LoginComponent } from './pages/login/login.component';
+import { AdminEventsComponent } from './pages/admin-events/admin-events.component';
+import { AdminAuctionsComponent } from './pages/admin-auctions/admin-auctions.component';
+import { AdminClanWarsComponent } from './pages/admin-clan-wars/admin-clan-wars.component';
 
 @NgModule({
   declarations: [
@@ -24,7 +29,12 @@ import { WikiComponent }      from './pages/wiki/wiki.component';
     LandingComponent,
     DashboardComponent,
     AdminComponent,
-    WikiComponent
+    WikiComponent,
+    InventoryComponent,
+    LoginComponent,
+    AdminEventsComponent,
+    AdminAuctionsComponent,
+    AdminClanWarsComponent
   ],
   imports: [
     BrowserModule,

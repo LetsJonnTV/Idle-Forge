@@ -1,0 +1,20 @@
+<div class="login-page">
+  <div class="login-card">
+    <h1>Idle Forge Login</h1>
+    <p>Bitte mit deinem Account anmelden.</p>
+
+    <label>Benutzername
+      <input class="input" [(ngModel)]="username" (keydown.enter)="submit()" autocomplete="username" />
+    </label>
+
+    <label>Passwort
+      <input class="input" type="password" [(ngModel)]="password" (keydown.enter)="submit()" autocomplete="current-password" />
+    </label>
+
+    <div class="error-card" *ngIf="error">{{ error }}</div>
+
+    <button class="btn btn-primary" [disabled]="loading" (click)="submit()">
+      {{ loading ? 'Anmeldung...' : 'Einloggen' }}
+    </button>
+  </div>
+</div>

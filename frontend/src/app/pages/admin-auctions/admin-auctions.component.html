@@ -1,0 +1,60 @@
+<div class="admin-auctions-page">
+  <div class="container">
+    <div class="title-row">
+      <div>
+        <h1>Auktionshaus Admin</h1>
+        <p>Aktive und vergangene Auktionen verwalten.</p>
+      </div>
+      <button class="btn btn-secondary btn-sm" (click)="loadAuctions()">Aktualisieren</button>
+    </div>
+
+    <div class="error-card" *ngIf="error">{{ error }}</div>
+    <div class="success-msg" *ngIf="success">{{ success }}</div>
+
+    <div class="stats-row" *ngIf="stats">
+      <div class="stat-card"><strong>{{ stats.active }}</strong><span>Aktiv</span></div>
+      <div class="stat-card"><strong>{{ stats.sold }}</strong><span>Verkauft</span></div>
+      <div class="stat-card"><strong>{{ stats.expired }}</strong><span>Abgelaufen</span></div>
+      <div class="stat-card"><strong>{{ stats.cancelled }}</strong><span>Storniert</span></div>
+      <div class="stat-card"><strong>{{ stats.total_volume }}</strong><span>Volumen</span></div>
+    </div>
+
+    <div class="filter-row">
+      <button class="btn btn-secondary btn-sm" *ngFor="let status of statuses" [class.active]="statusFilter === status" (click)="setStatus(status)">
+        {{ status }}
+      </button>
+    </div>
+
+    <div class="loading" *ngIf="loading">Lade Auktionen...</div>
+    <div class="empty-state" *ngIf="!loading && auctions.length === 0">Keine Auktionen gefunden.</div>
+
+    <div class="grid" *ngIf="!loading && auctions.length > 0">
+      <div class="auction-card" *ngFor="let auction of auctions">
+        <div class="card-head">
+          <div>
+            <div class="item-name">{{ auction.item.name || '?' }}</div>
+            <div class="item-meta">{{ auction.item.slot }} - {{ auction.item.tier }} - {{ auction.item.power }}</div>
+          </div>
+          <span class="badge badge-gold">{{ auction.status }}</span>
+        </div>
+
+        <div class="line">Start: {{ auction.minPrice }}g</div>
+        <div class="line" *ngIf="auction.buyNowPrice">Sofort: {{ auction.buyNowPrice }}g</div>
+        <div class="line" *ngIf="auction.currentBid > 0">Gebot: {{ auction.currentBid }}g ({{ auction.highestBidderName || 'unbekannt' }})</div>
+        <div class="line">Verkaeufer: {{ auction.sellerName }}</div>
+        <div class="line">Gebote: {{ auction.bidCount }}</div>
+        <div class="line">Ende: {{ fmtDate(auction.endsAt) }}</div>
+
+        <div class="actions" *ngIf="auction.status === 'active'">
+          <button class="btn btn-danger btn-sm" (click)="cancelAuction(auction.id)">Stornieren</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pagination" *ngIf="auctions.length === 25 || page > 1">
+      <button class="btn btn-secondary btn-sm" [disabled]="page === 1" (click)="prevPage()">Zurueck</button>
+      <span>Seite {{ page }}</span>
+      <button class="btn btn-secondary btn-sm" [disabled]="auctions.length < 25" (click)="nextPage()">Weiter</button>
+    </div>
+  </div>
+</div>

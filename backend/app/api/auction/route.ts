@@ -232,4 +232,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export { MARKET_FEE_PCT };

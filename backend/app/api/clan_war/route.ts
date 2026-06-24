@@ -227,4 +227,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export { WAR_DURATION_DAYS };

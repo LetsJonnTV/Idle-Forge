@@ -2,7 +2,7 @@
 
 All notable changes to Idle Forge are documented here.
 
-## [Unreleased] — Phase 4
+## [2.2.17] - 2026-06-24
 
 ### Added — Gildenkampf (Clan War)
 - Wöchentliche Clan-Kriege: zwei Gilden treten gegeneinander an, gewinner bekommt Ehre
@@ -32,7 +32,24 @@ All notable changes to Idle Forge are documented here.
 - 9 neue `ApiService`-Methoden: `getClanWar`, `contributeClanWar`, `getAuctions`, `createAuction`, `placeBid`, `buyNowAuction`, `claimAuction`, `cancelAuction`, `getMyAuctions`
 - Lokalisierung (DE + EN): ~20 neue Keys für Clan-Krieg und Auktionshaus
 
----
+
+### Changed — Frontend/Backend Trennung
+- Admin- und User-Webseiten aus dem Backend entfernt und in das Angular-Frontend migriert.
+- Neue Angular-Routen ergänzt: `/login`, `/inventory`, `/admin/events`, `/admin/auctions`, `/admin/clan-wars`.
+- Rollen sauber getrennt: User-Bereiche über `AuthGuard`, Admin-Bereiche zusätzlich über `AdminGuard`.
+- Backend `app` auf API-only bereinigt: nur noch `backend/app/api/**` bleibt als Laufzeitpfad bestehen.
+
+### Added — Angular Webflächen (Migration)
+- Login-Seite als dedizierte Webroute (`/login`) statt Backend-Page.
+- Inventar-Seite als Angular-Ansicht mit Ausrüsten/Ablegen/Verkaufen.
+- Admin-Ansichten für Event-Management, Auktionen und Clan-Wars als eigene Seiten im Frontend.
+- Admin-Navigation erweitert (Direktlinks zu Events/Auktionen/Clan-Wars), Header um Inventar-Link ergänzt.
+
+### Fixed — Backend Build (Next.js Route Typen)
+- CI/CD Build-Fehler behoben: ungültige Zusatz-Exporte aus Route-Dateien entfernt.
+- `app/api/auction/route.ts`: Export von `MARKET_FEE_PCT` entfernt.
+- `app/api/clan_war/route.ts`: Export von `WAR_DURATION_DAYS` entfernt.
+- Ergebnis: `npm run build` im Backend läuft wieder erfolgreich durch.
 
 ## [2.2.13] - 2026-06-24
 

@@ -1,0 +1,91 @@
+<div class="inventory-page">
+  <div class="inventory-container">
+    <div class="page-header">
+      <div>
+        <h1>Inventar</h1>
+        <p>Items ausruesten, ablegen und verkaufen.</p>
+      </div>
+      <button class="btn btn-danger btn-sm" (click)="logout()">Abmelden</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value">{{ items.length }}</div>
+        <div class="stat-label">Items gesamt</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ equippedCount }}</div>
+        <div class="stat-label">Ausgeruestet</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ rareOrBetterCount }}</div>
+        <div class="stat-label">Episch+</div>
+      </div>
+    </div>
+
+    <div class="slot-filter">
+      <button
+        class="btn btn-secondary btn-sm"
+        *ngFor="let slot of slots"
+        [class.active]="activeSlot === slot"
+        (click)="setSlot(slot)">
+        {{ slot === 'all' ? 'Alle' : slotLabel(slot) }}
+      </button>
+    </div>
+
+    <div class="error-card" *ngIf="error">{{ error }}</div>
+
+    <div class="loading" *ngIf="loading">Lade Inventar...</div>
+
+    <div class="empty-state" *ngIf="!loading && visibleItems.length === 0">
+      Keine Items gefunden.
+    </div>
+
+    <div class="item-grid" *ngIf="!loading && visibleItems.length > 0">
+      <div class="item-card" *ngFor="let item of visibleItems" [class.busy]="actionLoadingId === item.id">
+        <div class="item-head">
+          <div>
+            <div class="item-name" [class]="'item-name ' + tierClass(item.tier)">{{ item.name }}</div>
+            <div class="item-meta">{{ slotLabel(item.slot) }}</div>
+          </div>
+          <div class="item-badges">
+            <span class="badge" [class]="'badge badge-' + item.tier">{{ item.tier }}</span>
+            <span class="badge badge-green" *ngIf="item.isEquipped">Ausgeruestet</span>
+          </div>
+        </div>
+
+        <div class="item-stats">
+          <span>Staerke: <strong>{{ item.power }}</strong></span>
+          <span>Wert: <strong>{{ item.sellValue }}g</strong></span>
+          <span *ngIf="item.enchantments.length > 0">Runen: <strong>{{ item.enchantments.length }}</strong></span>
+        </div>
+
+        <div class="item-actions">
+          <button class="btn btn-secondary btn-sm" (click)="toggleEquip(item)" [disabled]="actionLoadingId === item.id">
+            {{ item.isEquipped ? 'Ablegen' : 'Ausruesten' }}
+          </button>
+          <button
+            class="btn btn-danger btn-sm"
+            (click)="openSellConfirm(item)"
+            [disabled]="actionLoadingId === item.id || item.isLocked || item.isEquipped">
+            Verkaufen
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" *ngIf="confirmSellItem">
+  <div class="modal-card">
+    <h3>Item verkaufen?</h3>
+    <p>
+      {{ confirmSellItem.name }} wird fuer {{ confirmSellItem.sellValue }} Gold verkauft
+      und aus dem Inventar entfernt.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary btn-sm" (click)="cancelSellConfirm()">Abbrechen</button>
+      <button class="btn btn-danger btn-sm" (click)="sellItem(confirmSellItem)">Verkaufen</button>
+    </div>
+  </div>
+</div>

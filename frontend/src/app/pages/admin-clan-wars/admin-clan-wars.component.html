@@ -1,0 +1,77 @@
+<div class="admin-clan-wars-page">
+  <div class="container">
+    <div class="title-row">
+      <div>
+        <h1>Clan Wars Admin</h1>
+        <p>Neue Kaempfe starten und aktive Kaempfe abbrechen.</p>
+      </div>
+      <button class="btn btn-secondary btn-sm" (click)="loadWars()">Aktualisieren</button>
+    </div>
+
+    <div class="error-card" *ngIf="error">{{ error }}</div>
+    <div class="success-msg" *ngIf="success">{{ success }}</div>
+
+    <div class="card">
+      <h3>Neuen Gildenkampf starten</h3>
+      <div class="create-grid">
+        <label>Clan A
+          <select class="input" [(ngModel)]="clanAId">
+            <option value="">Clan waehlen</option>
+            <option *ngFor="let clan of clans" [value]="clan.id">{{ clan.name }}</option>
+          </select>
+        </label>
+        <label>Clan B
+          <select class="input" [(ngModel)]="clanBId">
+            <option value="">Clan waehlen</option>
+            <option *ngFor="let clan of clans" [value]="clan.id" [disabled]="clan.id === clanAId">{{ clan.name }}</option>
+          </select>
+        </label>
+        <label>Dauer (Tage)
+          <select class="input" [(ngModel)]="durationDays">
+            <option value="1">1</option>
+            <option value="3">3</option>
+            <option value="5">5</option>
+            <option value="7">7</option>
+            <option value="14">14</option>
+          </select>
+        </label>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary btn-sm" (click)="createWar()" [disabled]="creating">
+          {{ creating ? 'Erstelle...' : 'Starten' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="section-title">Aktive Kaempfe ({{ activeWars.length }})</div>
+    <div class="loading" *ngIf="loading">Lade Kaempfe...</div>
+    <div class="empty-state" *ngIf="!loading && activeWars.length === 0">Keine aktiven Kaempfe.</div>
+
+    <div class="war-list" *ngIf="!loading && activeWars.length > 0">
+      <div class="war-card" *ngFor="let war of activeWars">
+        <div class="score-row">
+          <strong>{{ war.clan_a_name }}</strong>
+          <span>{{ war.clan_a_points }} - {{ war.clan_b_points }}</span>
+          <strong>{{ war.clan_b_name }}</strong>
+        </div>
+        <div class="meta-row">{{ war.participant_count }} Teilnehmer | {{ fmtDate(war.started_at) }} - {{ fmtDate(war.ends_at) }}</div>
+        <button class="btn btn-danger btn-sm" (click)="cancelWar(war.id)">Abbrechen</button>
+      </div>
+    </div>
+
+    <div class="section-title" *ngIf="pastWars.length > 0">Vergangene Kaempfe</div>
+    <div class="war-list" *ngIf="pastWars.length > 0">
+      <div class="war-card" *ngFor="let war of pastWars">
+        <div class="score-row">
+          <strong>{{ war.clan_a_name }}</strong>
+          <span>{{ war.clan_a_points }} - {{ war.clan_b_points }}</span>
+          <strong>{{ war.clan_b_name }}</strong>
+        </div>
+        <div class="meta-row">
+          {{ fmtDate(war.started_at) }} - {{ fmtDate(war.ends_at) }}
+          <span *ngIf="war.winner_name"> | Sieger: {{ war.winner_name }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

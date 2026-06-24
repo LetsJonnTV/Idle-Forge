@@ -47,6 +47,13 @@
   line-height: 1.5;
 }
 
+.admin-links-row {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-top: 0.3rem;
+}
+
 /* ── Search ──────────────────────────────────────────── */
 .search-wrapper {
   .input {
