@@ -65,7 +65,9 @@ jobs:
         run: flutter pub get
 
       - name: Restore google-services.json
-        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+        run: |
+          printf '%s' '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+          python3 -c "import json,sys; d=json.load(open('android/app/google-services.json')); print('package:', d['client'][0]['client_info']['android_client_info']['package_name']); print('clients:', len(d['client'][0]['oauth_client']))"
 
       - name: Restore debug keystore
         run: |
