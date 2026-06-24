@@ -217,7 +217,7 @@ jobs:
         run: |
           set -euo pipefail
           missing=0
-          mapfile -t endpoints < <(grep -RhoE "/api/[a-zA-Z0-9_/$\{\}-]+" frontend/src | sort -u)
+          mapfile -t endpoints < <(grep -RhoE "/api/[a-zA-Z0-9_/$\{\}.@-]+" frontend/src | grep -v '\$\{[^}]*$' | sort -u)
 
           if [ "${#endpoints[@]}" -eq 0 ]; then
             echo "No frontend /api endpoints found."
@@ -225,7 +225,7 @@ jobs:
           fi
 
           for endpoint in "${endpoints[@]}"; do
-            normalized=$(echo "$endpoint" | sed -E 's#\$\{[^}]+\}##g; s#/$##')
+            normalized=$(echo "$endpoint" | sed -E 's#\$\{[^}]+\}#[id]#g; s#/+#/#g; s#/$##')
             route_path="${normalized#/api/}"
 
             if [ -f "backend/app/api/${route_path}/route.ts" ] || [ -f "backend/app/api/${route_path}/route.js" ] || [ -d "backend/app/api/${route_path}" ]; then
