@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:firebase_core/firebase_core.dart';
@@ -229,12 +230,6 @@ class _IdleForgeAppState extends State<IdleForgeApp>
       });
     }
 
-    if (controller.streakClaimedToday) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _showStreakDialog(context, controller);
-      });
-    }
 
     if (!disableUpdateCheck) {
       // Version check
@@ -351,15 +346,43 @@ class IdleForgeHome extends StatefulWidget {
 class _IdleForgeHomeState extends State<IdleForgeHome> {
   GameController get controller => widget.controller;
 
+  List<Map<String, dynamic>> _activeEvents = [];
+  Timer? _eventsTimer;
+
   @override
   void initState() {
     super.initState();
-    if (!controller.tutorialCompleted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && !controller.tutorialCompleted) {
-          _showLoginPromptThenTutorial();
-        }
-      });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadActiveEvents();
+      _eventsTimer = Timer.periodic(
+        const Duration(minutes: 5),
+        (_) => _loadActiveEvents(),
+      );
+      if (!controller.tutorialCompleted) {
+        _showLoginPromptThenTutorial();
+      } else {
+        _showStartupDialogs();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _eventsTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadActiveEvents() async {
+    if (!ApiService.instance.isLoggedIn) return;
+    final events = await ApiService.instance.getActiveEvents();
+    if (mounted) setState(() => _activeEvents = events);
+  }
+
+  void _showStartupDialogs() {
+    if (!mounted) return;
+    if (controller.streakClaimedToday) {
+      _showStreakDialog(context, controller);
     }
   }
 
@@ -424,7 +447,32 @@ class _IdleForgeHomeState extends State<IdleForgeHome> {
             children: [
               _TopBar(controller: controller, dense: dense),
               Expanded(
-                child: _CombatArea(controller: controller, dense: dense),
+                child: Stack(
+                  children: [
+                    _CombatArea(controller: controller, dense: dense),
+                    if (_activeEvents.isNotEmpty)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: EventFloatingButton(
+                            events: _activeEvents,
+                            text: controller.text,
+                            onTap: (event) => Navigator.push<void>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => EventDetailScreen(
+                                  event: event,
+                                  text: controller.text,
+                                ),
+                              ),
+                            ).then((_) => _loadActiveEvents()),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
               _BottomMenu(controller: controller, dense: dense),
             ],
@@ -473,13 +521,25 @@ class _TopBar extends StatelessWidget {
       );
     }
 
+    final nameColor = controller.equippedNameColorHex != null
+        ? Color(
+            int.parse(
+              controller.equippedNameColorHex!.replaceFirst('#', 'FF'),
+              radix: 16,
+            ),
+          )
+        : context.textBright;
+
     final profileCard = Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(_rs(context, 12, min: 8)),
         onTap: () => _showProfilePanel(context),
         child: Container(
-          padding: EdgeInsets.all(_rs(context, dense ? 8 : 10, min: 6)),
+          padding: EdgeInsets.symmetric(
+            horizontal: _rs(context, 10, min: 7),
+            vertical: _rs(context, dense ? 7 : 8, min: 5),
+          ),
           decoration: BoxDecoration(
             color: context.cardBgAlt,
             borderRadius: BorderRadius.circular(_rs(context, 12, min: 8)),
@@ -493,75 +553,43 @@ class _TopBar extends StatelessWidget {
             ],
           ),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               _SvgIcon(
                 path: 'assets/icons/profile.svg',
-                size: _rs(context, dense ? 30 : 34, min: 22),
+                size: _rs(context, dense ? 22 : 24, min: 18),
               ),
-              SizedBox(width: _rs(context, 8, min: 5)),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (controller.equippedPrestigeTitle != null)
-                      Text(
-                        controller.equippedPrestigeTitle!,
-                        style: TextStyle(
-                          fontSize: _rs(context, dense ? 10 : 11, min: 9),
-                          color: const Color(0xFFD4A84B),
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    Text(
-                      controller.playerName,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: _rs(context, dense ? 13 : 14, min: 11),
-                        color: controller.equippedNameColorHex != null
-                            ? Color(
-                                int.parse(
-                                  controller.equippedNameColorHex!.replaceFirst(
-                                    '#',
-                                    'FF',
-                                  ),
-                                  radix: 16,
-                                ),
-                              )
-                            : context.textBright,
-                      ),
+              SizedBox(width: _rs(context, 7, min: 5)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    controller.playerName,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: _rs(context, dense ? 13 : 14, min: 11),
+                      color: nameColor,
                     ),
-                    SizedBox(height: _rs(context, 2, min: 1)),
+                  ),
+                  if (controller.equippedPrestigeTitle != null)
                     Text(
-                      '${text.tr('totalStrength')}: ${controller.totalStrength}',
+                      controller.equippedPrestigeTitle!,
                       style: TextStyle(
-                        fontSize: _rs(context, dense ? 11 : 12, min: 9),
+                        fontSize: _rs(context, 10, min: 8.5),
+                        color: const Color(0xFFD4A84B),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )
+                  else
+                    Text(
+                      'P${controller.prestigeLevel} · ${text.tr('totalStrength')} ${controller.totalStrength}',
+                      style: TextStyle(
+                        fontSize: _rs(context, 10, min: 8.5),
                         color: context.textSecondary,
                       ),
                     ),
-                    Text(
-                      'Prestige ${controller.prestigeLevel} | Scherben ${controller.forgeShards}',
-                      style: TextStyle(
-                        fontSize: _rs(context, dense ? 10 : 11, min: 8.5),
-                        color: context.textTertiary,
-                      ),
-                    ),
-                    Text(
-                      'HP ${controller.playerHp.round()}/${controller.maxPlayerHp.round()} | Tode ${controller.deaths}',
-                      style: TextStyle(
-                        fontSize: _rs(context, dense ? 10 : 11, min: 8.5),
-                        color: context.textTertiary,
-                      ),
-                    ),
-                    Text(
-                      'Profil bearbeiten',
-                      style: TextStyle(
-                        fontSize: _rs(context, dense ? 9.5 : 10.5, min: 8.5),
-                        color: const Color(0xFF9FB6CF),
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
             ],
           ),
@@ -606,72 +634,66 @@ class _TopBar extends StatelessWidget {
       ),
     );
 
+    final hpPct = controller.maxPlayerHp > 0
+        ? (controller.playerHp / controller.maxPlayerHp).clamp(0.0, 1.0)
+        : 1.0;
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
         _rs(context, 12, min: 8),
-        _rs(context, dense ? 8 : 12, min: 6),
+        _rs(context, dense ? 8 : 10, min: 6),
         _rs(context, 12, min: 8),
-        _rs(context, dense ? 6 : 8, min: 4),
+        _rs(context, dense ? 5 : 6, min: 4),
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final compact = dense || constraints.maxWidth < 720;
-          if (!compact) {
-            return Row(
-              children: [
-                Expanded(child: profileCard),
-                SizedBox(width: _rs(context, 8, min: 5)),
-                goldCard,
-                SizedBox(width: _rs(context, 8, min: 5)),
-                actionIcon(
-                  icon: Icons.auto_awesome,
-                  onTap: () => _showSkillTree(context, controller),
-                ),
-                const SizedBox(width: 8),
-                actionIcon(
-                  icon: Icons.settings,
-                  onTap: () => _showSettingsPanel(context),
-                ),
-                if (devMode) ...[
-                  SizedBox(width: _rs(context, 8, min: 5)),
-                  actionIcon(
-                    icon: Icons.tune,
-                    onTap: () => _showDeveloperPanel(context),
-                  ),
-                ],
-              ],
-            );
-          }
-
-          return Column(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
             children: [
               profileCard,
-              SizedBox(height: _rs(context, 8, min: 5)),
-              Row(
-                children: [
-                  Expanded(child: goldCard),
-                  SizedBox(width: _rs(context, 8, min: 5)),
-                  actionIcon(
-                    icon: Icons.auto_awesome,
-                    onTap: () => _showSkillTree(context, controller),
-                  ),
-                  const SizedBox(width: 8),
-                  actionIcon(
-                    icon: Icons.settings,
-                    onTap: () => _showSettingsPanel(context),
-                  ),
-                  if (devMode) ...[
-                    SizedBox(width: _rs(context, 8, min: 5)),
-                    actionIcon(
-                      icon: Icons.tune,
-                      onTap: () => _showDeveloperPanel(context),
-                    ),
-                  ],
-                ],
+              const Spacer(),
+              goldCard,
+              SizedBox(width: _rs(context, 6, min: 4)),
+              actionIcon(
+                icon: Icons.auto_awesome,
+                onTap: () => _showSkillTree(context, controller),
               ),
+              SizedBox(width: _rs(context, 6, min: 4)),
+              actionIcon(
+                icon: Icons.settings,
+                onTap: () => _showSettingsPanel(context),
+              ),
+              if (devMode) ...[
+                SizedBox(width: _rs(context, 6, min: 4)),
+                actionIcon(
+                  icon: Icons.tune,
+                  onTap: () => _showDeveloperPanel(context),
+                ),
+              ],
             ],
-          );
-        },
+          ),
+          SizedBox(height: _rs(context, 5, min: 3)),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Stack(
+              children: [
+                Container(height: 5, color: context.cardBgAlt),
+                FractionallySizedBox(
+                  widthFactor: hpPct,
+                  child: Container(
+                    height: 5,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFB71C1C), Color(0xFFEF5350)],
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -974,7 +996,7 @@ class _TopBar extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                       onTap: () async {
                         final uri = Uri.parse(
-                          'https://github.com/LetsJonnTV/Idle-Forge/issues/new',
+                          'https://github.com/LetsJonnTV/Idle-Forge/issues/new?template=bug_report.md',
                         );
                         if (await canLaunchUrl(uri)) {
                           await launchUrl(
@@ -1000,6 +1022,52 @@ class _TopBar extends StatelessWidget {
                             const SizedBox(width: 10),
                             Text(
                               controller.text.tr('reportBug'),
+                              style: TextStyle(
+                                color: ctx.textPrimary,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const Spacer(),
+                            Icon(
+                              Icons.open_in_new,
+                              color: ctx.textTertiary,
+                              size: 16,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () async {
+                        final uri = Uri.parse(
+                          'https://github.com/LetsJonnTV/Idle-Forge/issues/new?template=feature_request.md',
+                        );
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: ctx.cardBg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: ctx.cardBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.lightbulb_outline,
+                              color: ctx.iconColor,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              controller.text.tr('featureRequest'),
                               style: TextStyle(
                                 color: ctx.textPrimary,
                                 fontSize: 14,
@@ -2817,30 +2885,15 @@ Future<void> _showSkillTree(
   );
 }
 
-class _BottomMenu extends StatefulWidget {
+class _BottomMenu extends StatelessWidget {
   const _BottomMenu({required this.controller, this.dense = false});
 
   final GameController controller;
   final bool dense;
 
-  @override
-  State<_BottomMenu> createState() => _BottomMenuState();
-}
-
-class _BottomMenuState extends State<_BottomMenu> {
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    final controller = widget.controller;
-    final dense = widget.dense;
     final text = controller.text;
 
     return Container(
@@ -2850,172 +2903,172 @@ class _BottomMenuState extends State<_BottomMenu> {
         _rs(context, 8, min: 4),
         _rs(context, dense ? 6 : 8, min: 4),
       ),
-      padding: EdgeInsets.all(_rs(context, dense ? 6 : 8, min: 4)),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
         color: context.cardBgAlt,
-        borderRadius: BorderRadius.circular(_rs(context, 14, min: 9)),
-        border: Border.all(color: context.borderGold, width: 1.5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.borderGoldBright, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: context.goldAccent.withValues(alpha: 0.12),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+            color: context.goldAccent.withValues(alpha: 0.15),
+            blurRadius: 14,
+            offset: const Offset(0, -3),
           ),
         ],
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final compact = dense || constraints.maxWidth < 620;
-          final buttons = [
-            _MenuButton(
-              iconPath: 'assets/icons/forge.svg',
-              label: text.tr('forge'),
-              dense: dense,
-              onTap: () => _showForgePanel(context, controller),
-            ),
-            _MenuButton(
-              icon: Icons.local_drink_rounded,
-              label: 'Tränke',
-              dense: dense,
-              onTap: () => _showFlaskPanel(context, controller),
-            ),
-            _MenuButton(
-              iconPath: 'assets/icons/menu_world.svg',
-              label: text.tr('menuWorld'),
-              dense: dense,
-              onTap: () => _showWorldPanel(context, controller),
-            ),
-            if (ApiService.instance.isLoggedIn)
-              _MenuButton(
-                iconPath: 'assets/icons/menu_clan.svg',
-                label: text.tr('menuClan'),
-                dense: dense,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (_) =>
-                        ClanScreen(text: text, controller: controller),
+      child: Row(
+        children: [
+          _NavBtn(
+            iconPath: 'assets/icons/forge.svg',
+            label: text.tr('forge'),
+            onTap: () => _showForgePanel(context, controller),
+          ),
+          _NavBtn(
+            iconPath: 'assets/icons/inventory.svg',
+            label: text.tr('inventory'),
+            onTap: () => _showInventory(context, controller),
+          ),
+          _NavBtn(
+            iconPath: 'assets/icons/menu_dungeon.svg',
+            label: text.tr('menuDungeon'),
+            onTap: () => _showDungeonPanel(context, controller),
+          ),
+          _NavBtn(
+            iconPath: 'assets/icons/menu_world.svg',
+            label: text.tr('menuWorld'),
+            onTap: () => _showWorldPanel(context, controller),
+          ),
+          _NavBtn(
+            icon: Icons.grid_view_rounded,
+            label: 'Mehr',
+            onTap: () => _showMoreMenu(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showMoreMenu(BuildContext context) async {
+    final text = controller.text;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.sheetBg,
+      isScrollControlled: true,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: Text(
+                    'Mehr',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: context.textBright,
+                    ),
                   ),
                 ),
-              ),
-            _MenuButton(
-              iconPath: 'assets/icons/menu_shop.svg',
-              label: text.tr('menuShop'),
-              dense: dense,
-              onTap: () => _showShopPanel(context, controller),
-            ),
-            _MenuButton(
-              iconPath: 'assets/icons/menu_quest.svg',
-              label: text.tr('menuQuest'),
-              dense: dense,
-              onTap: () => _showQuestBoard(context, controller),
-            ),
-            _MenuButton(
-              iconPath: 'assets/icons/inventory.svg',
-              label: text.tr('inventory'),
-              dense: dense,
-              onTap: () => _showInventory(context, controller),
-            ),
-            _MenuButton(
-              iconPath: 'assets/icons/menu_dungeon.svg',
-              label: text.tr('menuDungeon'),
-              dense: dense,
-              onTap: () => _showDungeonPanel(context, controller),
-            ),
-            _MenuButton(
-              iconPath: 'assets/icons/menu_pet.svg',
-              label: text.tr('menuPet'),
-              dense: dense,
-              onTap: () => _showPetPanel(context, controller),
-            ),
-            _MenuButton(
-              iconPath: 'assets/icons/menu_expedition.svg',
-              label: text.tr('menuExpedition'),
-              dense: dense,
-              onTap: () => _showExpeditionPanel(context, controller),
-            ),
-            _MenuButton(
-              iconPath: 'assets/icons/menu_recipes.svg',
-              label: text.tr('menuRecipes'),
-              dense: dense,
-              onTap: () => _showRecipePanel(context, controller),
-            ),
-            _MenuButton(
-              iconPath: 'assets/icons/menu_ascension.svg',
-              label: text.tr('menuAscension'),
-              dense: dense,
-              onTap: () => _showAscensionPanel(context, controller),
-            ),
-            _MenuButton(
-              iconPath: 'assets/icons/menu_online.svg',
-              label: text.tr('socialTitle'),
-              dense: dense,
-              onTap: () => _showSocialPanel(context, controller),
-            ),
-          ];
-
-          if (!compact) {
-            return Row(
-              children: buttons
-                  .map((button) => Expanded(child: button))
-                  .toList(growable: false),
-            );
-          }
-
-          final pageCount = (buttons.length / 2).ceil();
-          final btnHeight = _rs(context, dense ? 54 : 64, min: 48, max: 82);
-
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                height: btnHeight,
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: pageCount,
-                  onPageChanged: (page) => setState(() => _currentPage = page),
-                  itemBuilder: (context, pageIndex) {
-                    final start = pageIndex * 2;
-                    final end = (start + 2).clamp(0, buttons.length);
-                    final pageBtns = buttons.sublist(start, end);
-                    return Row(
-                      children: pageBtns
-                          .map((b) => Expanded(child: b))
-                          .toList(growable: false),
-                    );
-                  },
-                ),
-              ),
-              SizedBox(height: _rs(context, 6, min: 4)),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(pageCount, (i) {
-                  final active = i == _currentPage;
-                  return GestureDetector(
-                    onTap: () => _pageController.animateToPage(
-                      i,
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeInOut,
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _MoreTile(
+                      iconPath: 'assets/icons/menu_shop.svg',
+                      label: text.tr('menuShop'),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showShopPanel(context, controller);
+                      },
                     ),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      width: active ? 14 : 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: active
-                            ? context.textPrimary
-                            : context.textPrimary.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(3),
+                    _MoreTile(
+                      icon: Icons.local_drink_rounded,
+                      label: 'Tränke',
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showFlaskPanel(context, controller);
+                      },
+                    ),
+                    _MoreTile(
+                      iconPath: 'assets/icons/menu_quest.svg',
+                      label: text.tr('menuQuest'),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showQuestBoard(context, controller);
+                      },
+                    ),
+                    _MoreTile(
+                      iconPath: 'assets/icons/menu_pet.svg',
+                      label: text.tr('menuPet'),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showPetPanel(context, controller);
+                      },
+                    ),
+                    _MoreTile(
+                      iconPath: 'assets/icons/menu_expedition.svg',
+                      label: text.tr('menuExpedition'),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showExpeditionPanel(context, controller);
+                      },
+                    ),
+                    _MoreTile(
+                      iconPath: 'assets/icons/menu_recipes.svg',
+                      label: text.tr('menuRecipes'),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showRecipePanel(context, controller);
+                      },
+                    ),
+                    _MoreTile(
+                      iconPath: 'assets/icons/menu_ascension.svg',
+                      label: text.tr('menuAscension'),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showAscensionPanel(context, controller);
+                      },
+                    ),
+                    if (ApiService.instance.isLoggedIn)
+                      _MoreTile(
+                        iconPath: 'assets/icons/menu_clan.svg',
+                        label: text.tr('menuClan'),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          Navigator.push<void>(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => ClanScreen(
+                                text: text,
+                                controller: controller,
+                              ),
+                            ),
+                          );
+                        },
                       ),
+                    _MoreTile(
+                      iconPath: 'assets/icons/menu_online.svg',
+                      label: text.tr('socialTitle'),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showSocialPanel(context, controller);
+                      },
                     ),
-                  );
-                }),
-              ),
-            ],
-          );
-        },
-      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -6800,6 +6853,133 @@ class _MenuButton extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavBtn extends StatelessWidget {
+  const _NavBtn({
+    this.iconPath,
+    this.icon,
+    required this.label,
+    required this.onTap,
+  }) : assert(iconPath != null || icon != null);
+
+  final String? iconPath;
+  final IconData? icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Container(
+            height: 62,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [context.cardBg, context.cardBgAlt],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: context.borderGoldBright, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: context.goldAccent.withValues(alpha: 0.14),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (iconPath != null)
+                  _SvgIcon(path: iconPath!, size: 24)
+                else
+                  Icon(icon, size: 24, color: context.goldAccent),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: context.textPrimary,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MoreTile extends StatelessWidget {
+  const _MoreTile({
+    this.iconPath,
+    this.icon,
+    required this.label,
+    required this.onTap,
+  }) : assert(iconPath != null || icon != null);
+
+  final String? iconPath;
+  final IconData? icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 96,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          decoration: BoxDecoration(
+            color: context.cardBg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: context.borderGold, width: 1),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (iconPath != null)
+                _SvgIcon(path: iconPath!, size: 26)
+              else
+                Icon(icon, size: 26, color: context.goldAccent),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: context.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
             ],
           ),

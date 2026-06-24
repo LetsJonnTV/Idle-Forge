@@ -973,6 +973,38 @@ class ApiService {
     }
   }
 
+  /// Submit a score delta for an event (e.g. crafted item → forge_tournament).
+  /// [meta] is optional extra data stored alongside the score.
+  /// Silently ignores errors — score reporting is best-effort.
+  Future<void> submitEventScore(
+    String eventId,
+    int delta, {
+    Map<String, dynamic>? meta,
+  }) async {
+    if (!isLoggedIn) return;
+    try {
+      await _post('/api/events/$eventId/score', {
+        'delta': delta,
+        if (meta != null) 'meta': meta,
+      });
+    } catch (_) {
+      // best-effort
+    }
+  }
+
+  /// Fetch the top-100 leaderboard for an event + the calling player's rank.
+  /// Returns `{ 'leaderboard': [...], 'playerRank': {...} | null }` or null.
+  Future<Map<String, dynamic>?> getEventLeaderboard(String eventId) async {
+    if (!isLoggedIn) return null;
+    try {
+      return await _get('/api/events/$eventId/leaderboard');
+    } on ApiException {
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   // ------------------------------------------------------------------ //
   //  Inventory Sync
   // ------------------------------------------------------------------ //

@@ -1,0 +1,116 @@
+<div class="admin-clans-page">
+  <div class="container">
+
+    <!-- DETAIL VIEW -->
+    <ng-container *ngIf="selectedClan">
+      <div class="title-row">
+        <div>
+          <button class="btn btn-secondary btn-sm back-btn" (click)="backToList()">← Zurück</button>
+          <h1>{{ selectedClan.name }}</h1>
+          <p class="muted">
+            Level {{ selectedClan.level }} &middot;
+            {{ selectedClan.member_count }} Mitglieder &middot;
+            Gegründet {{ fmtDate(selectedClan.created_at) }}
+          </p>
+          <p class="muted" *ngIf="selectedClan.leader">
+            Anführer: <strong>{{ selectedClan.leader.username }}</strong>
+          </p>
+          <p class="muted desc" *ngIf="selectedClan.description">{{ selectedClan.description }}</p>
+        </div>
+        <button class="btn btn-danger btn-sm" (click)="deleteClan(selectedClan)">Clan löschen</button>
+      </div>
+
+      <div class="error-card" *ngIf="error">{{ error }}</div>
+
+      <div class="card">
+        <h3>Mitglieder ({{ members.length }})</h3>
+        <div class="loading" *ngIf="membersLoading">Lade Mitglieder…</div>
+        <div class="empty-state" *ngIf="!membersLoading && members.length === 0">Keine Mitglieder gefunden.</div>
+
+        <table class="members-table" *ngIf="!membersLoading && members.length > 0">
+          <thead>
+            <tr>
+              <th>Spieler</th>
+              <th>Stärke</th>
+              <th>Prestige</th>
+              <th>Kapitel</th>
+              <th>Beigetreten</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let m of members">
+              <td>
+                {{ m.player.username }}
+                <span class="badge-leader" *ngIf="isLeader(m)">Anführer</span>
+              </td>
+              <td>{{ m.player.total_strength }}</td>
+              <td>{{ m.player.prestige_level }}</td>
+              <td>{{ m.player.chapter }}</td>
+              <td>{{ fmtDate(m.joined_at) }}</td>
+              <td>
+                <button
+                  class="btn btn-danger btn-xs"
+                  [disabled]="isLeader(m)"
+                  [title]="isLeader(m) ? 'Anführer kann nicht gekickt werden' : 'Kicken'"
+                  (click)="kickMember(m)">
+                  Kicken
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </ng-container>
+
+    <!-- LIST VIEW -->
+    <ng-container *ngIf="!selectedClan">
+      <div class="title-row">
+        <div>
+          <h1>Admin Clans</h1>
+          <p class="muted">Alle Clans verwalten, Mitglieder einsehen und Clans löschen.</p>
+        </div>
+        <div class="stat-chip">{{ clans.length }} Clans</div>
+      </div>
+
+      <div class="error-card" *ngIf="error">{{ error }}</div>
+
+      <div class="search-row">
+        <input
+          class="input"
+          type="search"
+          [(ngModel)]="searchQuery"
+          placeholder="🔍 Clan suchen…"
+          (keyup.enter)="loadClans()"
+        />
+        <button class="btn btn-secondary btn-sm" (click)="loadClans()">Suchen</button>
+      </div>
+
+      <div class="loading" *ngIf="loading">Lade Clans…</div>
+
+      <div class="empty-state" *ngIf="!loading && clans.length === 0 && !error">
+        Keine Clans gefunden.
+      </div>
+
+      <div class="clans-list" *ngIf="!loading && clans.length > 0">
+        <div class="clan-card" *ngFor="let clan of clans">
+          <div class="clan-info">
+            <div class="clan-name">{{ clan.name }}</div>
+            <div class="clan-meta">
+              Level {{ clan.level }} &middot;
+              {{ clan.member_count }} Mitglieder &middot;
+              Anführer: {{ clan.leader?.username ?? '—' }} &middot;
+              {{ fmtDate(clan.created_at) }}
+            </div>
+            <div class="clan-desc" *ngIf="clan.description">{{ clan.description }}</div>
+          </div>
+          <div class="clan-actions">
+            <button class="btn btn-secondary btn-sm" (click)="openClan(clan)">Details</button>
+            <button class="btn btn-danger btn-sm" (click)="deleteClan(clan)">Löschen</button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+  </div>
+</div>

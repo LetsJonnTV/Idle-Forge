@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const { rows: events } = await pool.query(
-      `SELECT id, name, description, starts_at, ends_at, currency_name, banner_color
+      `SELECT id, name, description, starts_at, ends_at, currency_name, banner_color,
+              event_type, type_config, notify_on_start
        FROM seasonal_events
        WHERE starts_at <= NOW() AND ends_at > NOW()
        ORDER BY ends_at ASC`,
@@ -38,6 +39,19 @@ export async function GET(request: NextRequest) {
 
     const currencyMap = new Map(playerCurrencies.map((c) => [c.event_id, c.amount]));
 
+    // Get player scores
+    let playerScores: { event_id: string; score: number }[] = [];
+    if (eventIds.length > 0) {
+      const placeholders = eventIds.map((_, i) => `$${i + 2}`).join(', ');
+      const { rows } = await pool.query(
+        `SELECT event_id, score FROM event_player_scores
+         WHERE player_id = $1 AND event_id IN (${placeholders})`,
+        [auth.playerId, ...eventIds],
+      );
+      playerScores = rows;
+    }
+    const scoreMap = new Map(playerScores.map((s) => [s.event_id, s.score]));
+
     return NextResponse.json({
       events: events.map((e) => ({
         id: e.id,
@@ -47,7 +61,10 @@ export async function GET(request: NextRequest) {
         endsAt: e.ends_at,
         currencyName: e.currency_name,
         bannerColor: e.banner_color,
+        eventType: e.event_type ?? 'collection',
+        typeConfig: e.type_config ?? {},
         playerCurrency: currencyMap.get(e.id) ?? 0,
+        playerScore: scoreMap.get(e.id) ?? 0,
       })),
     });
   } catch (err) {

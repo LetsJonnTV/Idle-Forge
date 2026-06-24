@@ -289,6 +289,9 @@ CREATE TABLE IF NOT EXISTS seasonal_events (
   ends_at TIMESTAMPTZ NOT NULL,
   currency_name TEXT NOT NULL DEFAULT 'Event-Münzen',
   banner_color TEXT NOT NULL DEFAULT '#D4A84B',
+  event_type TEXT CHECK (event_type IN ('collection','world_boss','forge_tournament','dungeon_rush','trade_expedition')) DEFAULT 'collection',
+  type_config JSONB NOT NULL DEFAULT '{}',
+  notify_on_start BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -321,6 +324,40 @@ CREATE INDEX IF NOT EXISTS idx_seasonal_events_dates ON seasonal_events(starts_a
 CREATE INDEX IF NOT EXISTS idx_event_shop_items_event ON event_shop_items(event_id);
 CREATE INDEX IF NOT EXISTS idx_event_player_currency_player ON event_player_currency(player_id);
 
+-- Rank rewards (admin-configurable per event)
+CREATE TABLE IF NOT EXISTS event_rank_rewards (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id UUID REFERENCES seasonal_events(id) ON DELETE CASCADE,
+  rank_from INT NOT NULL,
+  rank_to   INT NOT NULL,
+  reward_type TEXT CHECK (reward_type IN ('gold','item')) NOT NULL,
+  amount INT,
+  item_id TEXT,
+  leaderboard_type TEXT NOT NULL DEFAULT 'solo',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_event_rank_rewards_event ON event_rank_rewards(event_id);
+
+-- Player scores per event (tracks participation and ranking)
+CREATE TABLE IF NOT EXISTS event_player_scores (
+  player_id UUID REFERENCES players(id) ON DELETE CASCADE,
+  event_id  UUID REFERENCES seasonal_events(id) ON DELETE CASCADE,
+  score     BIGINT NOT NULL DEFAULT 0,
+  meta      JSONB NOT NULL DEFAULT '{}',
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (player_id, event_id)
+);
+CREATE INDEX IF NOT EXISTS idx_event_player_scores_event_score ON event_player_scores(event_id, score DESC);
+
+-- Rewards distribution log (prevents double-rewarding)
+CREATE TABLE IF NOT EXISTS event_rewards_distributed (
+  event_id    UUID REFERENCES seasonal_events(id) ON DELETE CASCADE,
+  player_id   UUID REFERENCES players(id) ON DELETE CASCADE,
+  rank        INT NOT NULL,
+  rewarded_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (event_id, player_id)
+);
+
 ALTER TABLE seasonal_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE event_shop_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE event_player_currency ENABLE ROW LEVEL SECURITY;
@@ -336,6 +373,19 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
   CREATE POLICY "Allow all event_player_purchases" ON event_player_purchases FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+ALTER TABLE event_rank_rewards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE event_player_scores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE event_rewards_distributed ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY "Allow all event_rank_rewards" ON event_rank_rewards FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Allow all event_player_scores" ON event_player_scores FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Allow all event_rewards_distributed" ON event_rewards_distributed FOR ALL USING (true);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ============================================================

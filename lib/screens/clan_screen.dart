@@ -267,7 +267,12 @@ class _ClanScreenState extends State<ClanScreen>
       if (!mounted) return;
       if (clan != null) {
         _showSnack(t.tr('clanCreated'));
-        await _load();
+        final newClanId = clan['id'] as String?;
+        if (newClanId != null) {
+          await _loadClanData(newClanId);
+        } else {
+          await _load();
+        }
       } else {
         // Refund if creation failed
         widget.controller.spendGold(-1000);

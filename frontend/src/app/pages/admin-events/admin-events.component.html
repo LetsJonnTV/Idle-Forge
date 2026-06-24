@@ -12,6 +12,7 @@
 
     <div class="error-card" *ngIf="error">{{ error }}</div>
 
+    <!-- LIST VIEW -->
     <ng-container *ngIf="!selectedEvent">
       <div class="stats-row">
         <div class="stat-card"><strong>{{ events.length }}</strong><span>Gesamt</span></div>
@@ -19,6 +20,7 @@
         <div class="stat-card"><strong>{{ upcomingCount }}</strong><span>Geplant</span></div>
       </div>
 
+      <!-- Create form -->
       <div class="card" *ngIf="showCreate">
         <h3>Neues Event</h3>
         <div class="grid">
@@ -27,8 +29,30 @@
           <label class="span-2">Beschreibung<input class="input" [(ngModel)]="createForm.description" /></label>
           <label>Start *<input class="input" type="datetime-local" [(ngModel)]="createForm.starts_at" /></label>
           <label>Ende *<input class="input" type="datetime-local" [(ngModel)]="createForm.ends_at" /></label>
-          <label class="span-2">Banner Farbe<input class="input" [(ngModel)]="createForm.banner_color" /></label>
+          <label>Banner Farbe<input class="input" [(ngModel)]="createForm.banner_color" /></label>
+          <label>
+            Event-Typ
+            <select class="input" [(ngModel)]="createForm.event_type" (ngModelChange)="onEventTypeChange()">
+              <option *ngFor="let t of EVENT_TYPES" [value]="t.value">{{ t.label }}</option>
+            </select>
+          </label>
+          <label class="span-2 notify-row">
+            <input type="checkbox" [(ngModel)]="createForm.notify_on_start" />
+            Push-Benachrichtigung bei Start senden
+          </label>
         </div>
+
+        <div class="type-config-section" *ngIf="currentTypeConfigFields.length > 0">
+          <h4>Typ-Konfiguration</h4>
+          <div class="grid">
+            <label *ngFor="let field of currentTypeConfigFields">
+              {{ field.label }}
+              <input class="input" [type]="field.type === 'number' ? 'number' : 'text'"
+                     [(ngModel)]="typeConfigDraft[field.key]" />
+            </label>
+          </div>
+        </div>
+
         <div class="actions">
           <button class="btn btn-primary btn-sm" (click)="createEvent()" [disabled]="creating">
             {{ creating ? 'Erstelle...' : 'Event erstellen' }}
@@ -45,11 +69,12 @@
             <div class="swatch" [style.background]="event.banner_color"></div>
             <div>
               <div class="event-name">{{ event.name }}</div>
-              <div class="event-meta">{{ fmtDate(event.starts_at) }} - {{ fmtDate(event.ends_at) }}</div>
+              <div class="event-meta">{{ fmtDate(event.starts_at) }} &ndash; {{ fmtDate(event.ends_at) }}</div>
             </div>
           </div>
           <div class="event-info">
             <span>Status: {{ event.status }}</span>
+            <span class="type-badge">{{ eventTypeLabel(event.event_type) }}</span>
             <span>Items: {{ event.item_count }}</span>
           </div>
           <div class="event-actions">
@@ -61,16 +86,22 @@
       </div>
     </ng-container>
 
+    <!-- DETAIL VIEW -->
     <ng-container *ngIf="selectedEvent">
       <div class="detail-head">
         <button class="btn btn-secondary btn-sm" (click)="backToList()">Zurueck</button>
         <div>
           <h2>{{ selectedEvent.name }}</h2>
-          <p>{{ fmtDate(selectedEvent.starts_at) }} - {{ fmtDate(selectedEvent.ends_at) }}</p>
+          <p>
+            <span class="type-badge">{{ eventTypeLabel(selectedEvent.event_type) }}</span>
+            &nbsp;{{ fmtDate(selectedEvent.starts_at) }} &ndash; {{ fmtDate(selectedEvent.ends_at) }}
+          </p>
         </div>
       </div>
 
       <div class="detail-grid">
+
+        <!-- Shop Items -->
         <div class="card span-2">
           <div class="title-row-inline">
             <h3>Shop Items ({{ items.length }})</h3>
@@ -110,6 +141,64 @@
           <div class="empty-state" *ngIf="!itemsLoading && items.length === 0">Keine Shop-Items vorhanden.</div>
         </div>
 
+        <!-- Rank Rewards -->
+        <div class="card span-2">
+          <div class="title-row-inline">
+            <h3>Rang-Belohnungen ({{ rankRewards.length }})</h3>
+            <button class="btn btn-primary btn-sm" (click)="showAddRankReward = !showAddRankReward">
+              {{ showAddRankReward ? 'Abbrechen' : 'Belohnung hinzufuegen' }}
+            </button>
+          </div>
+
+          <div class="add-item" *ngIf="showAddRankReward">
+            <div class="grid">
+              <label>Rang von *<input class="input" type="number" [(ngModel)]="rankRewardForm.rank_from" min="1" /></label>
+              <label>Rang bis *<input class="input" type="number" [(ngModel)]="rankRewardForm.rank_to" min="1" /></label>
+              <label>
+                Belohnungstyp
+                <select class="input" [(ngModel)]="rankRewardForm.reward_type">
+                  <option value="gold">Gold</option>
+                  <option value="item">Item</option>
+                </select>
+              </label>
+              <label>
+                Rangliste
+                <select class="input" [(ngModel)]="rankRewardForm.leaderboard_type">
+                  <option value="solo">Solo</option>
+                  <option value="guild">Gilde</option>
+                </select>
+              </label>
+              <label *ngIf="rankRewardForm.reward_type === 'gold'">
+                Betrag *<input class="input" type="number" [(ngModel)]="rankRewardForm.amount" min="1" />
+              </label>
+              <label *ngIf="rankRewardForm.reward_type === 'item'">
+                Item-ID *<input class="input" [(ngModel)]="rankRewardForm.item_id" placeholder="z.B. sword_of_fire" />
+              </label>
+            </div>
+            <button class="btn btn-primary btn-sm" (click)="addRankReward()" [disabled]="addingRankReward">
+              {{ addingRankReward ? 'Speichere...' : 'Belohnung speichern' }}
+            </button>
+          </div>
+
+          <div class="loading" *ngIf="rankRewardsLoading">Lade Rang-Belohnungen...</div>
+          <table class="items-table" *ngIf="!rankRewardsLoading && rankRewards.length > 0">
+            <thead>
+              <tr><th>Rang</th><th>Typ</th><th>Belohnung</th><th>Rangliste</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let rr of rankRewards">
+                <td>{{ rr.rank_from === rr.rank_to ? '#' + rr.rank_from : '#' + rr.rank_from + ' – #' + rr.rank_to }}</td>
+                <td>{{ rr.reward_type }}</td>
+                <td>{{ rr.reward_type === 'gold' ? (rr.amount + ' Gold') : rr.item_id }}</td>
+                <td>{{ rr.leaderboard_type }}</td>
+                <td><button class="btn btn-danger btn-sm" (click)="deleteRankReward(rr)">Loeschen</button></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="empty-state" *ngIf="!rankRewardsLoading && rankRewards.length === 0">Keine Rang-Belohnungen konfiguriert.</div>
+        </div>
+
+        <!-- Currency vergeben -->
         <div class="card">
           <h3>Waehrung vergeben</h3>
           <label>Spielername<input class="input" [(ngModel)]="giveUsername" /></label>
@@ -119,6 +208,7 @@
           </button>
           <div class="inline-msg" [class.ok]="giveResult.startsWith('OK')" *ngIf="giveResult">{{ giveResult }}</div>
         </div>
+
       </div>
     </ng-container>
   </div>

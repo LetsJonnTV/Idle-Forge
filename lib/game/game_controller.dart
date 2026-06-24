@@ -172,6 +172,36 @@ class GameController extends ChangeNotifier {
   DateTime? _lastCloudSaveAt;
   bool _isLoaded = false;
 
+  // Active event cache for score reporting (type → eventId)
+  final Map<String, String> _activeEventIdsByType = {};
+  DateTime? _activeEventsCachedAt;
+
+  Future<void> _refreshActiveEventsCache() async {
+    if (!ApiService.instance.isLoggedIn) return;
+    final now = DateTime.now();
+    final cached = _activeEventsCachedAt;
+    if (cached != null && now.difference(cached).inMinutes < 10) return;
+    try {
+      final events = await ApiService.instance.getActiveEvents();
+      _activeEventIdsByType.clear();
+      for (final e in events) {
+        final type = e['eventType'] as String?;
+        final id   = e['id'] as String?;
+        if (type != null && id != null) _activeEventIdsByType[type] = id;
+      }
+      _activeEventsCachedAt = now;
+    } catch (_) {}
+  }
+
+  void _reportEventScore(String eventType, int delta) {
+    final eventId = _activeEventIdsByType[eventType];
+    if (eventId == null) {
+      _refreshActiveEventsCache();
+      return;
+    }
+    ApiService.instance.submitEventScore(eventId, delta);
+  }
+
   /// Tracks the last cloud save/load result for UI feedback.
   /// Values: null = idle, 'saving', 'saved', 'loading', 'loaded', 'error'
   String? cloudSyncStatus;
@@ -2692,6 +2722,7 @@ class GameController extends ChangeNotifier {
         completedStages: 5,
         itemFactory: (tier) => _craftItemWithTier(tier),
       );
+      _reportEventScore('dungeon_rush', 5);
       _save();
       notifyListeners();
       return true;
@@ -2718,6 +2749,7 @@ class GameController extends ChangeNotifier {
         completedStages: completedStages,
         itemFactory: (tier) => _craftItemWithTier(tier),
       );
+      _reportEventScore('dungeon_rush', completedStages);
     } else {
       _dungeonController.activeDungeonRun = null;
     }
@@ -2756,6 +2788,7 @@ class GameController extends ChangeNotifier {
   GameItem _craftItemRaw({required void Function(int soldFor) onAutoSold}) {
     hammers -= 1;
     craftedItems += 1;
+    _reportEventScore('forge_tournament', 1);
     AnalyticsService.instance.logItemCrafted(
       itemName: 'random',
       totalCrafted: craftedItems,

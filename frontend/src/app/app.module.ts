@@ -20,6 +20,7 @@ import { LoginComponent } from './pages/login/login.component';
 import { AdminEventsComponent } from './pages/admin-events/admin-events.component';
 import { AdminAuctionsComponent } from './pages/admin-auctions/admin-auctions.component';
 import { AdminClanWarsComponent } from './pages/admin-clan-wars/admin-clan-wars.component';
+import { AdminClansComponent } from './pages/admin-clans/admin-clans.component';
 
 @NgModule({
   declarations: [
@@ -34,7 +35,8 @@ import { AdminClanWarsComponent } from './pages/admin-clan-wars/admin-clan-wars.
     LoginComponent,
     AdminEventsComponent,
     AdminAuctionsComponent,
-    AdminClanWarsComponent
+    AdminClanWarsComponent,
+    AdminClansComponent
   ],
   imports: [
     BrowserModule,

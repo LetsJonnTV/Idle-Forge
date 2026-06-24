@@ -10,6 +10,7 @@ import { LoginComponent } from './pages/login/login.component';
 import { AdminEventsComponent } from './pages/admin-events/admin-events.component';
 import { AdminAuctionsComponent } from './pages/admin-auctions/admin-auctions.component';
 import { AdminClanWarsComponent } from './pages/admin-clan-wars/admin-clan-wars.component';
+import { AdminClansComponent } from './pages/admin-clans/admin-clans.component';
 import { AuthGuard }  from './guards/auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 
@@ -23,6 +24,7 @@ const routes: Routes = [
   { path: 'admin/events', component: AdminEventsComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'admin/auctions', component: AdminAuctionsComponent, canActivate: [AuthGuard, AdminGuard] },
   { path: 'admin/clan-wars', component: AdminClanWarsComponent, canActivate: [AuthGuard, AdminGuard] },
+  { path: 'admin/clans',    component: AdminClansComponent,    canActivate: [AuthGuard, AdminGuard] },
   { path: '**',        redirectTo: '' }
 ];
 

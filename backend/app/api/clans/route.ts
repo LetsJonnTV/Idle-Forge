@@ -65,13 +65,28 @@ export async function POST(request: NextRequest) {
   }
 
   // Add leader as member
-  await db.from('clan_members').insert({
+  const { error: memberError } = await db.from('clan_members').insert({
     clan_id: clan.id,
     player_id: auth.playerId,
   });
 
+  if (memberError) {
+    console.error('Add clan member error:', memberError);
+    await db.from('clans').delete().eq('id', clan.id);
+    return NextResponse.json({ error: 'Failed to join clan after creation' }, { status: 500 });
+  }
+
   // Update player's clan_id
-  await db.from('players').update({ clan_id: clan.id }).eq('id', auth.playerId);
+  const { error: playerError } = await db
+    .from('players')
+    .update({ clan_id: clan.id })
+    .eq('id', auth.playerId);
+
+  if (playerError) {
+    console.error('Update player clan_id error:', playerError);
+    await db.from('clans').delete().eq('id', clan.id);
+    return NextResponse.json({ error: 'Failed to assign clan to player' }, { status: 500 });
+  }
 
   return NextResponse.json({ clan }, { status: 201 });
 }

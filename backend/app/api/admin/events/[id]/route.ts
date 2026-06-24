@@ -20,13 +20,9 @@ export async function PUT(
   const { id } = await params;
 
   let body: {
-    name?: string;
-    description?: string;
-    starts_at?: string;
-    ends_at?: string;
-    currency_name?: string;
-    banner_color?: string;
-    end_now?: boolean;
+    name?: string; description?: string; starts_at?: string; ends_at?: string;
+    currency_name?: string; banner_color?: string; end_now?: boolean;
+    event_type?: string; type_config?: object; notify_on_start?: boolean;
   };
   try {
     body = await request.json();
@@ -34,6 +30,7 @@ export async function PUT(
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
+  const VALID_TYPES = ['collection','world_boss','forge_tournament','dungeon_rush','trade_expedition'];
   const fields: string[] = [];
   const values: unknown[] = [];
 
@@ -41,6 +38,12 @@ export async function PUT(
   if (body.description !== undefined) { values.push(body.description); fields.push(`description = $${values.length}`); }
   if (body.currency_name !== undefined) { values.push(body.currency_name); fields.push(`currency_name = $${values.length}`); }
   if (body.banner_color !== undefined) { values.push(body.banner_color); fields.push(`banner_color = $${values.length}`); }
+  if (body.event_type !== undefined) {
+    if (!VALID_TYPES.includes(body.event_type)) return NextResponse.json({ error: 'Invalid event_type' }, { status: 400 });
+    values.push(body.event_type); fields.push(`event_type = $${values.length}`);
+  }
+  if (body.type_config !== undefined) { values.push(JSON.stringify(body.type_config)); fields.push(`type_config = $${values.length}`); }
+  if (body.notify_on_start !== undefined) { values.push(body.notify_on_start); fields.push(`notify_on_start = $${values.length}`); }
   if (body.starts_at !== undefined) { values.push(new Date(body.starts_at).toISOString()); fields.push(`starts_at = $${values.length}`); }
   if (body.end_now) {
     values.push(new Date().toISOString());
