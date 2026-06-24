@@ -132,9 +132,15 @@ export default function InventoryPage() {
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <span style={{ fontSize: 18, fontWeight: 'bold', letterSpacing: 3, color: 'var(--gold)' }}>⚒ IDLE FORGE</span>
-          <span style={{ fontSize: 12, color: 'var(--text2)', marginLeft: 12 }}>Inventar</span>
+          <nav style={{ display: 'flex', gap: 4 }}>
+            <span style={{
+              padding: '5px 12px', fontSize: 12, borderRadius: 20,
+              background: 'var(--gold)', color: '#1a1000', fontWeight: 'bold',
+            }}>Inventar</span>
+            <a href="/events" style={{ padding: '5px 12px', fontSize: 12, borderRadius: 20, color: 'var(--text2)', border: '1.5px solid transparent' }}>Events</a>
+          </nav>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 13, color: 'var(--text2)' }}>{username}</span>

@@ -2,6 +2,123 @@
 
 All notable changes to Idle Forge are documented here.
 
+## [Unreleased] — Phase 4
+
+### Added — Gildenkampf (Clan War)
+- Wöchentliche Clan-Kriege: zwei Gilden treten gegeneinander an, gewinner bekommt Ehre
+- Spieler tragen einmal täglich Punkte bei (Punkte = aktuelle Gesamt-Stärke), 24-h-Cooldown
+- Echtzeit-VS-Anzeige mit Punkte-Ticker, linearrem Fortschrittsbalken und Countdown
+- Beitrags-Rangliste farblich nach Team getrennt
+- API: `GET /api/clan_war` (aktiver Krieg + eigener Beitrag + Cooldown-Status), `POST /api/clan_war` (Beitrag leisten)
+- Admin-API: `GET /POST /DELETE /api/admin/clan_wars`
+- Admin-Frontend `/admin/clan-wars`: Krieg starten (Clan-Dropdown, Dauer 1–30 Tage), aktive Kriege mit Abbrechen, vergangene Kriege
+
+### Added — Auktionshaus (Auction House)
+- Spieler können beliebige nicht-ausgerüstete, nicht-gesperrte Items einstellen (max. 5 aktive Listings gleichzeitig)
+- Mindestpreis, optionaler Sofortkauf-Preis, konfigurierbare Laufzeit (1–72 h)
+- Gebote: Mindest-Inkrementvalidierung, kein Eigengebot, vollständige Bid-History
+- Sofortkauf: markiert Auktion als `sold`, überträgt Item sofort an Käufer, schreibt Gold (–5 % Marktgebühr) in `pending_rewards` des Verkäufers
+- Item-Sicherheit: Item wird beim Einstellen aus `player_items` entfernt; bei Ablauf ohne Gebote oder bei Stornierung wird es zurückgegeben
+- Gewonnene Auktionen erscheinen im Tab „Meine Auktionen" unter „Abholen" — Item-Transfer erst bei Claim
+- Browse-Tab mit Slot-Filter, Sortierung (Endzeit / Preis), Seitennavigation (20/Seite)
+- API: `GET/POST /api/auction` (Browse + Einstellen), `GET/POST /api/auction/[id]` (Detail + Aktionen: bid, buy_now, claim, cancel), `GET /api/auction/mine`
+- Admin-API: `GET/DELETE /api/admin/auctions` mit Statusfilter und Aggregat-Statistiken
+- Admin-Frontend `/admin/auctions`: Stats-Leiste (aktiv/verkauft/abgelaufen/storniert + Gesamtvolumen), Auktionskarten nach Status filtern, Notfall-Stornierung
+
+### Added — Technisches (Phase 4)
+- DB-Schema: 4 neue Tabellen (`clan_wars`, `clan_war_contributions`, `auctions`, `auction_bids`) mit RLS-Policies und Indizes
+- `GameController.inventoryForAuction` — liefert auktionierbare Items als Map-Liste (nicht ausgerüstet, nicht gesperrt)
+- `GameController.spendGoldForAuction(amount)` — zieht Gold clientseitig ab und persistiert (analog zu Server-Item-Transfer)
+- 9 neue `ApiService`-Methoden: `getClanWar`, `contributeClanWar`, `getAuctions`, `createAuction`, `placeBid`, `buyNowAuction`, `claimAuction`, `cancelAuction`, `getMyAuctions`
+- Lokalisierung (DE + EN): ~20 neue Keys für Clan-Krieg und Auktionshaus
+
+---
+
+## [2.2.13] - 2026-06-24
+
+### Fixed
+- **Admin-Rewards kamen nie beim Spieler an (Hauptbug)** — `GET /api/saves` las und löschte bei jedem App-Start alle `pending_rewards`, bevor `_claimPendingRewards()` sie verarbeiten konnte. `downloadSave()` in Flutter ignorierte das `pendingRewards`-Feld im Response vollständig, sodass Rewards still vernichtet wurden. Behoben: `pending_rewards`-Logik vollständig aus `GET /api/saves` entfernt — nur `POST /api/players/me/rewards` darf diese Tabelle leeren.
+- **Item-Rewards nicht implementiert** — `_claimPendingRewards()` in `GameController` übersprang Item-Belohnungen komplett (explizites TODO-Kommentar). Implementiert: Blueprint wird per ID aus `ItemCatalogService` nachgeschlagen, daraus ein `GameItem` mit Tier `legendary` erstellt und ins Inventar eingefügt.
+
+## [2.2.x] - 2026-06-24
+
+### Added — Backend (Next.js API)
+
+#### Daily Challenges Sync (`/api/daily_challenges`)
+- `GET` — upserted tagesaktuelle Challenge-Zeile, gibt aktuellen Fortschritt und Claim-Status zurück.
+- `POST` — synchronisiert Fortschritt vom App (nimmt Maximum aus lokal vs. Server), verarbeitet optionales `claim`-Feld zum serverseitigen Markieren als beansprucht.
+
+#### Prestige Shop Sync (`/api/prestige_shop`)
+- `GET` — gibt Set der bereits gekauften Blueprint-IDs des Spielers zurück.
+- `POST` — speichert Prestige-Kauf; gibt 409 zurück wenn bereits vorhanden (wird von der App als Erfolg behandelt).
+
+#### World Boss (`/api/world_boss`)
+- `GET` — gibt den aktiven Boss zurück (erstellt automatisch einen neuen wenn keiner existiert oder der letzte abgelaufen ist). Enthält Spieler-eigenen Schadensbeitrag und Top-10-Rangliste mit Spielernamen.
+- `POST` — verarbeitet Angriff: reduziert Boss-HP atomar (auf 0 begrenzt), aktualisiert Spieler-Schadensdatensatz per Upsert. Schaden pro Angriff auf 10 % von `BASE_HP` (10.000.000) begrenzt.
+- Boss-Dauer: 6 Stunden. Status-Übergänge: `active` → `defeated` (HP = 0) oder `expired` (Timer abgelaufen).
+
+#### Seasonal Events (`/api/events`, `/api/events/[id]/shop`)
+- `GET /api/events` — gibt alle aktuell aktiven Events mit Spieler-Währungsguthaben pro Event zurück.
+- `GET /api/events/[id]/shop` — gibt Shop-Items, Spieler-Währung und Set bereits gekaufter Item-IDs zurück.
+- `POST /api/events/[id]/shop` — transaktionaler Kauf: prüft Währung, prüft Limit pro Spieler, zieht Währung ab, speichert Kauf atomar.
+
+#### Admin — Event-Verwaltung
+- `GET /api/admin/events` — listet alle Events (vergangen, aktiv, geplant) mit Item-Anzahl, verteilter Gesamtwährung und berechnetem Status.
+- `POST /api/admin/events` — erstellt neues Seasonal Event mit Name, Beschreibung, Start-/Enddatum, Währungsname und Banner-Farbe.
+- `PUT /api/admin/events/[id]` — aktualisiert beliebige Event-Felder; unterstützt `end_now: true` zum sofortigen Beenden eines aktiven Events.
+- `DELETE /api/admin/events/[id]` — kaskadierendes Löschen von Event, allen Shop-Items und allen Spielerdaten des Events.
+- `GET /api/admin/events/[id]/items` — listet Shop-Items mit Käuferzahl.
+- `POST /api/admin/events/[id]/items` — fügt Shop-Item hinzu (Name, Beschreibung, Icon, Kosten, Max pro Spieler, Reihenfolge).
+- `PUT /api/admin/events/[id]/items/[itemId]` — aktualisiert vorhandenes Shop-Item.
+- `DELETE /api/admin/events/[id]/items/[itemId]` — entfernt Shop-Item.
+- `POST /api/admin/events/[id]/give_currency` — gibt Event-Währung an Spieler per Username (additive Upsert).
+
+#### Datenbankschema (`schema.sql`)
+Acht neue Tabellen mit idempotenten `CREATE TABLE IF NOT EXISTS` und RLS-Policies:
+`daily_challenges`, `prestige_purchases`, `world_bosses`, `world_boss_damage`, `seasonal_events`, `event_shop_items`, `event_player_currency`, `event_player_purchases`.
+
+### Added — Flutter App
+
+#### API Service (`lib/services/api_service.dart`)
+Neue Methoden: `getDailyChallenges()`, `syncDailyChallenges()`, `getPrestigePurchases()`, `recordPrestigePurchase()`, `getWorldBoss()`, `attackWorldBoss()`, `getActiveEvents()`, `getEventShop()`, `buyEventItem()`.
+
+#### Notification Service (`lib/services/notification_service.dart`)
+Neu geschrieben mit Plattform-Sicherheitsguard (`isSupported`): `scheduleOfflineRewardFull()`, `showOfflineRewardFullNow()`, `showExpeditionComplete()`, `cancelNotification()`, `cancelAll()`.
+
+#### World Boss Screen (`lib/screens/world_boss_screen.dart`)
+Vollbild-Boss-Ansicht: Live-HP-Balken mit Countdown-Timer (Sekundentakt), Angriffs-Button mit Schadensberechnung basierend auf Spielerstärke, Top-10-Rangliste mit Hervorhebung des aktuellen Spielers.
+
+#### Seasonal Events Screens (`lib/screens/event_screen.dart`)
+- `EventsListScreen` — listet alle aktiven Events auf, Tippen öffnet Shop.
+- `EventBannerWidget` — kompaktes Banner für den Hauptscreen mit dem ersten aktiven Event.
+- `EventShopScreen` — vollständiger Event-Shop mit Währungsanzeige, Item-Karten, Kaufen-Button und Besitzer-Status.
+
+#### GameController (`lib/game/game_controller.dart`)
+- `_syncDailyChallengesOnStartup()` — lädt Server-Stand beim Login, merged mit lokalem Stand (Maximum gewinnt, Server-Claims werden vertraut).
+- `_syncDailyChallengesProgress()` — schiebt Fortschritt an Server.
+- `_syncPrestigePurchasesOnLogin()` — holt gekaufte IDs und gleicht mit lokalem Set ab.
+- `onAppPaused()` — wird aus App-Lifecycle aufgerufen; synchronisiert Daily-Challenge-Fortschritt wenn App in Hintergrund wechselt.
+- `claimDailyChallenge()` — nach lokalem Claim Server-Sync ausgelöst.
+- `buyPrestigeItem()` — nach lokalem Kauf auf Server aufgezeichnet.
+- `_checkExpeditionNotifications()` — zeigt Notification für Expeditionen die offline abgeschlossen wurden.
+
+#### Hauptnavigation (`lib/main.dart`)
+World Boss und Events als Einträge im Social-Panel hinzugefügt. App-Lifecycle-Handler ruft `onAppPaused()` beim Pausieren auf.
+
+#### Übersetzungen (`lib/l10n/app_text.dart`)
+~30 neue Keys in DE und EN für World Boss, Events, Notifications und Daily-Sync-Fehler.
+
+### Added — Admin Frontend (Next.js)
+
+#### Events-Seite (`backend/app/events/page.tsx`)
+Vollständige Admin-UI für Seasonal-Event-Verwaltung:
+- **Listenansicht**: Stats-Leiste (gesamt / aktiv / geplant), Event-Karten mit Farbvorschau, Statusbadge, Datumsangaben, Item-Anzahl, verteilter Währung. Aktionen: Detail, Beenden, Löschen.
+- **Erstellen-Formular**: Name, Beschreibung, Start-/Enddatum, Währungsname, Banner-Farbe mit Live-Vorschau.
+- **Detailansicht**: Shop-Item-Tabelle mit Käuferzahl, Item-hinzufügen-Formular, Währung-vergeben-Karte (per Username, Enter-Taste unterstützt), Event-Info-Karte.
+
+#### Navigation
+Tab-Leiste `[Inventar] [Events]` im Header beider Admin-Seiten (`/inventory` und `/events`) hinzugefügt.
+
 ## [2.1.11] - 2026-06-22
 
 ### Added

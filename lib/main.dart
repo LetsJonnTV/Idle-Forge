@@ -16,9 +16,13 @@ import 'l10n/app_text.dart';
 import 'screens/auth_screen.dart';
 import 'screens/clan_screen.dart';
 import 'screens/coop_screen.dart';
+import 'screens/event_screen.dart';
 import 'screens/friends_screen.dart';
 import 'screens/leaderboard_screen.dart';
 import 'screens/pvp_screen.dart';
+import 'screens/world_boss_screen.dart';
+import 'screens/clan_war_screen.dart';
+import 'screens/auction_screen.dart';
 import 'services/api_service.dart';
 import 'services/analytics_service.dart';
 import 'services/remote_config_service.dart';
@@ -184,6 +188,7 @@ class _IdleForgeAppState extends State<IdleForgeApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       controller.syncInventoryToServer().ignore();
+      controller.onAppPaused();
     }
   }
 
@@ -6632,6 +6637,41 @@ Future<void> _showSocialPanel(
                 icon: Icons.group_work_outlined,
                 label: text.tr('coopTitle'),
                 onTap: () => requireAuth(ctx, CoopScreen(text: text)),
+              ),
+              _SocialTile(
+                icon: Icons.whatshot,
+                label: text.tr('worldBossTitle'),
+                onTap: () => requireAuth(
+                  ctx,
+                  WorldBossScreen(
+                    text: text,
+                    playerStrength: controller.totalStrength,
+                  ),
+                ),
+              ),
+              _SocialTile(
+                icon: Icons.celebration,
+                label: text.tr('eventsTitle'),
+                onTap: () => requireAuth(ctx, EventsListScreen(text: text)),
+              ),
+              _SocialTile(
+                icon: Icons.shield,
+                label: text.tr('clanWarTitle'),
+                onTap: () => requireAuth(ctx, ClanWarScreen(text: text)),
+              ),
+              _SocialTile(
+                icon: Icons.storefront_outlined,
+                label: text.tr('auctionTitle'),
+                onTap: () => requireAuth(
+                  ctx,
+                  AuctionScreen(
+                    text: text,
+                    playerGold: controller.gold,
+                    playerInventory: controller.inventoryForAuction,
+                    onGoldSpent: (amount) =>
+                        controller.spendGoldForAuction(amount),
+                  ),
+                ),
               ),
             ],
           ),

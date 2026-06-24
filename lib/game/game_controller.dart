@@ -1294,6 +1294,11 @@ class GameController extends ChangeNotifier {
 
     _save();
     notifyListeners();
+
+    // Record purchase on backend (non-blocking)
+    if (ApiService.instance.isLoggedIn) {
+      ApiService.instance.recordPrestigePurchase(id).ignore();
+    }
     return true;
   }
 
@@ -1990,6 +1995,23 @@ class GameController extends ChangeNotifier {
 
     _save();
     notifyListeners();
+
+    // Sync claim to backend (non-blocking)
+    if (ApiService.instance.isLoggedIn) {
+      final claimKey = type == QuestType.kills
+          ? 'kills'
+          : type == QuestType.crafts
+          ? 'crafts'
+          : 'boss';
+      ApiService.instance
+          .syncDailyChallenges(
+            killsProgress: dailyKillsProgress,
+            craftsProgress: dailyCraftsProgress,
+            bossProgress: dailyBossProgress,
+            claim: claimKey,
+          )
+          .ignore();
+    }
     return true;
   }
 
@@ -2080,7 +2102,11 @@ class GameController extends ChangeNotifier {
     // Claim any pending admin rewards (non-blocking, runs after first load)
     if (ApiService.instance.isLoggedIn) {
       _claimPendingRewards();
+      _syncDailyChallengesOnStartup().ignore();
+      _syncPrestigePurchasesOnLogin().ignore();
     }
+    // Notify if any expedition completed while offline
+    _checkExpeditionNotifications();
     // Sync item blueprints from API in background (non-blocking)
     ItemCatalogService.instance.loadFromCache().then((_) {
       ItemCatalogService.instance.syncBlueprints().ignore();
@@ -2092,6 +2118,14 @@ class GameController extends ChangeNotifier {
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  /// Called when the app is paused (goes to background).
+  void onAppPaused() {
+    // Sync daily challenge progress to server in background
+    if (ApiService.instance.isLoggedIn) {
+      _syncDailyChallengesProgress().ignore();
+    }
   }
 
   void _startTickLoop() {
@@ -2880,6 +2914,34 @@ class GameController extends ChangeNotifier {
     _save();
     notifyListeners();
     return true;
+  }
+
+  /// Returns unlocked, unequipped inventory items as plain maps for the auction house.
+  List<Map<String, dynamic>> get inventoryForAuction {
+    final equippedIds = equippedBySlot.values.toSet();
+    return inventory
+        .where((item) => !item.isLocked && !equippedIds.contains(item.id))
+        .map(
+          (item) => {
+            'id': item.id,
+            'name': item.name,
+            'slot': item.slot.name,
+            'tier': item.tier.name,
+            'power': item.power,
+            'sellValue': item.sellValue,
+            'isLocked': false,
+            'isEquipped': false,
+          },
+        )
+        .toList();
+  }
+
+  /// Deduct gold when the player wins / buys an auction. Called from UI on success.
+  void spendGoldForAuction(int amount) {
+    if (amount <= 0) return;
+    gold = max(0, gold - amount);
+    _save();
+    notifyListeners();
   }
 
   bool toggleItemLock(String itemId) {
@@ -4585,6 +4647,12 @@ class GameController extends ChangeNotifier {
     try {
       final rewards = await ApiService.instance.claimPendingRewards();
       if (rewards.isEmpty) return;
+
+      // Ensure catalog is loaded so item lookups work
+      if (!ItemCatalogService.instance.isLoaded) {
+        await ItemCatalogService.instance.loadFromCache();
+      }
+
       var changed = false;
       for (final r in rewards) {
         final type = r['reward_type'] as String? ?? '';
@@ -4594,9 +4662,36 @@ class GameController extends ChangeNotifier {
             gold += amount;
             changed = true;
           }
+        } else if (type == 'item') {
+          final blueprintId = r['item_id'] as String? ?? '';
+          if (blueprintId.isEmpty) continue;
+
+          final bp = ItemCatalogService.instance.findById(blueprintId);
+          if (bp == null) continue;
+
+          final slot = ItemSlot.values.firstWhere(
+            (s) => s.name == bp.slot,
+            orElse: () => ItemSlot.weapon,
+          );
+          const tier = ItemTier.legendary;
+          final power = bp.basePower;
+          final sellValue = (power * 1.6).round() + (tier.index * 15);
+
+          final item = GameItem(
+            id: '${DateTime.now().microsecondsSinceEpoch}_admin_${_random.nextInt(9999)}',
+            name: bp.name,
+            slot: slot,
+            tier: tier,
+            setId: _rollSetForChapter(),
+            power: power,
+            sellValue: sellValue,
+            iconPath: bp.iconPath.isNotEmpty
+                ? bp.iconPath
+                : 'assets/icons/forge.svg',
+          );
+          inventory.add(item);
+          changed = true;
         }
-        // item rewards: find blueprint in catalog and create a game item
-        // (currently not implemented — blueprint-based items need crafting logic)
       }
       if (changed) {
         _save();
@@ -4677,6 +4772,89 @@ class GameController extends ChangeNotifier {
       debugPrint('syncInventoryToServer: uploaded ${items.length} items');
     } catch (e) {
       debugPrint('syncInventoryToServer error: $e');
+    }
+  }
+
+  // ------------------------------------------------------------------ //
+  //  Daily Challenges — backend sync
+  // ------------------------------------------------------------------ //
+
+  Future<void> _syncDailyChallengesOnStartup() async {
+    try {
+      final remote = await ApiService.instance.getDailyChallenges();
+      if (remote == null) return;
+      // Use max of local and server to avoid losing progress from either side
+      dailyKillsProgress = max(
+        dailyKillsProgress,
+        (remote['kills_progress'] as int?) ?? 0,
+      );
+      dailyCraftsProgress = max(
+        dailyCraftsProgress,
+        (remote['crafts_progress'] as int?) ?? 0,
+      );
+      dailyBossProgress = max(
+        dailyBossProgress,
+        (remote['boss_progress'] as int?) ?? 0,
+      );
+      // If server says claimed, trust it
+      if (remote['kills_claimed'] == true) dailyKillsClaimed = true;
+      if (remote['crafts_claimed'] == true) dailyCraftsClaimed = true;
+      if (remote['boss_claimed'] == true) dailyBossClaimed = true;
+      _save();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('_syncDailyChallengesOnStartup error: $e');
+    }
+  }
+
+  Future<void> _syncDailyChallengesProgress() async {
+    try {
+      await ApiService.instance.syncDailyChallenges(
+        killsProgress: dailyKillsProgress,
+        craftsProgress: dailyCraftsProgress,
+        bossProgress: dailyBossProgress,
+      );
+    } catch (e) {
+      debugPrint('_syncDailyChallengesProgress error: $e');
+    }
+  }
+
+  // ------------------------------------------------------------------ //
+  //  Prestige Shop — backend sync
+  // ------------------------------------------------------------------ //
+
+  Future<void> _syncPrestigePurchasesOnLogin() async {
+    try {
+      final serverIds = await ApiService.instance.getPrestigePurchases();
+      if (serverIds.isEmpty) return;
+      bool changed = false;
+      for (final id in serverIds) {
+        if (!purchasedPrestigeItems.contains(id)) {
+          purchasedPrestigeItems.add(id);
+          changed = true;
+        }
+      }
+      if (changed) {
+        _save();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('_syncPrestigePurchasesOnLogin error: $e');
+    }
+  }
+
+  // ------------------------------------------------------------------ //
+  //  Expeditions — completion notification
+  // ------------------------------------------------------------------ //
+
+  void _checkExpeditionNotifications() {
+    for (final expedition in expeditionSlots) {
+      if (expedition != null && expedition.isComplete && !expedition.claimed) {
+        NotificationService.showExpeditionComplete(
+          expedition.expeditionId,
+        ).ignore();
+        break; // one notification is enough
+      }
     }
   }
 }

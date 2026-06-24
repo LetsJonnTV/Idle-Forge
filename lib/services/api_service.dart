@@ -350,7 +350,9 @@ class ApiService {
 
       final account = await googleSignIn.signIn();
       if (account == null) {
-        debugPrint('[GoogleSignIn] signIn() returned null (user cancelled or silent failure)');
+        debugPrint(
+          '[GoogleSignIn] signIn() returned null (user cancelled or silent failure)',
+        );
         return false;
       }
       debugPrint('[GoogleSignIn] account: ${account.email}');
@@ -359,7 +361,9 @@ class ApiService {
       final idToken = authentication.idToken;
 
       if (idToken == null) {
-        debugPrint('[GoogleSignIn] idToken is null — serverClientId may be wrong or missing');
+        debugPrint(
+          '[GoogleSignIn] idToken is null — serverClientId may be wrong or missing',
+        );
         return false;
       }
       debugPrint('[GoogleSignIn] idToken received (${idToken.length} chars)');

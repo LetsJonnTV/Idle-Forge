@@ -209,6 +209,210 @@ DO $$ BEGIN
   CREATE POLICY "Allow all pending_rewards" ON pending_rewards FOR ALL USING (true);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+-- ============================================================
+-- DAILY CHALLENGES
+-- ============================================================
+CREATE TABLE IF NOT EXISTS daily_challenges (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  player_id UUID REFERENCES players(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  kills_progress INT NOT NULL DEFAULT 0,
+  crafts_progress INT NOT NULL DEFAULT 0,
+  boss_progress INT NOT NULL DEFAULT 0,
+  kills_claimed BOOLEAN NOT NULL DEFAULT false,
+  crafts_claimed BOOLEAN NOT NULL DEFAULT false,
+  boss_claimed BOOLEAN NOT NULL DEFAULT false,
+  UNIQUE(player_id, date)
+);
+CREATE INDEX IF NOT EXISTS idx_daily_challenges_player_date ON daily_challenges(player_id, date);
+
+ALTER TABLE daily_challenges ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY "Allow all daily_challenges" ON daily_challenges FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ============================================================
+-- PRESTIGE PURCHASES
+-- ============================================================
+CREATE TABLE IF NOT EXISTS prestige_purchases (
+  player_id UUID REFERENCES players(id) ON DELETE CASCADE,
+  item_id TEXT NOT NULL,
+  purchased_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY(player_id, item_id)
+);
+CREATE INDEX IF NOT EXISTS idx_prestige_purchases_player ON prestige_purchases(player_id);
+
+ALTER TABLE prestige_purchases ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY "Allow all prestige_purchases" ON prestige_purchases FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ============================================================
+-- WORLD BOSSES
+-- ============================================================
+CREATE TABLE IF NOT EXISTS world_bosses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  max_hp BIGINT NOT NULL,
+  current_hp BIGINT NOT NULL,
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  ends_at TIMESTAMPTZ NOT NULL,
+  status TEXT CHECK (status IN ('active', 'defeated', 'expired')) DEFAULT 'active'
+);
+CREATE INDEX IF NOT EXISTS idx_world_bosses_status ON world_bosses(status);
+
+CREATE TABLE IF NOT EXISTS world_boss_damage (
+  boss_id UUID REFERENCES world_bosses(id) ON DELETE CASCADE,
+  player_id UUID REFERENCES players(id) ON DELETE CASCADE,
+  damage BIGINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (boss_id, player_id)
+);
+CREATE INDEX IF NOT EXISTS idx_world_boss_damage_boss ON world_boss_damage(boss_id, damage DESC);
+
+ALTER TABLE world_bosses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE world_boss_damage ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY "Allow all world_bosses" ON world_bosses FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Allow all world_boss_damage" ON world_boss_damage FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ============================================================
+-- SEASONAL EVENTS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS seasonal_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  starts_at TIMESTAMPTZ NOT NULL,
+  ends_at TIMESTAMPTZ NOT NULL,
+  currency_name TEXT NOT NULL DEFAULT 'Event-Münzen',
+  banner_color TEXT NOT NULL DEFAULT '#D4A84B',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS event_shop_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id UUID REFERENCES seasonal_events(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  icon TEXT NOT NULL DEFAULT 'event',
+  currency_cost INT NOT NULL,
+  max_per_player INT NOT NULL DEFAULT 1,
+  sort_order INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS event_player_currency (
+  player_id UUID REFERENCES players(id) ON DELETE CASCADE,
+  event_id UUID REFERENCES seasonal_events(id) ON DELETE CASCADE,
+  amount INT NOT NULL DEFAULT 0,
+  PRIMARY KEY(player_id, event_id)
+);
+
+CREATE TABLE IF NOT EXISTS event_player_purchases (
+  player_id UUID REFERENCES players(id) ON DELETE CASCADE,
+  item_id UUID REFERENCES event_shop_items(id) ON DELETE CASCADE,
+  purchased_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY(player_id, item_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_seasonal_events_dates ON seasonal_events(starts_at, ends_at);
+CREATE INDEX IF NOT EXISTS idx_event_shop_items_event ON event_shop_items(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_player_currency_player ON event_player_currency(player_id);
+
+ALTER TABLE seasonal_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE event_shop_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE event_player_currency ENABLE ROW LEVEL SECURITY;
+ALTER TABLE event_player_purchases ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY "Allow all seasonal_events" ON seasonal_events FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Allow all event_shop_items" ON event_shop_items FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Allow all event_player_currency" ON event_player_currency FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Allow all event_player_purchases" ON event_player_purchases FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ============================================================
+-- CLAN WARS (Phase 4.1)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS clan_wars (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  clan_a_id UUID REFERENCES clans(id) ON DELETE CASCADE,
+  clan_b_id UUID REFERENCES clans(id) ON DELETE CASCADE,
+  clan_a_points INT NOT NULL DEFAULT 0,
+  clan_b_points INT NOT NULL DEFAULT 0,
+  winner_clan_id UUID REFERENCES clans(id) ON DELETE SET NULL,
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  ends_at TIMESTAMPTZ NOT NULL,
+  status TEXT CHECK (status IN ('active', 'completed')) DEFAULT 'active'
+);
+CREATE INDEX IF NOT EXISTS idx_clan_wars_status ON clan_wars(status);
+CREATE INDEX IF NOT EXISTS idx_clan_wars_clan_a ON clan_wars(clan_a_id);
+CREATE INDEX IF NOT EXISTS idx_clan_wars_clan_b ON clan_wars(clan_b_id);
+
+CREATE TABLE IF NOT EXISTS clan_war_contributions (
+  war_id UUID REFERENCES clan_wars(id) ON DELETE CASCADE,
+  player_id UUID REFERENCES players(id) ON DELETE CASCADE,
+  clan_id UUID REFERENCES clans(id) ON DELETE CASCADE,
+  points INT NOT NULL DEFAULT 0,
+  last_contributed_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (war_id, player_id)
+);
+CREATE INDEX IF NOT EXISTS idx_clan_war_contributions_war ON clan_war_contributions(war_id);
+
+ALTER TABLE clan_wars ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clan_war_contributions ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY "Allow all clan_wars" ON clan_wars FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Allow all clan_war_contributions" ON clan_war_contributions FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ============================================================
+-- AUCTION HOUSE (Phase 4.2)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS auctions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  seller_id UUID REFERENCES players(id) ON DELETE CASCADE,
+  item_data JSONB NOT NULL,
+  min_price INT NOT NULL CHECK (min_price > 0),
+  buy_now_price INT CHECK (buy_now_price IS NULL OR buy_now_price > 0),
+  current_bid INT NOT NULL DEFAULT 0,
+  highest_bidder_id UUID REFERENCES players(id) ON DELETE SET NULL,
+  claimed BOOLEAN NOT NULL DEFAULT false,
+  ends_at TIMESTAMPTZ NOT NULL,
+  status TEXT CHECK (status IN ('active', 'sold', 'expired', 'cancelled')) DEFAULT 'active',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_auctions_status ON auctions(status, ends_at);
+CREATE INDEX IF NOT EXISTS idx_auctions_seller ON auctions(seller_id);
+CREATE INDEX IF NOT EXISTS idx_auctions_bidder ON auctions(highest_bidder_id);
+
+CREATE TABLE IF NOT EXISTS auction_bids (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  auction_id UUID REFERENCES auctions(id) ON DELETE CASCADE,
+  bidder_id UUID REFERENCES players(id) ON DELETE CASCADE,
+  amount INT NOT NULL CHECK (amount > 0),
+  placed_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_auction_bids_auction ON auction_bids(auction_id, amount DESC);
+
+ALTER TABLE auctions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE auction_bids ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY "Allow all auctions" ON auctions FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Allow all auction_bids" ON auction_bids FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
 -- Migration: add is_admin / is_blocked to existing players table (idempotent)
 DO $$ BEGIN
   ALTER TABLE players ADD COLUMN is_admin BOOLEAN DEFAULT false;

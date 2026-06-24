@@ -26,25 +26,12 @@ export async function GET(request: NextRequest) {
   }
 
   if (!data) {
-    return NextResponse.json({ save: null, pendingRewards: [] });
-  }
-
-  // Fetch and consume pending rewards
-  const { data: rewards } = await db
-    .from('pending_rewards')
-    .select('id, reward_type, amount, item_id, given_by, created_at')
-    .eq('player_id', auth.playerId)
-    .order('created_at', { ascending: true });
-
-  if (rewards && rewards.length > 0) {
-    const ids = rewards.map((r: { id: string }) => r.id);
-    await db.from('pending_rewards').delete().in('id', ids);
+    return NextResponse.json({ save: null });
   }
 
   return NextResponse.json({
     save: data.save_data,
     updatedAt: data.updated_at,
-    pendingRewards: rewards ?? [],
   });
 }
 
