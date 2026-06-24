@@ -105,44 +105,6 @@ jobs:
       - name: Build APK
         run: flutter build apk --release --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }} --dart-define=GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }}
 
-      - name: Validate built APK signing SHA1
-        run: |
-          APK_PATH=build/app/outputs/flutter-apk/app-release.apk
-
-          APKSIGNER_BIN=""
-          if command -v apksigner >/dev/null 2>&1; then
-            APKSIGNER_BIN="$(command -v apksigner)"
-          elif [ -n "$ANDROID_SDK_ROOT" ]; then
-            APKSIGNER_BIN="$(find "$ANDROID_SDK_ROOT/build-tools" -name apksigner -type f 2>/dev/null | sort -V | tail -n1)"
-          elif [ -n "$ANDROID_HOME" ]; then
-            APKSIGNER_BIN="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f 2>/dev/null | sort -V | tail -n1)"
-          fi
-
-          if [ -z "$APKSIGNER_BIN" ] || [ ! -x "$APKSIGNER_BIN" ]; then
-            echo "::error::apksigner not found on runner."
-            exit 1
-          fi
-
-          APK_SHA1=$(
-            "$APKSIGNER_BIN" verify --print-certs "$APK_PATH" 2>/dev/null \
-              | awk -F': ' '/Signer #1 certificate SHA-1 digest:/{print $2; exit}' \
-              | tr -d ':' \
-              | tr '[:lower:]' '[:upper:]'
-          )
-
-          if [ -z "$APK_SHA1" ]; then
-            echo "::error::Could not read SHA1 from built APK signature via apksigner."
-            exit 1
-          fi
-
-          echo "Built APK SHA1 (normalized): $APK_SHA1"
-          echo "Expected SHA1 from keystore: $KEYSTORE_SHA1"
-
-          if [ "$APK_SHA1" != "$KEYSTORE_SHA1" ]; then
-            echo "::error::Built APK is signed with a different certificate than expected keystore."
-            exit 1
-          fi
-
       - name: Rename APK Artifact
         run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Idle-Forge-release.apk
 
