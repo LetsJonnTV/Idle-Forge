@@ -996,7 +996,7 @@ class ApiService {
     try {
       await _post('/api/events/$eventId/score', {
         'delta': delta,
-        ?'meta': meta,
+        if (meta != null) 'meta': meta,
       });
     } catch (_) {
       // best-effort
