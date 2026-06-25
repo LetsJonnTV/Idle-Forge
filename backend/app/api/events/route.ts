@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pool } from 'pg';
 import { getAuthPayload } from '@/lib/auth';
+import { distributeExpiredEventRankRewards } from '@/lib/eventRewards';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -15,6 +16,8 @@ export async function GET(request: NextRequest) {
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
+    await distributeExpiredEventRankRewards(pool);
+
     const { rows: events } = await pool.query(
       `SELECT id, name, description, starts_at, ends_at, currency_name, banner_color,
               event_type, type_config, notify_on_start

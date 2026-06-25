@@ -46,7 +46,9 @@ export async function POST(
 
   const { rank_from, rank_to, reward_type, amount, item_id, leaderboard_type = 'solo' } = body;
   if (!rank_from || !rank_to || !reward_type) return NextResponse.json({ error: 'rank_from, rank_to and reward_type are required' }, { status: 400 });
+  if (rank_from < 1 || rank_to < rank_from) return NextResponse.json({ error: 'Invalid rank range' }, { status: 400 });
   if (!['gold', 'item'].includes(reward_type)) return NextResponse.json({ error: 'reward_type must be gold or item' }, { status: 400 });
+  if (!['solo', 'clan'].includes(leaderboard_type)) return NextResponse.json({ error: 'leaderboard_type must be solo or clan' }, { status: 400 });
   if (reward_type === 'gold' && (!amount || amount <= 0)) return NextResponse.json({ error: 'amount required for gold' }, { status: 400 });
   if (reward_type === 'item' && !item_id) return NextResponse.json({ error: 'item_id required for item' }, { status: 400 });
 

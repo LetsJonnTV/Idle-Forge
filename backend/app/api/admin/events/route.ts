@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pool } from 'pg';
 import { requireAdmin } from '@/lib/adminAuth';
+import { distributeExpiredEventRankRewards } from '@/lib/eventRewards';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -15,6 +16,8 @@ export async function GET(request: NextRequest) {
   if (authError) return authError;
 
   try {
+    await distributeExpiredEventRankRewards(pool);
+
     const { rows } = await pool.query(
       `SELECT
          e.id, e.name, e.description, e.starts_at, e.ends_at,

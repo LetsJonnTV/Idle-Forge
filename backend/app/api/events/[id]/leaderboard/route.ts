@@ -18,9 +18,64 @@ export async function GET(
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id: eventId } = await params;
+  const leaderboardType = request.nextUrl.searchParams.get('leaderboard') === 'clan'
+    ? 'clan'
+    : 'solo';
 
   try {
-    // Top 100
+    if (leaderboardType === 'clan') {
+      const { rows: top } = await pool.query(
+        `SELECT
+           ecs.clan_id,
+           c.name AS clan_name,
+           ecs.score,
+           RANK() OVER (ORDER BY ecs.score DESC) AS rank
+         FROM event_clan_scores ecs
+         JOIN clans c ON c.id = ecs.clan_id
+         WHERE ecs.event_id = $1
+         ORDER BY ecs.score DESC
+         LIMIT 100`,
+        [eventId],
+      );
+
+      const { rows: playerClanRows } = await pool.query<{ clan_id: string | null }>(
+        `SELECT clan_id FROM players WHERE id = $1`,
+        [auth.playerId],
+      );
+      const playerClanId = playerClanRows[0]?.clan_id;
+
+      let own: Array<{ score: string | number; rank: string | number }> = [];
+      if (playerClanId) {
+        const { rows } = await pool.query(
+          `SELECT score, rank FROM (
+             SELECT
+               clan_id,
+               score,
+               RANK() OVER (ORDER BY score DESC) AS rank
+             FROM event_clan_scores
+             WHERE event_id = $1
+           ) ranked
+           WHERE clan_id = $2`,
+          [eventId, playerClanId],
+        );
+        own = rows;
+      }
+
+      return NextResponse.json({
+        leaderboardType,
+        leaderboard: top.map((r) => ({
+          rank: Number(r.rank),
+          clanId: r.clan_id,
+          clanName: r.clan_name,
+          score: Number(r.score),
+          isMe: Boolean(playerClanId && r.clan_id === playerClanId),
+        })),
+        playerRank: own.length > 0
+          ? { rank: Number(own[0].rank), score: Number(own[0].score) }
+          : null,
+      });
+    }
+
     const { rows: top } = await pool.query(
       `SELECT
          eps.player_id,
@@ -35,7 +90,6 @@ export async function GET(
       [eventId],
     );
 
-    // Player's own rank (may be outside top 100)
     const { rows: own } = await pool.query(
       `SELECT score, rank FROM (
          SELECT
@@ -50,6 +104,7 @@ export async function GET(
     );
 
     return NextResponse.json({
+      leaderboardType,
       leaderboard: top.map((r) => ({
         rank: Number(r.rank),
         playerId: r.player_id,

@@ -39,6 +39,13 @@ interface RankReward {
   leaderboard_type: string;
 }
 
+interface TypeConfigField {
+  key: string;
+  label: string;
+  type: 'text' | 'number' | 'boolean';
+  placeholder?: string;
+}
+
 @Component({
   selector: 'app-admin-events',
   templateUrl: './admin-events.component.html',
@@ -53,31 +60,70 @@ export class AdminEventsComponent implements OnInit {
     { value: 'trade_expedition',  label: 'Handels-Expedition' },
   ];
 
-  readonly EVENT_TYPE_CONFIGS: Record<string, Array<{ key: string; label: string; type: 'text' | 'number' }>> = {
+  readonly EVENT_TYPE_CONFIGS: Record<string, TypeConfigField[]> = {
     collection: [
-      { key: 'target_item_category',  label: 'Ziel-Kategorie',     type: 'text'   },
-      { key: 'bonus_drop_multiplier', label: 'Bonus Multiplikator', type: 'number' },
+      { key: 'mission_durations_minutes', label: 'Missionsdauern (CSV, z.B. 30,120,480)', type: 'text', placeholder: '30,120,480' },
+      { key: 'resource_yield_per_mission', label: 'Ressourcen pro Mission', type: 'number' },
+      { key: 'enable_solo_leaderboard', label: 'Solo-Rangliste aktiv', type: 'boolean' },
+      { key: 'enable_clan_leaderboard', label: 'Clan-Rangliste aktiv', type: 'boolean' },
+      { key: 'max_parallel_missions', label: 'Max. parallele Missionen', type: 'number' },
     ],
     world_boss: [
-      { key: 'boss_name',              label: 'Boss Name',             type: 'text'   },
-      { key: 'hp',                     label: 'HP',                    type: 'number' },
-      { key: 'max_attacks_per_player', label: 'Max Angriffe/Spieler',  type: 'number' },
-      { key: 'respawn_interval_hours', label: 'Respawn Intervall (h)', type: 'number' },
+      { key: 'boss_name', label: 'Boss-Name', type: 'text' },
+      { key: 'boss_hp', label: 'Boss-HP', type: 'number' },
+      { key: 'boss_duration_minutes', label: 'Boss-Dauer (Minuten)', type: 'number' },
+      { key: 'max_damage_per_attack', label: 'Max. Schaden pro Angriff', type: 'number' },
+      { key: 'boss_icon', label: 'Boss-Icon Vorlage', type: 'text', placeholder: 'inferno_lord' },
+      { key: 'enable_phase_two', label: '2. Boss-Phase aktiv', type: 'boolean' },
+      { key: 'phase_two_trigger_hp_pct', label: 'Phase-2 Trigger (%)', type: 'number' },
     ],
     forge_tournament: [
-      { key: 'scoring_metric',   label: 'Metrik (crafts/power)', type: 'text'   },
-      { key: 'min_item_tier',    label: 'Mindest-Tier',          type: 'number' },
-      { key: 'bonus_multiplier', label: 'Bonus Multiplikator',   type: 'number' },
+      { key: 'min_item_tier', label: 'Mindest-Tier (z.B. rare)', type: 'text' },
+      { key: 'tier_multipliers_json', label: 'Tier-Multiplikatoren (JSON)', type: 'text', placeholder: '{"common":1,"uncommon":2,"rare":5}' },
+      { key: 'count_bulk_crafting', label: 'Bulk-Crafting zaehlt', type: 'boolean' },
     ],
     dungeon_rush: [
-      { key: 'dungeon_chapter',    label: 'Kapitel',          type: 'number' },
-      { key: 'score_per_floor',    label: 'Punkte/Etage',     type: 'number' },
-      { key: 'time_limit_minutes', label: 'Zeitlimit (min)',  type: 'number' },
+      { key: 'dungeon_name', label: 'Dungeon-Name', type: 'text' },
+      { key: 'dungeon_description', label: 'Dungeon-Beschreibung', type: 'text' },
+      { key: 'difficulty', label: 'Schwierigkeit', type: 'text', placeholder: 'normal|hard|nightmare' },
+      { key: 'max_clears_per_day', label: 'Max. Clears pro Tag', type: 'number' },
+      { key: 'min_power_required', label: 'Mindest-Staerke', type: 'number' },
     ],
     trade_expedition: [
-      { key: 'trade_routes',      label: 'Handelsrouten',        type: 'number' },
-      { key: 'profit_multiplier', label: 'Gewinn Multiplikator', type: 'number' },
+      { key: 'routes_json', label: 'Routen (JSON)', type: 'text', placeholder: '[{"name":"Kurz","minutes":30,"yield":80}]' },
+      { key: 'clan_bonus_multiplier', label: 'Clan-Bonus Multiplikator', type: 'number' },
+      { key: 'max_active_expeditions', label: 'Max. aktive Expeditionen', type: 'number' },
+      { key: 'currency_yield_multiplier', label: 'Waehrungs-Multiplikator', type: 'number' },
+      { key: 'enable_rank_rewards', label: 'Rang-Belohnungen aktiv', type: 'boolean' },
     ],
+  };
+
+  readonly EVENT_TYPE_PREVIEWS: Record<string, { title: string; description: string; objective: string }> = {
+    collection: {
+      title: 'Sammel-Event',
+      description: 'Spieler schicken Missionen und sammeln Event-Ressourcen solo oder im Clan.',
+      objective: 'Mehr Ressourcen sammeln als andere.'
+    },
+    world_boss: {
+      title: 'Community-Boss',
+      description: 'Ein globaler Boss mit gemeinsamem HP-Pool. Schaden zaehlt fuer Ranglisten.',
+      objective: 'Maximalen Boss-Schaden beitragen.'
+    },
+    forge_tournament: {
+      title: 'Schmiede-Turnier',
+      description: 'Geschmiedete Items geben Punkte, hoehere Tiers geben Bonus.',
+      objective: 'Ueber Laufzeit die meisten Schmiede-Punkte sammeln.'
+    },
+    dungeon_rush: {
+      title: 'Dungeon-Rush',
+      description: 'Exklusiver Event-Dungeon ist nur waehrend des Events verfuegbar.',
+      objective: 'Moeglichst viele Clears im Zeitfenster schaffen.'
+    },
+    trade_expedition: {
+      title: 'Handels-Expedition',
+      description: 'Routen mit unterschiedlicher Dauer/Ausbeute, optional mit Clan-Bonus.',
+      objective: 'Hoechste Event-Waehrungsausbeute erreichen.'
+    },
   };
 
   events: AdminEvent[] = [];
@@ -115,6 +161,19 @@ export class AdminEventsComponent implements OnInit {
   };
   typeConfigDraft: Record<string, string> = {};
 
+  savingDetail = false;
+  editForm = {
+    name: '',
+    description: '',
+    starts_at: '',
+    ends_at: '',
+    currency_name: 'Event-Muenzen',
+    banner_color: '#D4A84B',
+    event_type: 'collection',
+    notify_on_start: false,
+  };
+  selectedTypeConfigDraft: Record<string, string> = {};
+
   showAddItem = false;
   addingItem = false;
   itemForm = {
@@ -145,12 +204,28 @@ export class AdminEventsComponent implements OnInit {
     return this.events.filter(e => e.status === 'upcoming').length;
   }
 
-  get currentTypeConfigFields(): Array<{ key: string; label: string; type: 'text' | 'number' }> {
+  get currentTypeConfigFields(): TypeConfigField[] {
     return this.EVENT_TYPE_CONFIGS[this.createForm.event_type] ?? [];
+  }
+
+  get currentEditTypeConfigFields(): TypeConfigField[] {
+    return this.EVENT_TYPE_CONFIGS[this.editForm.event_type] ?? [];
+  }
+
+  get currentCreateTypePreview(): { title: string; description: string; objective: string } {
+    return this.EVENT_TYPE_PREVIEWS[this.createForm.event_type] ?? this.EVENT_TYPE_PREVIEWS['collection'];
+  }
+
+  get currentEditTypePreview(): { title: string; description: string; objective: string } {
+    return this.EVENT_TYPE_PREVIEWS[this.editForm.event_type] ?? this.EVENT_TYPE_PREVIEWS['collection'];
   }
 
   onEventTypeChange(): void {
     this.typeConfigDraft = {};
+  }
+
+  onEditEventTypeChange(): void {
+    this.selectedTypeConfigDraft = {};
   }
 
   eventTypeLabel(type: string): string {
@@ -173,14 +248,80 @@ export class AdminEventsComponent implements OnInit {
     });
   }
 
-  private buildTypeConfig(): Record<string, unknown> {
+  private parseTypeConfigValue(field: TypeConfigField, raw: string): unknown {
+    if (field.type === 'number') {
+      const numeric = Number(raw);
+      return Number.isNaN(numeric) ? null : numeric;
+    }
+
+    if (field.type === 'boolean') {
+      return raw === 'true';
+    }
+
+    if (field.key.endsWith('_json')) {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return raw;
+      }
+    }
+
+    if (field.key.endsWith('_minutes') && raw.includes(',')) {
+      return raw
+        .split(',')
+        .map((v) => Number(v.trim()))
+        .filter((v) => !Number.isNaN(v));
+    }
+
+    return raw;
+  }
+
+  private buildTypeConfig(fields: TypeConfigField[], source: Record<string, string>): Record<string, unknown> {
     const result: Record<string, unknown> = {};
-    for (const f of this.currentTypeConfigFields) {
-      const val = this.typeConfigDraft[f.key];
-      if (!val) continue;
-      result[f.key] = f.type === 'number' ? Number(val) : val;
+    for (const field of fields) {
+      const raw = source[field.key];
+      if (raw === undefined || raw === null || raw === '') continue;
+      const parsed = this.parseTypeConfigValue(field, raw);
+      if (parsed !== null) {
+        result[field.key] = parsed;
+      }
     }
     return result;
+  }
+
+  private toDatetimeLocal(iso: string): string {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  private draftFromTypeConfig(fields: TypeConfigField[], config: Record<string, unknown>): Record<string, string> {
+    const draft: Record<string, string> = {};
+    for (const field of fields) {
+      const value = config[field.key];
+      if (value === undefined || value === null) continue;
+
+      if (Array.isArray(value)) {
+        draft[field.key] = value.join(',');
+        continue;
+      }
+
+      if (typeof value === 'object') {
+        draft[field.key] = JSON.stringify(value);
+        continue;
+      }
+
+      if (typeof value === 'boolean') {
+        draft[field.key] = value ? 'true' : 'false';
+        continue;
+      }
+
+      if (typeof value === 'string' || typeof value === 'number') {
+        draft[field.key] = String(value);
+      }
+    }
+    return draft;
   }
 
   createEvent(): void {
@@ -196,7 +337,7 @@ export class AdminEventsComponent implements OnInit {
       ...this.createForm,
       starts_at: new Date(this.createForm.starts_at).toISOString(),
       ends_at: new Date(this.createForm.ends_at).toISOString(),
-      type_config: this.buildTypeConfig(),
+      type_config: this.buildTypeConfig(this.currentTypeConfigFields, this.typeConfigDraft),
     }).subscribe({
       next: () => {
         this.creating = false;
@@ -223,6 +364,20 @@ export class AdminEventsComponent implements OnInit {
 
   openDetail(event: AdminEvent): void {
     this.selectedEvent = event;
+    this.editForm = {
+      name: event.name,
+      description: event.description,
+      starts_at: this.toDatetimeLocal(event.starts_at),
+      ends_at: this.toDatetimeLocal(event.ends_at),
+      currency_name: event.currency_name,
+      banner_color: event.banner_color,
+      event_type: event.event_type,
+      notify_on_start: !!event.notify_on_start,
+    };
+    const cfg = event.type_config ?? {};
+    const fields = this.EVENT_TYPE_CONFIGS[event.event_type] ?? [];
+    this.selectedTypeConfigDraft = this.draftFromTypeConfig(fields, cfg);
+
     this.showAddItem = false;
     this.showAddRankReward = false;
     this.giveUsername = '';
@@ -232,6 +387,53 @@ export class AdminEventsComponent implements OnInit {
     this.rankRewards = [];
     this.loadItems(event.id);
     this.loadRankRewards(event.id);
+  }
+
+  saveEventDetails(): void {
+    if (!this.selectedEvent) return;
+    if (!this.editForm.name.trim() || !this.editForm.starts_at || !this.editForm.ends_at) {
+      this.error = 'Name, Startdatum und Enddatum sind Pflichtfelder.';
+      return;
+    }
+
+    this.savingDetail = true;
+    this.error = '';
+
+    const payload = {
+      name: this.editForm.name.trim(),
+      description: this.editForm.description,
+      starts_at: new Date(this.editForm.starts_at).toISOString(),
+      ends_at: new Date(this.editForm.ends_at).toISOString(),
+      currency_name: this.editForm.currency_name,
+      banner_color: this.editForm.banner_color,
+      event_type: this.editForm.event_type,
+      notify_on_start: this.editForm.notify_on_start,
+      type_config: this.buildTypeConfig(this.currentEditTypeConfigFields, this.selectedTypeConfigDraft),
+    };
+
+    this.api.put<{ event: AdminEvent }>(`/api/admin/events/${this.selectedEvent.id}`, payload).subscribe({
+      next: res => {
+        this.savingDetail = false;
+        this.selectedEvent = res.event;
+        this.editForm = {
+          name: res.event.name,
+          description: res.event.description,
+          starts_at: this.toDatetimeLocal(res.event.starts_at),
+          ends_at: this.toDatetimeLocal(res.event.ends_at),
+          currency_name: res.event.currency_name,
+          banner_color: res.event.banner_color,
+          event_type: res.event.event_type,
+          notify_on_start: !!res.event.notify_on_start,
+        };
+        const fields = this.EVENT_TYPE_CONFIGS[res.event.event_type] ?? [];
+        this.selectedTypeConfigDraft = this.draftFromTypeConfig(fields, res.event.type_config ?? {});
+        this.loadEvents();
+      },
+      error: err => {
+        this.error = err?.error?.error ?? 'Event konnte nicht aktualisiert werden.';
+        this.savingDetail = false;
+      }
+    });
   }
 
   backToList(): void {
@@ -272,8 +474,8 @@ export class AdminEventsComponent implements OnInit {
   addRankReward(): void {
     if (!this.selectedEvent) return;
 
-    const rankFrom = parseInt(this.rankRewardForm.rank_from, 10);
-    const rankTo   = parseInt(this.rankRewardForm.rank_to, 10);
+    const rankFrom = Number.parseInt(this.rankRewardForm.rank_from, 10);
+    const rankTo   = Number.parseInt(this.rankRewardForm.rank_to, 10);
     if (!rankFrom || !rankTo || rankFrom < 1 || rankTo < rankFrom) {
       this.error = 'Rang-Bereich ungueltig (von >= 1, bis >= von).';
       return;
@@ -297,7 +499,7 @@ export class AdminEventsComponent implements OnInit {
       leaderboard_type: this.rankRewardForm.leaderboard_type,
     };
     if (this.rankRewardForm.reward_type === 'gold') {
-      body['amount'] = parseInt(this.rankRewardForm.amount, 10);
+      body['amount'] = Number.parseInt(this.rankRewardForm.amount, 10);
     } else {
       body['item_id'] = this.rankRewardForm.item_id.trim();
     }
@@ -378,9 +580,9 @@ export class AdminEventsComponent implements OnInit {
       name: this.itemForm.name.trim(),
       description: this.itemForm.description,
       icon: this.itemForm.icon || 'event',
-      currency_cost: parseInt(this.itemForm.currency_cost, 10),
-      max_per_player: parseInt(this.itemForm.max_per_player, 10) || 1,
-      sort_order: parseInt(this.itemForm.sort_order, 10) || 0
+      currency_cost: Number.parseInt(this.itemForm.currency_cost, 10),
+      max_per_player: Number.parseInt(this.itemForm.max_per_player, 10) || 1,
+      sort_order: Number.parseInt(this.itemForm.sort_order, 10) || 0
     }).subscribe({
       next: () => {
         this.addingItem = false;
@@ -412,7 +614,7 @@ export class AdminEventsComponent implements OnInit {
   giveCurrency(): void {
     if (!this.selectedEvent) return;
 
-    const amount = parseInt(this.giveAmount, 10);
+    const amount = Number.parseInt(this.giveAmount, 10);
     if (!this.giveUsername.trim() || !amount || amount <= 0) {
       this.giveResult = 'Spielername und Betrag (> 0) sind erforderlich.';
       return;
@@ -436,6 +638,14 @@ export class AdminEventsComponent implements OnInit {
         this.giving = false;
       }
     });
+  }
+
+  toBooleanDraft(value: string | undefined): boolean {
+    return value === 'true';
+  }
+
+  setBooleanDraft(target: Record<string, string>, key: string, checked: boolean): void {
+    target[key] = checked ? 'true' : 'false';
   }
 
   fmtDate(iso: string): string {

@@ -349,6 +349,15 @@ CREATE TABLE IF NOT EXISTS event_player_scores (
 );
 CREATE INDEX IF NOT EXISTS idx_event_player_scores_event_score ON event_player_scores(event_id, score DESC);
 
+-- Clan scores per event (for clan leaderboard mode)
+CREATE TABLE IF NOT EXISTS event_clan_scores (
+  clan_id  UUID REFERENCES clans(id) ON DELETE CASCADE,
+  event_id UUID REFERENCES seasonal_events(id) ON DELETE CASCADE,
+  score    BIGINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (clan_id, event_id)
+);
+CREATE INDEX IF NOT EXISTS idx_event_clan_scores_event_score ON event_clan_scores(event_id, score DESC);
+
 -- Rewards distribution log (prevents double-rewarding)
 CREATE TABLE IF NOT EXISTS event_rewards_distributed (
   event_id    UUID REFERENCES seasonal_events(id) ON DELETE CASCADE,
@@ -377,12 +386,16 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 ALTER TABLE event_rank_rewards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE event_player_scores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE event_clan_scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE event_rewards_distributed ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   CREATE POLICY "Allow all event_rank_rewards" ON event_rank_rewards FOR ALL USING (true);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
   CREATE POLICY "Allow all event_player_scores" ON event_player_scores FOR ALL USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "Allow all event_clan_scores" ON event_clan_scores FOR ALL USING (true);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
   CREATE POLICY "Allow all event_rewards_distributed" ON event_rewards_distributed FOR ALL USING (true);

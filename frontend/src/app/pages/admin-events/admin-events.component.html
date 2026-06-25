@@ -47,10 +47,29 @@
           <div class="grid">
             <label *ngFor="let field of currentTypeConfigFields">
               {{ field.label }}
-              <input class="input" [type]="field.type === 'number' ? 'number' : 'text'"
-                     [(ngModel)]="typeConfigDraft[field.key]" />
+              <input
+                *ngIf="field.type !== 'boolean'"
+                class="input"
+                [type]="field.type === 'number' ? 'number' : 'text'"
+                [placeholder]="field.placeholder || ''"
+                [(ngModel)]="typeConfigDraft[field.key]"
+              />
+              <label class="notify-row" *ngIf="field.type === 'boolean'">
+                <input
+                  type="checkbox"
+                  [checked]="toBooleanDraft(typeConfigDraft[field.key])"
+                  (change)="setBooleanDraft(typeConfigDraft, field.key, $any($event.target).checked)"
+                />
+                Aktiv
+              </label>
             </label>
           </div>
+        </div>
+
+        <div class="type-preview" *ngIf="currentCreateTypePreview as preview">
+          <h4>Typ-Vorschau: {{ preview.title }}</h4>
+          <p>{{ preview.description }}</p>
+          <p><strong>Ziel:</strong> {{ preview.objective }}</p>
         </div>
 
         <div class="actions">
@@ -100,6 +119,65 @@
       </div>
 
       <div class="detail-grid">
+
+        <!-- Event Settings -->
+        <div class="card span-2">
+          <div class="title-row-inline">
+            <h3>Event-Einstellungen</h3>
+            <button class="btn btn-primary btn-sm" (click)="saveEventDetails()" [disabled]="savingDetail">
+              {{ savingDetail ? 'Speichere...' : 'Speichern' }}
+            </button>
+          </div>
+
+          <div class="grid">
+            <label>Name *<input class="input" [(ngModel)]="editForm.name" /></label>
+            <label>Waehrungsname<input class="input" [(ngModel)]="editForm.currency_name" /></label>
+            <label class="span-2">Beschreibung<input class="input" [(ngModel)]="editForm.description" /></label>
+            <label>Start *<input class="input" type="datetime-local" [(ngModel)]="editForm.starts_at" /></label>
+            <label>Ende *<input class="input" type="datetime-local" [(ngModel)]="editForm.ends_at" /></label>
+            <label>Banner Farbe<input class="input" [(ngModel)]="editForm.banner_color" /></label>
+            <label>
+              Event-Typ
+              <select class="input" [(ngModel)]="editForm.event_type" (ngModelChange)="onEditEventTypeChange()">
+                <option *ngFor="let t of EVENT_TYPES" [value]="t.value">{{ t.label }}</option>
+              </select>
+            </label>
+            <label class="span-2 notify-row">
+              <input type="checkbox" [(ngModel)]="editForm.notify_on_start" />
+              Push-Benachrichtigung bei Start senden
+            </label>
+          </div>
+
+          <div class="type-config-section" *ngIf="currentEditTypeConfigFields.length > 0">
+            <h4>Typ-Konfiguration</h4>
+            <div class="grid">
+              <label *ngFor="let field of currentEditTypeConfigFields">
+                {{ field.label }}
+                <input
+                  *ngIf="field.type !== 'boolean'"
+                  class="input"
+                  [type]="field.type === 'number' ? 'number' : 'text'"
+                  [placeholder]="field.placeholder || ''"
+                  [(ngModel)]="selectedTypeConfigDraft[field.key]"
+                />
+                <label class="notify-row" *ngIf="field.type === 'boolean'">
+                  <input
+                    type="checkbox"
+                    [checked]="toBooleanDraft(selectedTypeConfigDraft[field.key])"
+                    (change)="setBooleanDraft(selectedTypeConfigDraft, field.key, $any($event.target).checked)"
+                  />
+                  Aktiv
+                </label>
+              </label>
+            </div>
+          </div>
+
+          <div class="type-preview" *ngIf="currentEditTypePreview as preview">
+            <h4>Typ-Vorschau: {{ preview.title }}</h4>
+            <p>{{ preview.description }}</p>
+            <p><strong>Ziel:</strong> {{ preview.objective }}</p>
+          </div>
+        </div>
 
         <!-- Shop Items -->
         <div class="card span-2">
@@ -165,7 +243,7 @@
                 Rangliste
                 <select class="input" [(ngModel)]="rankRewardForm.leaderboard_type">
                   <option value="solo">Solo</option>
-                  <option value="guild">Gilde</option>
+                  <option value="clan">Clan</option>
                 </select>
               </label>
               <label *ngIf="rankRewardForm.reward_type === 'gold'">

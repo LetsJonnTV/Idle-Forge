@@ -1141,6 +1141,7 @@ class _TopBar extends StatelessWidget {
   }
 
   Future<void> _showProfilePanel(BuildContext context) async {
+    final screenContext = context; // saved before builder shadows it
     final isLoggedIn = ApiService.instance.isLoggedIn;
     final loginName = ApiService.instance.currentUsername;
     if (isLoggedIn && loginName != null && loginName.isNotEmpty) {
@@ -1469,12 +1470,13 @@ class _TopBar extends StatelessWidget {
                               onPressed: () async {
                                 Navigator.of(context).pop();
                                 await Navigator.push<void>(
-                                  context,
+                                  screenContext,
                                   MaterialPageRoute(
                                     builder: (_) => AuthScreen(
                                       onLoggedIn: () =>
-                                          Navigator.pop(context),
-                                      onSkip: () => Navigator.pop(context),
+                                          Navigator.pop(screenContext),
+                                      onSkip: () =>
+                                          Navigator.pop(screenContext),
                                       text: controller.text,
                                     ),
                                   ),

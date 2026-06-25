@@ -37,17 +37,44 @@ export async function POST(
   if (events.length === 0) return NextResponse.json({ error: 'Event not found or not active' }, { status: 404 });
 
   try {
-    const { rows } = await pool.query(
-      `INSERT INTO event_player_scores (player_id, event_id, score, meta, updated_at)
-       VALUES ($1, $2, $3, $4, NOW())
-       ON CONFLICT (player_id, event_id) DO UPDATE
-         SET score = event_player_scores.score + EXCLUDED.score,
-             meta = COALESCE($4, event_player_scores.meta),
-             updated_at = NOW()
-       RETURNING score`,
-      [auth.playerId, eventId, delta, JSON.stringify(body.meta ?? {})],
-    );
-    return NextResponse.json({ score: rows[0].score });
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const { rows } = await client.query(
+        `INSERT INTO event_player_scores (player_id, event_id, score, meta, updated_at)
+         VALUES ($1, $2, $3, $4, NOW())
+         ON CONFLICT (player_id, event_id) DO UPDATE
+           SET score = event_player_scores.score + EXCLUDED.score,
+               meta = COALESCE($4, event_player_scores.meta),
+               updated_at = NOW()
+         RETURNING score`,
+        [auth.playerId, eventId, delta, JSON.stringify(body.meta ?? {})],
+      );
+
+      const { rows: playerRows } = await client.query<{ clan_id: string | null }>(
+        `SELECT clan_id FROM players WHERE id = $1`,
+        [auth.playerId],
+      );
+      const clanId = playerRows[0]?.clan_id;
+      if (clanId) {
+        await client.query(
+          `INSERT INTO event_clan_scores (clan_id, event_id, score)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (clan_id, event_id) DO UPDATE
+             SET score = event_clan_scores.score + EXCLUDED.score`,
+          [clanId, eventId, delta],
+        );
+      }
+
+      await client.query('COMMIT');
+      return NextResponse.json({ score: rows[0].score });
+    } catch (txErr) {
+      await client.query('ROLLBACK');
+      throw txErr;
+    } finally {
+      client.release();
+    }
   } catch (err) {
     console.error('event score POST error:', err);
     return NextResponse.json({ error: 'Failed to update score' }, { status: 500 });
