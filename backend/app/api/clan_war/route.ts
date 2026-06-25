@@ -208,6 +208,23 @@ export async function POST(request: NextRequest) {
         [points, war.id],
       );
 
+      // Award 50 XP to the player's clan and level up if threshold reached
+      // Threshold: level * 1000 XP, max level 10
+      await pool.query(
+        `UPDATE clans
+         SET
+           level = CASE
+             WHEN xp + 50 >= level * 1000 AND level < 10 THEN level + 1
+             ELSE level
+           END,
+           xp = CASE
+             WHEN xp + 50 >= level * 1000 AND level < 10 THEN (xp + 50) - (level * 1000)
+             ELSE xp + 50
+           END
+         WHERE id = $1`,
+        [player.clan_id],
+      );
+
       await pool.query('COMMIT');
     } catch (e) {
       await pool.query('ROLLBACK');

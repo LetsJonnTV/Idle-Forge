@@ -1,0 +1,59 @@
+<div class="admin-shell">
+
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-brand">
+      <span>🛡️</span>
+      <span>Admin Panel</span>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Admin Navigation">
+      <a class="nav-item"
+         routerLink="/admin"
+         routerLinkActive="active"
+         [routerLinkActiveOptions]="{exact: true}">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Spieler &amp; Items</span>
+      </a>
+      <a class="nav-item"
+         routerLink="/admin/events"
+         routerLinkActive="active">
+        <span class="nav-icon">📅</span>
+        <span class="nav-label">Events</span>
+      </a>
+      <a class="nav-item"
+         routerLink="/admin/auctions"
+         routerLinkActive="active">
+        <span class="nav-icon">🏪</span>
+        <span class="nav-label">Auktionen</span>
+      </a>
+      <a class="nav-item"
+         routerLink="/admin/clan-wars"
+         routerLinkActive="active">
+        <span class="nav-icon">⚔️</span>
+        <span class="nav-label">Clan-Wars</span>
+      </a>
+      <a class="nav-item"
+         routerLink="/admin/clans"
+         routerLinkActive="active">
+        <span class="nav-icon">🏰</span>
+        <span class="nav-label">Clans</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-bottom">
+      <a class="nav-item nav-back" routerLink="/dashboard">
+        <span class="nav-icon">←</span>
+        <span class="nav-label">Zum Spiel</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- Content area -->
+  <main class="admin-content">
+    <router-outlet></router-outlet>
+  </main>
+
+</div>

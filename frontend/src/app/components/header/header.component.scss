@@ -32,16 +32,23 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
   transition: opacity 0.2s;
+  flex-shrink: 0;
 
   &:hover { opacity: 0.85; }
 }
 
-/* Nav wrapper */
+/* Desktop nav */
 .header-nav {
   display: flex;
   align-items: center;
   gap: 0.55rem;
   flex-wrap: wrap;
+}
+
+/* Active link highlight */
+.btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* User chip */
@@ -70,23 +77,83 @@
   white-space: nowrap;
 }
 
-/* Active link highlight */
-.btn.active {
-  border-color: var(--accent);
-  color: var(--accent);
+/* ── Hamburger button ─────────────────────────────── */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 7px 8px;
+  flex-shrink: 0;
+
+  span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: var(--text);
+    border-radius: 1px;
+    transition: transform 0.22s ease, opacity 0.22s ease;
+  }
+
+  &.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  &.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  &.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 }
 
-/* ── Responsive ─────────────────────────────────────── */
-@media (max-width: 560px) {
+/* ── Mobile menu ──────────────────────────────────── */
+.mobile-menu {
+  display: none;
+  flex-direction: column;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 0.5rem 0.75rem 0.75rem;
+
+  &.open { display: flex; }
+}
+
+.mobile-user {
+  padding: 0.55rem 0.5rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.25rem;
+}
+
+.mobile-link {
+  display: block;
+  padding: 0.7rem 0.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 500;
+  transition: background 0.15s;
+
+  &:hover { background: rgba(255, 255, 255, 0.04); }
+}
+
+.mobile-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  width: 100%;
+}
+
+.mobile-btn-accent { color: var(--accent); }
+.mobile-btn-danger  { color: #e74c3c; }
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 640px) {
   .header-inner {
     padding: 0.7rem 1rem;
   }
 
-  .username-text {
-    display: none;
-  }
-
-  .user-chip {
-    padding: 0.3rem 0.45rem;
-  }
+  .header-nav  { display: none; }
+  .hamburger   { display: flex; }
 }

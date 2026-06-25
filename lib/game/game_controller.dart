@@ -18,11 +18,14 @@ class OfflineReward {
     required this.gold,
     required this.hammers,
     required this.minutes,
+    required this.items,
   });
 
   final int gold;
   final int hammers;
   final int minutes;
+  // Items crafted by the forge while the player was away
+  final List<GameItem> items;
 }
 
 class BulkSellResult {
@@ -238,6 +241,29 @@ class GameController extends ChangeNotifier {
   int loginStreakDays = 0;
   bool streakClaimedToday = false;
   String _lastLoginDateKey = '';
+
+  int _clanLevel = 0;
+  int get clanLevel => _clanLevel;
+
+  // Not persisted — refreshed from server each session
+  String? _clanName;
+  String? get clanName => _clanName;
+
+  void setClanLevel(int level) {
+    if (_clanLevel == level) return;
+    _clanLevel = level.clamp(0, 20);
+    _save();
+    notifyListeners();
+  }
+
+  void setClanInfo(int level, String? name) {
+    final clampedLevel = level.clamp(0, 20);
+    final levelChanged = _clanLevel != clampedLevel;
+    _clanLevel = clampedLevel;
+    _clanName = name;
+    if (levelChanged) _save();
+    notifyListeners();
+  }
 
   int talentAttackLevel = 0;
   int talentVitalityLevel = 0;
@@ -1396,8 +1422,8 @@ class GameController extends ChangeNotifier {
 
   double get clanDamageBonusMultiplier => 1.0;
   double get clanDefenseReduction => 0.0;
-  double get clanGoldBonusMultiplier => 1.0;
-  double get clanShardBonusMultiplier => 1.0;
+  double get clanGoldBonusMultiplier => 1.0 + _clanLevel * 0.05;
+  double get clanShardBonusMultiplier => 1.0 + _clanLevel * 0.02;
 
   int get skillStrikeCost => 2 + (skillStrikeLevel * 2);
   int get skillWhirlCost => 2 + (skillWhirlLevel * 2);
@@ -4294,6 +4320,7 @@ class GameController extends ChangeNotifier {
 
     loginStreakDays = map['loginStreakDays'] as int? ?? 0;
     _lastLoginDateKey = map['lastLoginDateKey'] as String? ?? '';
+    _clanLevel = (map['clanLevel'] as int? ?? 0).clamp(0, 20);
     _dailyChallengesDateKey = map['dailyChallengesDateKey'] as String? ?? '';
     dailyKillsProgress = map['dailyKillsProgress'] as int? ?? 0;
     dailyCraftsProgress = map['dailyCraftsProgress'] as int? ?? 0;
@@ -4312,24 +4339,45 @@ class GameController extends ChangeNotifier {
     final clampedMinutes = min(minutes, 240);
     final estimatedKills = max(1, (clampedMinutes / 2).floor());
 
+    final offlineMultiplier = tuning.offlineRewardMultiplier *
+        clanGoldBonusMultiplier *
+        ascensionOfflineMultiplier *
+        prestigeShopOfflineMultiplier;
+
     final earnedGold =
-        (estimatedKills *
-                (6 + chapter) *
-                tuning.offlineRewardMultiplier *
-                clanGoldBonusMultiplier *
-                ascensionOfflineMultiplier *
-                prestigeShopOfflineMultiplier)
-            .round();
+        (estimatedKills * (6 + chapter) * offlineMultiplier).round();
     final earnedHammers = estimatedKills;
 
     gold += earnedGold;
     hammers += earnedHammers;
 
+    // Craft items offline: 1 item per 15 minutes, max 12
+    final itemCount = (clampedMinutes / 15).floor().clamp(0, 12);
+    final offlineItems = <GameItem>[];
+    for (int i = 0; i < itemCount; i++) {
+      // Slightly boosted tier chances offline (reward for returning)
+      final tier = _rollOfflineTier();
+      final item = _craftItemWithTier(tier);
+      offlineItems.add(item);
+      inventory.add(item);
+    }
+
     lastOfflineReward = OfflineReward(
       gold: earnedGold,
       hammers: earnedHammers,
       minutes: clampedMinutes,
+      items: offlineItems,
     );
+  }
+
+  // Tier roll for offline crafting — slightly better odds than online
+  ItemTier _rollOfflineTier() {
+    final roll = _random.nextDouble();
+    if (roll < 0.60) return ItemTier.common;
+    if (roll < 0.82) return ItemTier.uncommon;
+    if (roll < 0.94) return ItemTier.rare;
+    if (roll < 0.99) return ItemTier.epic;
+    return ItemTier.legendary;
   }
 
   bool startExpedition(int slotIndex, String expeditionId) {
@@ -4587,6 +4635,7 @@ class GameController extends ChangeNotifier {
           .toList(growable: false),
       'loginStreakDays': loginStreakDays,
       'lastLoginDateKey': _lastLoginDateKey,
+      'clanLevel': _clanLevel,
       'dailyChallengesDateKey': _dailyChallengesDateKey,
       'dailyKillsProgress': dailyKillsProgress,
       'dailyCraftsProgress': dailyCraftsProgress,

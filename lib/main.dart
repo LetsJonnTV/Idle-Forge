@@ -22,7 +22,6 @@ import 'screens/friends_screen.dart';
 import 'screens/leaderboard_screen.dart';
 import 'screens/pvp_screen.dart';
 import 'screens/world_boss_screen.dart';
-import 'screens/clan_war_screen.dart';
 import 'screens/auction_screen.dart';
 import 'services/api_service.dart';
 import 'services/analytics_service.dart';
@@ -201,52 +200,6 @@ class _IdleForgeAppState extends State<IdleForgeApp>
       return;
     }
 
-    final reward = controller.lastOfflineReward;
-    if (reward != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) {
-          return;
-        }
-        showDialog<void>(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              title: Text(controller.text.tr('offlineReward')),
-              content: Text(
-                '${controller.text.tr('offlineSummary')}\n\n'
-                '+${reward.gold} ${controller.text.tr('gold')}\n'
-                '+${reward.hammers} ${controller.text.tr('hammers')}\n'
-                '${reward.minutes} Minuten',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(controller.text.tr('close')),
-                ),
-              ],
-            );
-          },
-        );
-      });
-    }
-
-
-    if (!disableUpdateCheck) {
-      // Version check
-      final updateChecker = UpdateChecker();
-      final updateInfo = await updateChecker.checkForUpdate();
-      if (updateInfo != null && mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          showDialog<void>(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) =>
-                _UpdateDialog(updateInfo: updateInfo, controller: controller),
-          );
-        });
-      }
-    }
   }
 
   @override
@@ -379,7 +332,32 @@ class _IdleForgeHomeState extends State<IdleForgeHome> {
     if (mounted) setState(() => _activeEvents = events);
   }
 
-  void _showStartupDialogs() {
+  Future<void> _showStartupDialogs() async {
+    if (!mounted) return;
+
+    final reward = controller.lastOfflineReward;
+    if (reward != null && mounted) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => _OfflineRewardDialog(
+          reward: reward,
+          controller: controller,
+        ),
+      );
+    }
+
+    if (!disableUpdateCheck && mounted) {
+      final updateInfo = await UpdateChecker().checkForUpdate();
+      if (updateInfo != null && mounted) {
+        await showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) =>
+              _UpdateDialog(updateInfo: updateInfo, controller: controller),
+        );
+      }
+    }
+
     if (!mounted) return;
     if (controller.streakClaimedToday) {
       _showStreakDialog(context, controller);
@@ -693,6 +671,8 @@ class _TopBar extends StatelessWidget {
               ],
             ),
           ),
+          SizedBox(height: _rs(context, 6, min: 4)),
+          _ProgressStrip(controller: controller, dense: dense),
         ],
       ),
     );
@@ -1094,6 +1074,8 @@ class _TopBar extends StatelessWidget {
                     const SizedBox(height: 8),
                     Row(
                       children: [
+                        Icon(Icons.speed, color: ctx.iconColor, size: 20),
+                        const SizedBox(width: 10),
                         const Expanded(child: Text('Max FPS')),
                         const SizedBox(width: 10),
                         SizedBox(
@@ -1120,6 +1102,7 @@ class _TopBar extends StatelessWidget {
                     ),
                     SwitchListTile.adaptive(
                       contentPadding: EdgeInsets.zero,
+                      secondary: Icon(Icons.dark_mode_outlined, color: ctx.iconColor, size: 20),
                       title: const Text('Dark Mode'),
                       value: controller.darkModeEnabled,
                       onChanged: (value) {
@@ -1129,6 +1112,7 @@ class _TopBar extends StatelessWidget {
                     ),
                     SwitchListTile.adaptive(
                       contentPadding: EdgeInsets.zero,
+                      secondary: Icon(Icons.format_list_bulleted, color: ctx.iconColor, size: 20),
                       title: const Text('Kampf-Log anzeigen'),
                       value: controller.showCombatLog,
                       onChanged: (value) {
@@ -1138,6 +1122,7 @@ class _TopBar extends StatelessWidget {
                     ),
                     SwitchListTile.adaptive(
                       contentPadding: EdgeInsets.zero,
+                      secondary: Icon(Icons.blur_off, color: ctx.iconColor, size: 20),
                       title: const Text('Reduzierte Effekte'),
                       value: controller.reducedEffects,
                       onChanged: (value) {
@@ -1345,6 +1330,159 @@ class _TopBar extends StatelessWidget {
                             ],
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        // ── Login / Logout ────────────────────────────────
+                        if (isLoggedIn) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: context.cardBgAlt,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: context.borderGold),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.account_circle_outlined,
+                                  color: context.goldAccent,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        ApiService.instance.currentUsername ??
+                                            '',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: context.textBright,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      Text(
+                                        controller.text.tr('loginButton'),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: context.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                TextButton.icon(
+                                  icon: const Icon(
+                                    Icons.logout_rounded,
+                                    size: 16,
+                                    color: Color(0xFFE07070),
+                                  ),
+                                  label: Text(
+                                    controller.text.tr('logoutButton'),
+                                    style: const TextStyle(
+                                      color: Color(0xFFE07070),
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  onPressed: () async {
+                                    final confirmed = await showDialog<bool>(
+                                      context: context,
+                                      builder: (dialogCtx) => AlertDialog(
+                                        title: Text(
+                                          controller.text.tr(
+                                            'logoutConfirmTitle',
+                                          ),
+                                        ),
+                                        content: Text(
+                                          controller.text.tr(
+                                            'logoutConfirmMessage',
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(
+                                              dialogCtx,
+                                              false,
+                                            ),
+                                            child: Text(
+                                              controller.text.tr('cancel'),
+                                            ),
+                                          ),
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(
+                                              dialogCtx,
+                                              true,
+                                            ),
+                                            child: Text(
+                                              controller.text.tr(
+                                                'logoutButton',
+                                              ),
+                                              style: const TextStyle(
+                                                color: Color(0xFFE07070),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirmed == true) {
+                                      await ApiService.instance.logout();
+                                      if (context.mounted) {
+                                        Navigator.of(context).pop();
+                                      }
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ] else ...[
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: context.goldAccent,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              icon: const Icon(
+                                Icons.login_rounded,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                              label: Text(
+                                controller.text.tr('loginButton'),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              onPressed: () async {
+                                Navigator.of(context).pop();
+                                await Navigator.push<void>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => AuthScreen(
+                                      onLoggedIn: () =>
+                                          Navigator.pop(context),
+                                      onSkip: () => Navigator.pop(context),
+                                      text: controller.text,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 8),
                         Row(
                           children: [
@@ -2885,6 +3023,121 @@ Future<void> _showSkillTree(
   );
 }
 
+// ── Progress Strip ────────────────────────────────────────────────────────── //
+
+class _ProgressStrip extends StatelessWidget {
+  const _ProgressStrip({required this.controller, this.dense = false});
+
+  final GameController controller;
+  final bool dense;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = controller.text;
+    final chapter = controller.chapter;
+    final stage = controller.stage;
+    final prestige = controller.prestigeLevel;
+    final strength = controller.totalStrength;
+    final clanName = controller.clanName;
+
+    String fmt(int n) {
+      if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+      if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
+      return '$n';
+    }
+
+    final chips = [
+      _ProgressChip(
+        icon: Icons.menu_book_rounded,
+        label: '${t.tr('chapter')} $chapter-$stage',
+        color: const Color(0xFF5C8FD6),
+      ),
+      _ProgressChip(
+        icon: Icons.star_rounded,
+        label: 'P$prestige',
+        color: const Color(0xFFD4A84B),
+      ),
+      _ProgressChip(
+        icon: Icons.fitness_center_rounded,
+        label: fmt(strength),
+        color: const Color(0xFFE07070),
+      ),
+      _ProgressChip(
+        icon: Icons.shield_rounded,
+        label: clanName ?? t.tr('progressNoClan'),
+        color: clanName != null
+            ? const Color(0xFF50C878)
+            : context.textSecondary,
+        faded: clanName == null,
+      ),
+    ];
+
+    return Row(
+      children: chips
+          .expand<Widget>(
+            (c) => [
+              Expanded(child: c),
+              const SizedBox(width: 6),
+            ],
+          )
+          .toList()
+        ..removeLast(),
+    );
+  }
+}
+
+class _ProgressChip extends StatelessWidget {
+  const _ProgressChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+    this.faded = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool faded;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveColor = faded ? color.withAlpha(120) : color;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: effectiveColor.withAlpha(faded ? 15 : 25),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: effectiveColor.withAlpha(faded ? 40 : 70),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: effectiveColor),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: effectiveColor,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Bottom Menu ───────────────────────────────────────────────────────────── //
+
 class _BottomMenu extends StatelessWidget {
   const _BottomMenu({required this.controller, this.dense = false});
 
@@ -2948,8 +3201,31 @@ class _BottomMenu extends StatelessWidget {
     );
   }
 
+  void _pushOrLogin(
+    BuildContext context,
+    AppText text,
+    bool loggedIn,
+    Widget screen,
+  ) {
+    if (loggedIn) {
+      Navigator.push<void>(context, MaterialPageRoute(builder: (_) => screen));
+    } else {
+      Navigator.push<void>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AuthScreen(
+            onLoggedIn: () => Navigator.pop(context),
+            onSkip: () => Navigator.pop(context),
+            text: text,
+          ),
+        ),
+      );
+    }
+  }
+
   Future<void> _showMoreMenu(BuildContext context) async {
     final text = controller.text;
+    final isLoggedIn = ApiService.instance.isLoggedIn;
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: context.sheetBg,
@@ -3037,29 +3313,107 @@ class _BottomMenu extends StatelessWidget {
                         _showAscensionPanel(context, controller);
                       },
                     ),
-                    if (ApiService.instance.isLoggedIn)
-                      _MoreTile(
-                        iconPath: 'assets/icons/menu_clan.svg',
-                        label: text.tr('menuClan'),
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          Navigator.push<void>(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (_) => ClanScreen(
-                                text: text,
-                                controller: controller,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                    // ── Online features ──────────────────────────────────
                     _MoreTile(
-                      iconPath: 'assets/icons/menu_online.svg',
-                      label: text.tr('socialTitle'),
+                      icon: Icons.leaderboard_outlined,
+                      label: text.tr('leaderboardTitle'),
+                      enabled: isLoggedIn,
                       onTap: () {
                         Navigator.pop(ctx);
-                        _showSocialPanel(context, controller);
+                        _pushOrLogin(context, text, isLoggedIn,
+                            LeaderboardScreen(text: text));
+                      },
+                    ),
+                    _MoreTile(
+                      icon: Icons.people_outline,
+                      label: text.tr('friendsTitle'),
+                      enabled: isLoggedIn,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _pushOrLogin(context, text, isLoggedIn,
+                            FriendsScreen(text: text));
+                      },
+                    ),
+                    _MoreTile(
+                      iconPath: 'assets/icons/menu_clan.svg',
+                      label: text.tr('menuClan'),
+                      enabled: isLoggedIn,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _pushOrLogin(
+                          context,
+                          text,
+                          isLoggedIn,
+                          ClanScreen(text: text, controller: controller),
+                        );
+                      },
+                    ),
+                    _MoreTile(
+                      icon: Icons.sports_kabaddi_outlined,
+                      label: text.tr('pvpTitle'),
+                      enabled: isLoggedIn,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _pushOrLogin(
+                            context, text, isLoggedIn, PvpScreen(text: text));
+                      },
+                    ),
+                    _MoreTile(
+                      icon: Icons.group_work_outlined,
+                      label: text.tr('coopTitle'),
+                      enabled: isLoggedIn,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _pushOrLogin(context, text, isLoggedIn,
+                            CoopScreen(text: text));
+                      },
+                    ),
+                    _MoreTile(
+                      icon: Icons.whatshot,
+                      label: text.tr('worldBossTitle'),
+                      enabled: isLoggedIn,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _pushOrLogin(
+                          context,
+                          text,
+                          isLoggedIn,
+                          WorldBossScreen(
+                            text: text,
+                            playerStrength: controller.totalStrength,
+                          ),
+                        );
+                      },
+                    ),
+                    _MoreTile(
+                      icon: Icons.celebration,
+                      label: text.tr('eventsTitle'),
+                      enabled: isLoggedIn,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _pushOrLogin(context, text, isLoggedIn,
+                            EventsListScreen(text: text));
+                      },
+                    ),
+                    _MoreTile(
+                      icon: Icons.storefront_outlined,
+                      label: text.tr('auctionTitle'),
+                      enabled: isLoggedIn,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _pushOrLogin(
+                          context,
+                          text,
+                          isLoggedIn,
+                          AuctionScreen(
+                            text: text,
+                            playerGold: controller.gold,
+                            playerInventory:
+                                controller.inventoryForAuction,
+                            onGoldSpent: (amount) =>
+                                controller.spendGoldForAuction(amount),
+                          ),
+                        );
                       },
                     ),
                   ],
@@ -6562,177 +6916,6 @@ class _AscensionPathView extends StatelessWidget {
   }
 }
 
-Future<void> _showSocialPanel(
-  BuildContext context,
-  GameController controller,
-) async {
-  final text = controller.text;
-
-  // Require login before showing any social features
-  if (!ApiService.instance.isLoggedIn) {
-    await Navigator.push<void>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AuthScreen(
-          onLoggedIn: () => Navigator.pop(context),
-          onSkip: () => Navigator.pop(context),
-          text: text,
-        ),
-      ),
-    );
-    if (!context.mounted || !ApiService.instance.isLoggedIn) return;
-  }
-
-  // Helper: require login before pushing a screen
-  void requireAuth(BuildContext ctx, Widget screen) {
-    Navigator.pop(ctx);
-    if (!ApiService.instance.isLoggedIn) {
-      Navigator.push<void>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AuthScreen(
-            onLoggedIn: () {
-              Navigator.pop(context);
-              Navigator.push<void>(
-                context,
-                MaterialPageRoute(builder: (_) => screen),
-              );
-            },
-            onSkip: () => Navigator.pop(context),
-            text: text,
-          ),
-        ),
-      );
-    } else {
-      Navigator.push<void>(context, MaterialPageRoute(builder: (_) => screen));
-    }
-  }
-
-  await showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: context.sheetBg,
-    isScrollControlled: true,
-    builder: (ctx) {
-      return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                text.tr('socialTitle'),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _SocialTile(
-                icon: Icons.person_outline,
-                label: ApiService.instance.isLoggedIn
-                    ? (ApiService.instance.currentUsername ??
-                          text.tr('loginButton'))
-                    : text.tr('loginButton'),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  if (ApiService.instance.isLoggedIn) {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (dialogCtx) => AlertDialog(
-                        title: Text(text.tr('logoutConfirmTitle')),
-                        content: Text(text.tr('logoutConfirmMessage')),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialogCtx, false),
-                            child: Text(text.tr('cancel')),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialogCtx, true),
-                            child: Text(text.tr('logoutButton')),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (confirmed == true) {
-                      await ApiService.instance.logout();
-                    }
-                  } else {
-                    Navigator.push<void>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => AuthScreen(
-                          onLoggedIn: () => Navigator.pop(context),
-                          onSkip: () => Navigator.pop(context),
-                          text: text,
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
-              _SocialTile(
-                icon: Icons.leaderboard_outlined,
-                label: text.tr('leaderboardTitle'),
-                onTap: () => requireAuth(ctx, LeaderboardScreen(text: text)),
-              ),
-              _SocialTile(
-                icon: Icons.people_outline,
-                label: text.tr('friendsTitle'),
-                onTap: () => requireAuth(ctx, FriendsScreen(text: text)),
-              ),
-              _SocialTile(
-                icon: Icons.sports_kabaddi_outlined,
-                label: text.tr('pvpTitle'),
-                onTap: () => requireAuth(ctx, PvpScreen(text: text)),
-              ),
-              _SocialTile(
-                icon: Icons.group_work_outlined,
-                label: text.tr('coopTitle'),
-                onTap: () => requireAuth(ctx, CoopScreen(text: text)),
-              ),
-              _SocialTile(
-                icon: Icons.whatshot,
-                label: text.tr('worldBossTitle'),
-                onTap: () => requireAuth(
-                  ctx,
-                  WorldBossScreen(
-                    text: text,
-                    playerStrength: controller.totalStrength,
-                  ),
-                ),
-              ),
-              _SocialTile(
-                icon: Icons.celebration,
-                label: text.tr('eventsTitle'),
-                onTap: () => requireAuth(ctx, EventsListScreen(text: text)),
-              ),
-              _SocialTile(
-                icon: Icons.shield,
-                label: text.tr('clanWarTitle'),
-                onTap: () => requireAuth(ctx, ClanWarScreen(text: text)),
-              ),
-              _SocialTile(
-                icon: Icons.storefront_outlined,
-                label: text.tr('auctionTitle'),
-                onTap: () => requireAuth(
-                  ctx,
-                  AuctionScreen(
-                    text: text,
-                    playerGold: controller.gold,
-                    playerInventory: controller.inventoryForAuction,
-                    onGoldSpent: (amount) =>
-                        controller.spendGoldForAuction(amount),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
 
 Future<void> _showPetPanel(
   BuildContext context,
@@ -6778,88 +6961,6 @@ Future<void> _showPetPanel(
       );
     },
   );
-}
-
-class _MenuButton extends StatelessWidget {
-  const _MenuButton({
-    this.iconPath,
-    this.icon,
-    required this.label,
-    required this.onTap,
-    this.dense = false,
-  }) : assert(iconPath != null || icon != null);
-
-  final String? iconPath;
-  final IconData? icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool dense;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: _rs(context, 3, min: 1.5)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(_rs(context, 10, min: 7)),
-        onTap: onTap,
-        child: Container(
-          height: _rs(context, dense ? 54 : 64, min: 48, max: 82),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [context.cardBg, context.cardBgAlt],
-            ),
-            borderRadius: BorderRadius.circular(_rs(context, 10, min: 7)),
-            border: Border.all(color: context.borderGoldBright, width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: context.goldAccent.withValues(alpha: 0.14),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (iconPath != null)
-                _SvgIcon(
-                  path: iconPath!,
-                  size: _rs(context, dense ? 17 : 20, min: 14, max: 26),
-                )
-              else
-                Icon(
-                  icon,
-                  size: _rs(context, dense ? 17 : 20, min: 14, max: 26),
-                  color: context.goldAccent,
-                ),
-              SizedBox(height: _rs(context, 4, min: 2)),
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: _rs(context, 4, min: 2),
-                ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: _rs(context, dense ? 9 : 10, min: 8, max: 12),
-                      color: context.textPrimary,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _NavBtn extends StatelessWidget {
@@ -6941,47 +7042,60 @@ class _MoreTile extends StatelessWidget {
     this.icon,
     required this.label,
     required this.onTap,
+    this.enabled = true,
   }) : assert(iconPath != null || icon != null);
 
   final String? iconPath;
   final IconData? icon;
   final String label;
   final VoidCallback onTap;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 96,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-          decoration: BoxDecoration(
-            color: context.cardBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: context.borderGold, width: 1),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (iconPath != null)
-                _SvgIcon(path: iconPath!, size: 26)
-              else
-                Icon(icon, size: 26, color: context.goldAccent),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: context.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.42,
+      child: SizedBox(
+        width: 96,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+            decoration: BoxDecoration(
+              color: context.cardBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: enabled ? context.borderGold : context.cardBorder,
+                width: 1,
               ),
-            ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (iconPath != null)
+                  _SvgIcon(path: iconPath!, size: 26)
+                else
+                  Icon(
+                    icon,
+                    size: 26,
+                    color: enabled ? context.goldAccent : context.textTertiary,
+                  ),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color:
+                        enabled ? context.textPrimary : context.textTertiary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -6989,26 +7103,6 @@ class _MoreTile extends StatelessWidget {
   }
 }
 
-class _SocialTile extends StatelessWidget {
-  const _SocialTile({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: context.textPrimary),
-      title: Text(label),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Update Dialog with download progress
@@ -7925,5 +8019,285 @@ class _RecipeCard extends StatelessWidget {
       ItemTier.epic => const Color(0xFF9C27B0),
       ItemTier.legendary => const Color(0xFFFF9800),
     };
+  }
+}
+
+// ── Offline Reward Dialog ─────────────────────────────────────────────────── //
+
+class _OfflineRewardDialog extends StatelessWidget {
+  const _OfflineRewardDialog({
+    required this.reward,
+    required this.controller,
+  });
+
+  final OfflineReward reward;
+  final GameController controller;
+
+  static const _tierColors = {
+    ItemTier.common: Color(0xFFAAAAAA),
+    ItemTier.uncommon: Color(0xFF4CAF50),
+    ItemTier.rare: Color(0xFF2196F3),
+    ItemTier.epic: Color(0xFF9C27B0),
+    ItemTier.legendary: Color(0xFFFF9800),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final t = controller.text;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF191E2C) : const Color(0xFFFFF8EC);
+    final textPrimary =
+        isDark ? const Color(0xFFDED0B0) : const Color(0xFF2A1E08);
+    final textSecondary =
+        isDark ? const Color(0xFF9A8860) : const Color(0xFF6A5028);
+    final accent = const Color(0xFFD4A84B);
+    final border = isDark ? const Color(0xFF7A5818) : const Color(0xFF9A7420);
+
+    final hasItems = reward.items.isNotEmpty;
+    // Sort items best-first (legendary → common)
+    final sortedItems = [...reward.items]
+      ..sort((a, b) => b.tier.index.compareTo(a.tier.index));
+
+    final bestTier = hasItems ? sortedItems.first.tier : null;
+    final bestColor =
+        bestTier != null ? (_tierColors[bestTier] ?? accent) : accent;
+
+    return Dialog(
+      backgroundColor: bg,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 560),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Header ──────────────────────────────────────────────
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+              decoration: BoxDecoration(
+                color: bestColor.withAlpha(30),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
+                border: Border(
+                  bottom: BorderSide(color: border.withAlpha(80)),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(Icons.hardware_rounded, color: bestColor, size: 40),
+                  const SizedBox(height: 8),
+                  Text(
+                    t.tr('offlineForgeWorked'),
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    t
+                        .tr('offlineAwayFor')
+                        .replaceFirst('{minutes}', '${reward.minutes}'),
+                    style: TextStyle(color: textSecondary, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Items list ──────────────────────────────────────────
+            if (hasItems) ...[
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Row(
+                  children: [
+                    Icon(Icons.inventory_2_outlined,
+                        size: 16, color: textSecondary),
+                    const SizedBox(width: 6),
+                    Text(
+                      t
+                          .tr('offlineItemsForged')
+                          .replaceFirst('{count}', '${reward.items.length}'),
+                      style: TextStyle(
+                        color: textSecondary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                  shrinkWrap: true,
+                  itemCount: sortedItems.length,
+                  itemBuilder: (_, i) {
+                    final item = sortedItems[i];
+                    final tierColor =
+                        _tierColors[item.tier] ?? accent;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: tierColor.withAlpha(15),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: tierColor.withAlpha(60)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: tierColor.withAlpha(40),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              controller.tierLabel(item.tier),
+                              style: TextStyle(
+                                color: tierColor,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              item.name,
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.bolt, size: 14, color: accent),
+                              Text(
+                                '${item.power}',
+                                style: TextStyle(
+                                  color: accent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+
+            // ── Gold + Hammers footer ───────────────────────────────
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: border.withAlpha(60))),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _RewardBadge(
+                        icon: Icons.monetization_on_rounded,
+                        color: accent,
+                        label: '+${_formatNumber(reward.gold)}',
+                        sublabel: t.tr('gold'),
+                      ),
+                      _RewardBadge(
+                        icon: Icons.hardware,
+                        color: const Color(0xFF78909C),
+                        label: '+${reward.hammers}',
+                        sublabel: t.tr('hammers'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: accent,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        t.tr('offlineCollect'),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatNumber(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
+    return '$n';
+  }
+}
+
+class _RewardBadge extends StatelessWidget {
+  const _RewardBadge({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.sublabel,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String sublabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 28),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        Text(
+          sublabel,
+          style: const TextStyle(
+            color: Color(0xFF9A8860),
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
   }
 }

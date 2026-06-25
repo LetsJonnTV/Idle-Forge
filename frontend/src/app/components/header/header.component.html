@@ -6,7 +6,7 @@
       ⚒️ <span>Idle Forge</span>
     </a>
 
-    <!-- Navigation / Auth Controls -->
+    <!-- Desktop Navigation -->
     <nav class="header-nav" aria-label="Hauptnavigation">
 
       <!-- Logged-out state -->
@@ -14,10 +14,10 @@
         <a routerLink="/wiki" routerLinkActive="active" class="btn btn-secondary btn-sm">
           Wiki
         </a>
-        <button class="btn btn-secondary btn-sm" (click)="openLogin()" aria-label="Einloggen">
+        <button class="btn btn-secondary btn-sm" (click)="openLogin()">
           Einloggen
         </button>
-        <button class="btn btn-primary btn-sm" (click)="openRegister()" aria-label="Registrieren">
+        <button class="btn btn-primary btn-sm" (click)="openRegister()">
           Registrieren
         </button>
       </ng-container>
@@ -28,28 +28,47 @@
           <span class="user-icon">👤</span>
           <span class="username-text">{{ username }}</span>
         </span>
-
-        <a routerLink="/wiki" routerLinkActive="active" class="btn btn-secondary btn-sm">
-          Wiki
-        </a>
-
-        <a routerLink="/dashboard" routerLinkActive="active" class="btn btn-secondary btn-sm">
-          Dashboard
-        </a>
-
-        <a routerLink="/inventory" routerLinkActive="active" class="btn btn-secondary btn-sm">
-          Inventar
-        </a>
-
-        <a *ngIf="isAdmin" routerLink="/admin" routerLinkActive="active" class="btn btn-secondary btn-sm">
-          Admin
-        </a>
-
-        <button class="btn btn-danger btn-sm" (click)="logout()" aria-label="Abmelden">
-          Abmelden
-        </button>
+        <a routerLink="/wiki"      routerLinkActive="active" class="btn btn-secondary btn-sm">Wiki</a>
+        <a routerLink="/dashboard" routerLinkActive="active" class="btn btn-secondary btn-sm">Dashboard</a>
+        <a routerLink="/inventory" routerLinkActive="active" class="btn btn-secondary btn-sm">Inventar</a>
+        <a *ngIf="isAdmin" routerLink="/admin" routerLinkActive="active" class="btn btn-secondary btn-sm">Admin</a>
+        <button class="btn btn-danger btn-sm" (click)="logout()">Abmelden</button>
       </ng-container>
 
     </nav>
+
+    <!-- Hamburger (mobile only) -->
+    <button
+      class="hamburger"
+      [class.open]="menuOpen"
+      (click)="toggleMenu()"
+      [attr.aria-expanded]="menuOpen"
+      aria-label="Menü öffnen"
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
   </div>
+
+  <!-- Mobile Menu -->
+  <nav class="mobile-menu" [class.open]="menuOpen" aria-label="Mobile Navigation">
+
+    <ng-container *ngIf="!isLoggedIn">
+      <a routerLink="/wiki" class="mobile-link" (click)="closeMenu()">Wiki</a>
+      <button class="mobile-link mobile-btn" (click)="openLogin(); closeMenu()">Einloggen</button>
+      <button class="mobile-link mobile-btn mobile-btn-accent" (click)="openRegister(); closeMenu()">Registrieren</button>
+    </ng-container>
+
+    <ng-container *ngIf="isLoggedIn">
+      <div class="mobile-user">👤 {{ username }}</div>
+      <a routerLink="/wiki"      class="mobile-link" (click)="closeMenu()">Wiki</a>
+      <a routerLink="/dashboard" class="mobile-link" (click)="closeMenu()">Dashboard</a>
+      <a routerLink="/inventory" class="mobile-link" (click)="closeMenu()">Inventar</a>
+      <a *ngIf="isAdmin" routerLink="/admin" class="mobile-link" (click)="closeMenu()">Admin</a>
+      <button class="mobile-link mobile-btn mobile-btn-danger" (click)="logout(); closeMenu()">Abmelden</button>
+    </ng-container>
+
+  </nav>
 </header>

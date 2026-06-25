@@ -13,6 +13,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   isLoggedIn = false;
   username = '';
   isAdmin = false;
+  menuOpen = false;
 
   private routerSub!: Subscription;
 
@@ -24,11 +25,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.syncState();
-    // Re-sync on every navigation so header reflects auth changes after
-    // login/logout (which happen alongside navigation)
     this.routerSub = this.router.events
       .pipe(filter(e => e instanceof NavigationEnd))
-      .subscribe(() => this.syncState());
+      .subscribe(() => {
+        this.syncState();
+        this.menuOpen = false;
+      });
   }
 
   ngOnDestroy(): void {
@@ -44,6 +46,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   openLogin(): void    { this.modal.open('login');    }
   openRegister(): void { this.modal.open('register'); }
+
+  toggleMenu(): void { this.menuOpen = !this.menuOpen; }
+  closeMenu(): void  { this.menuOpen = false; }
 
   logout(): void {
     this.auth.logout();

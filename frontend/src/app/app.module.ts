@@ -9,6 +9,7 @@ import { AppComponent } from './app.component';
 // Components
 import { HeaderComponent }    from './components/header/header.component';
 import { AuthModalComponent } from './components/auth-modal/auth-modal.component';
+import { AdminShellComponent } from './components/admin-shell/admin-shell.component';
 
 // Pages
 import { LandingComponent }   from './pages/landing/landing.component';
@@ -27,6 +28,7 @@ import { AdminClansComponent } from './pages/admin-clans/admin-clans.component';
     AppComponent,
     HeaderComponent,
     AuthModalComponent,
+    AdminShellComponent,
     LandingComponent,
     DashboardComponent,
     AdminComponent,

@@ -533,6 +533,17 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>?> getClan(String clanId) async {
+    try {
+      final data = await _get('/api/clans/$clanId');
+      return data['clan'] as Map<String, dynamic>?;
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Create a new clan.
   Future<Map<String, dynamic>?> createClan(
     String name, {
@@ -985,7 +996,7 @@ class ApiService {
     try {
       await _post('/api/events/$eventId/score', {
         'delta': delta,
-        if (meta != null) 'meta': meta,
+        ?'meta': meta,
       });
     } catch (_) {
       // best-effort

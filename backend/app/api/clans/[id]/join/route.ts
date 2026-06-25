@@ -53,8 +53,24 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 
   // Join new clan
-  await db.from('clan_members').insert({ clan_id: params.id, player_id: auth.playerId });
-  await db.from('players').update({ clan_id: params.id }).eq('id', auth.playerId);
+  const { error: memberError } = await db
+    .from('clan_members')
+    .insert({ clan_id: params.id, player_id: auth.playerId });
+
+  if (memberError) {
+    console.error('Join clan member insert error:', memberError);
+    return NextResponse.json({ error: 'Failed to join clan' }, { status: 500 });
+  }
+
+  const { error: playerError } = await db
+    .from('players')
+    .update({ clan_id: params.id })
+    .eq('id', auth.playerId);
+
+  if (playerError) {
+    console.error('Join clan player update error:', playerError);
+    return NextResponse.json({ error: 'Failed to update player clan' }, { status: 500 });
+  }
 
   return NextResponse.json({ message: `Joined clan ${clan.name}`, clanId: clan.id });
 }
